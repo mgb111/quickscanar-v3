@@ -7,6 +7,7 @@ import { Camera, ArrowLeft, Share2, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import QRCode from 'qrcode.react'
 import toast from 'react-hot-toast'
+import Script from 'next/script'
 
 type ARExperience = {
   id: string
@@ -29,14 +30,15 @@ export default function ExperienceViewer() {
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    // Check if user is on mobile
+    setIsClient(true)
     setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
-    
     if (params.id) {
       fetchExperience()
     }
+    // eslint-disable-next-line
   }, [params.id])
 
   const fetchExperience = async () => {
@@ -65,7 +67,7 @@ export default function ExperienceViewer() {
     }
   }
 
-  if (loading) {
+  if (loading || !isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
@@ -96,6 +98,10 @@ export default function ExperienceViewer() {
 
   return (
     <div className="min-h-screen bg-black">
+      {/* Load A-Frame and MindAR scripts before anything else */}
+      <Script src="https://aframe.io/releases/1.5.0/aframe.min.js" strategy="beforeInteractive" />
+      <Script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js" strategy="beforeInteractive" />
+
       {/* Navigation */}
       <nav className="absolute top-0 left-0 right-0 z-10 bg-black bg-opacity-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -126,49 +132,52 @@ export default function ExperienceViewer() {
 
       {/* AR Experience */}
       <div className="relative w-full h-screen">
-        <a-scene
-          mindar-image={`imageTargetSrc: ${experience.mind_file_url};`}
-          color-space="sRGB"
-          renderer="colorManagement: true, physicallyCorrectLights"
-          vr-mode-ui="enabled: false"
-          device-orientation-permission-ui="enabled: false"
-          embedded
-        >
-          <a-assets>
-            <img id="marker" src={experience.marker_image_url} />
-            <video
-              id="videoTexture"
-              src={experience.video_url}
-              loop
-              muted
-              playsInline
-              crossOrigin="anonymous"
-            ></video>
-          </a-assets>
+        {/* Only render AR scene on client */}
+        {isClient && (
+          <a-scene
+            mindar-image={`imageTargetSrc: ${experience.mind_file_url};`}
+            color-space="sRGB"
+            renderer="colorManagement: true, physicallyCorrectLights"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            embedded
+          >
+            <a-assets>
+              <img id="marker" src={experience.marker_image_url} />
+              <video
+                id="videoTexture"
+                src={experience.video_url}
+                loop
+                muted
+                playsInline
+                crossOrigin="anonymous"
+              ></video>
+            </a-assets>
 
-          <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-          <a-entity mindar-image-target="targetIndex: 0" id="target">
-            {/* Marker image plane */}
-            <a-plane 
-              src="#marker"
-              position="0 0 0"
-              height={experience.plane_height}
-              width={experience.plane_width}
-              rotation="0 0 0"
-            ></a-plane>
+            <a-entity mindar-image-target="targetIndex: 0" id="target">
+              {/* Marker image plane */}
+              <a-plane 
+                src="#marker"
+                position="0 0 0"
+                height={experience.plane_height}
+                width={experience.plane_width}
+                rotation="0 0 0"
+              ></a-plane>
 
-            {/* Video plane */}
-            <a-plane
-              id="videoPlane"
-              width={experience.plane_width}
-              height={experience.plane_height}
-              position="0 0 0.01"
-              rotation={`0 0 ${experience.video_rotation * Math.PI / 180}`}
-              material="shader: flat; src: #videoTexture"
-            ></a-plane>
-          </a-entity>
-        </a-scene>
+              {/* Video plane */}
+              <a-plane
+                id="videoPlane"
+                width={experience.plane_width}
+                height={experience.plane_height}
+                position="0 0 0.01"
+                rotation={`0 0 ${experience.video_rotation * Math.PI / 180}`}
+                material="shader: flat; src: #videoTexture"
+              ></a-plane>
+            </a-entity>
+          </a-scene>
+        )}
 
         {/* Instructions Overlay */}
         {!isMobile && (
@@ -209,28 +218,6 @@ export default function ExperienceViewer() {
           </div>
         )}
       </div>
-
-      {/* Scripts */}
-      <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            document.addEventListener("DOMContentLoaded", () => {
-              const video = document.querySelector("#videoTexture");
-              const target = document.querySelector("#target");
-
-              target.addEventListener("targetFound", () => {
-                video.play();
-              });
-
-              target.addEventListener("targetLost", () => {
-                video.pause();
-              });
-            });
-          `,
-        }}
-      />
     </div>
   )
 } 
