@@ -141,8 +141,8 @@ export default function ExperienceViewer() {
               src={experience.video_url}
               loop
               muted
-              playsinline
-              crossorigin="anonymous"
+              playsInline
+              crossOrigin="anonymous"
             ></video>
           </a-assets>
 
