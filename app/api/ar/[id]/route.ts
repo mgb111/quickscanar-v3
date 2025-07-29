@@ -27,7 +27,7 @@ export async function GET(
     const workingMindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const workingMarkerUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
 
-    // Create the AR HTML with proper MindAR integration
+    // Create the AR HTML with proper MindAR integration and crossorigin fixes
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -145,8 +145,8 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="marker" src="${markerImageUrl}" />
-        <img id="working-marker" src="${workingMarkerUrl}" />
+        <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
+        <img id="working-marker" src="${workingMarkerUrl}" crossorigin="anonymous" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
