@@ -25,7 +25,7 @@ export async function GET(
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
-    // Minimal AR HTML - no A-Frame loading system
+    // Clean AR HTML with targeted loading screen removal
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -87,8 +87,7 @@ export async function GET(
         display: none;
       }
       
-      /* Nuclear option - hide everything that could be a loading screen */
-      .a-loader,
+      /* Targeted loading screen removal - only hide specific loading elements */
       .a-loader-title,
       .a-loader-spinner,
       .a-loader-logo,
@@ -100,24 +99,11 @@ export async function GET(
       .a-orientation-modal,
       .a-fullscreen,
       .a-enter-ar,
-      .a-enter-vr-button,
-      .a-orientation-modal__content,
-      .a-orientation-modal__content__message,
-      .a-orientation-modal__content__icon,
-      .a-orientation-modal__content__button,
-      .a-orientation-modal__content__button--primary,
-      .a-orientation-modal__content__button--secondary,
-      [class*="a-loader"],
-      [class*="a-enter"],
-      [class*="a-orientation"],
-      [class*="a-fullscreen"] {
+      .a-enter-vr-button {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
-        position: absolute !important;
-        left: -9999px !important;
-        top: -9999px !important;
       }
     </style>
   </head>
@@ -236,41 +222,33 @@ export async function GET(
         return isMobile;
       }
 
-      function nukeLoadingScreens() {
-        // Nuclear option - remove ALL possible loading elements
-        const selectors = [
-          '.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
+      function removeLoadingScreens() {
+        // Targeted removal - only specific loading elements
+        const loadingSelectors = [
+          '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
           '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
           '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
-          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button',
-          '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]',
-          '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'
+          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button'
         ];
         
-        selectors.forEach(selector => {
+        loadingSelectors.forEach(selector => {
           const elements = document.querySelectorAll(selector);
           elements.forEach(el => {
             el.style.display = 'none';
             el.style.visibility = 'hidden';
             el.style.opacity = '0';
             el.style.pointerEvents = 'none';
-            el.style.position = 'absolute';
-            el.style.left = '-9999px';
-            el.style.top = '-9999px';
           });
         });
         
-        updateDebug("Nuclear loading screen removal executed");
+        updateDebug("Loading screens removed");
       }
-
-      // Run immediately
-      nukeLoadingScreens();
 
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
         
-        // Nuclear loading screen removal
-        nukeLoadingScreens();
+        // Remove loading screens
+        removeLoadingScreens();
         
         // Detect mobile device
         detectMobile();
@@ -309,12 +287,12 @@ export async function GET(
         if (scene) {
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
-            nukeLoadingScreens(); // Remove any loading screens that appeared
+            removeLoadingScreens();
           });
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
-            nukeLoadingScreens(); // Remove any loading screens that appeared
+            removeLoadingScreens();
           });
 
           scene.addEventListener("error", (error) => {
@@ -400,12 +378,9 @@ export async function GET(
             updateDebug("❌ Not HTTPS - camera may not work");
           }
           
-          // Final nuclear strike
-          nukeLoadingScreens();
+          // Final loading screen removal
+          removeLoadingScreens();
         }, 2000);
-        
-        // Continuous nuclear strikes
-        setInterval(nukeLoadingScreens, 1000);
       });
     </script>
   </body>
