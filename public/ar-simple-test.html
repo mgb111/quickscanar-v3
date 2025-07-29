@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Simple Camera Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 2px solid #333;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+        .info { background: #17a2b8; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Camera Test</h1>
+    
+    <div class="status info" id="status">Click "Start Camera" to test</div>
+    
+    <button onclick="startCamera()">Start Camera</button>
+    <button onclick="stopCamera()">Stop Camera</button>
+    
+    <video id="video" autoplay playsinline muted></video>
+    
+    <div id="logs"></div>
+
+    <script>
+        let stream = null;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div style="color: ${type === 'error' ? '#ff6b6b' : '#4ecdc4'}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function startCamera() {
+            log('Starting camera test...');
+            updateStatus('Requesting camera access...', 'info');
+            
+            try {
+                // Check if getUserMedia is available
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('getUserMedia not supported');
+                }
+                
+                log('getUserMedia API available');
+                
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment' // Use back camera on mobile
+                    }
+                });
+                
+                log('Camera stream obtained successfully');
+                updateStatus('Camera started successfully!', 'success');
+                
+                // Display the video
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    log('Video metadata loaded');
+                };
+                
+                video.onplay = () => {
+                    log('Video started playing');
+                };
+                
+                video.onerror = (error) => {
+                    log('Video error: ' + error, 'error');
+                };
+                
+            } catch (error) {
+                log('Camera error: ' + error.message, 'error');
+                updateStatus('Camera failed: ' + error.message, 'error');
+                
+                // Provide specific error guidance
+                if (error.name === 'NotAllowedError') {
+                    log('Permission denied. Please allow camera access.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    log('No camera found on device.', 'error');
+                } else if (error.name === 'NotSupportedError') {
+                    log('Camera not supported on this device/browser.', 'error');
+                }
+            }
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                log('Camera stopped');
+                updateStatus('Camera stopped', 'info');
+                
+                const video = document.getElementById('video');
+                video.srcObject = null;
+            }
+        }
+        
+        // Auto-start camera when page loads
+        window.addEventListener('load', () => {
+            log('Page loaded, auto-starting camera in 2 seconds...');
+            setTimeout(startCamera, 2000);
+        });
+    </script>
+</body>
+</html> 

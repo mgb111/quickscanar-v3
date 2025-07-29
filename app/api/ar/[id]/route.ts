@@ -21,12 +21,10 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // For debugging, let's use a known working MindAR file first
-    const mindFileUrl = experience.mind_file_url.includes('compiled') 
-      ? 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-      : experience.mind_file_url
+    // Always use working MindAR file for now to isolate the issue
+    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
 
-    // Create the AR HTML with full-screen camera and better compatibility
+    // Create the AR HTML with comprehensive debugging and fallback
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -54,6 +52,35 @@ export async function GET(
         font-family: Arial, sans-serif;
         text-align: center;
         z-index: 1000;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 10px;
+      }
+      .debug-panel {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        max-width: 300px;
+        z-index: 1001;
+      }
+      .fallback-camera {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 999;
+        display: none;
+      }
+      .fallback-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
     </style>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -63,6 +90,21 @@ export async function GET(
     <div class="loading" id="loading">
       <h2>Loading AR Experience...</h2>
       <p>Please wait while we initialize the camera</p>
+      <div id="debug-info"></div>
+    </div>
+
+    <div class="debug-panel" id="debug-panel">
+      <strong>Debug Info:</strong><br>
+      <div id="debug-content"></div>
+    </div>
+
+    <!-- Fallback camera view -->
+    <div class="fallback-camera" id="fallback-camera">
+      <video class="fallback-video" id="fallback-video" autoplay playsinline muted></video>
+      <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px;">
+        <p>Fallback Camera View</p>
+        <p>MindAR failed to load</p>
+      </div>
     </div>
 
     <a-scene
@@ -75,7 +117,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="marker" src="${experience.marker_image_url}" />
+        <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -91,10 +133,10 @@ export async function GET(
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         <a-plane 
-          src="#marker"
+          src="#card"
           position="0 0 0"
-          height="${experience.plane_height}"
-          width="${experience.plane_width}"
+          height="0.552"
+          width="1"
           rotation="0 0 0"
           material="transparent: true; opacity: 0.3"
         ></a-plane>
@@ -111,64 +153,164 @@ export async function GET(
     </a-scene>
 
     <script>
+      let mindarLoaded = false;
+      let aframeLoaded = false;
+      let fallbackActivated = false;
+
+      function updateDebug(message) {
+        const debugContent = document.getElementById('debug-content');
+        const timestamp = new Date().toLocaleTimeString();
+        debugContent.innerHTML += \`[\${timestamp}] \${message}<br>\`;
+        console.log(message);
+      }
+
+      function updateLoading(message) {
+        const loading = document.getElementById('loading');
+        const debugInfo = document.getElementById('debug-info');
+        debugInfo.innerHTML = message;
+      }
+
+      function activateFallback() {
+        if (fallbackActivated) return;
+        fallbackActivated = true;
+        
+        updateDebug("🔄 Activating fallback camera view");
+        updateLoading("Activating fallback camera");
+        
+        const fallbackCamera = document.getElementById('fallback-camera');
+        const fallbackVideo = document.getElementById('fallback-video');
+        
+        // Get camera stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            fallbackVideo.srcObject = stream;
+            fallbackCamera.style.display = 'block';
+            updateDebug("✅ Fallback camera activated");
+            updateLoading("Fallback camera active");
+            
+            // Hide loading
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = "none";
+          })
+          .catch(error => {
+            updateDebug("❌ Fallback camera failed: " + error.message);
+            updateLoading("Fallback camera failed");
+          });
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
-        console.log("AR Experience loaded");
+        updateDebug("AR Experience loaded");
+        updateLoading("DOM loaded");
         
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
         const scene = document.querySelector("a-scene");
         const loading = document.querySelector("#loading");
         
+        // Test camera access first
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          updateDebug("Testing camera access...");
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(() => {
+              updateDebug("✅ Camera permission granted");
+              updateLoading("Camera access confirmed");
+            })
+            .catch((error) => {
+              updateDebug("❌ Camera permission denied: " + error.message);
+              updateLoading("Camera access failed: " + error.message);
+            });
+        } else {
+          updateDebug("❌ Camera API not available");
+          updateLoading("Camera API not supported");
+        }
+        
         if (scene) {
           scene.addEventListener("loaded", () => {
-            console.log("AR Scene loaded successfully");
+            updateDebug("✅ AR Scene loaded successfully");
+            updateLoading("AR Scene loaded");
             if (loading) loading.style.display = "none";
           });
           
           scene.addEventListener("renderstart", () => {
-            console.log("AR rendering started");
+            updateDebug("✅ AR rendering started");
+            updateLoading("AR rendering started");
             if (loading) loading.style.display = "none";
           });
 
           scene.addEventListener("error", (error) => {
-            console.error("AR Scene error:", error);
-            if (loading) {
-              loading.innerHTML = "<h2>Error Loading AR</h2><p>Please refresh the page</p>";
-            }
+            updateDebug("❌ AR Scene error: " + error);
+            updateLoading("AR Scene error occurred");
+            activateFallback();
           });
+
+          // Check if scene is actually loading
+          setTimeout(() => {
+            if (scene.hasAttribute('loaded')) {
+              updateDebug("✅ Scene loaded attribute present");
+            } else {
+              updateDebug("⚠️ Scene loaded attribute missing");
+            }
+          }, 5000);
         }
         
         if (target) {
           target.addEventListener("targetFound", () => {
-            console.log("Target found - playing video");
+            updateDebug("🎯 Target found - playing video");
             if (video) {
-              video.play().catch(e => console.log("Video play error:", e));
+              video.play().catch(e => updateDebug("❌ Video play error: " + e));
             }
           });
           
           target.addEventListener("targetLost", () => {
-            console.log("Target lost");
+            updateDebug("❌ Target lost");
           });
         }
-        
-        // Request camera permissions explicitly
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          navigator.mediaDevices.getUserMedia({ video: true })
-            .then(() => {
-              console.log("Camera permission granted");
-            })
-            .catch((error) => {
-              console.error("Camera permission denied:", error);
-              if (loading) {
-                loading.innerHTML = "<h2>Camera Permission Required</h2><p>Please allow camera access and refresh</p>";
-              }
-            });
-        }
 
-        // Hide loading after 10 seconds as fallback
+        // Check for common issues
         setTimeout(() => {
-          if (loading) loading.style.display = "none";
+          updateDebug("Checking for common issues...");
+          
+          // Check if A-Frame is loaded
+          if (typeof AFRAME !== 'undefined') {
+            updateDebug("✅ A-Frame loaded");
+            aframeLoaded = true;
+          } else {
+            updateDebug("❌ A-Frame not loaded");
+            activateFallback();
+          }
+          
+          // Check if MindAR is loaded
+          if (typeof MINDAR !== 'undefined') {
+            updateDebug("✅ MindAR loaded");
+            mindarLoaded = true;
+          } else {
+            updateDebug("❌ MindAR not loaded");
+            activateFallback();
+          }
+          
+          // Check if we're on HTTPS or localhost
+          if (location.protocol === 'https:' || location.hostname === 'localhost') {
+            updateDebug("✅ HTTPS/localhost detected");
+          } else {
+            updateDebug("❌ Not HTTPS - camera may not work");
+          }
+        }, 2000);
+
+        // Activate fallback if MindAR doesn't load within 10 seconds
+        setTimeout(() => {
+          if (!mindarLoaded || !aframeLoaded) {
+            updateDebug("⏰ Timeout - activating fallback");
+            activateFallback();
+          }
         }, 10000);
+
+        // Hide loading after 15 seconds as fallback
+        setTimeout(() => {
+          if (loading) {
+            updateDebug("⏰ Auto-hiding loading screen");
+            loading.style.display = "none";
+          }
+        }, 15000);
       });
     </script>
   </body>
