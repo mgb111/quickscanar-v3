@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Camera, ArrowLeft, Share2, Smartphone } from 'lucide-react'
+import { Camera, ArrowLeft, Share2, Smartphone, Play, Pause, Volume2, VolumeX } from 'lucide-react'
 import Link from 'next/link'
 import QRCode from 'qrcode.react'
 import toast from 'react-hot-toast'
@@ -31,6 +31,10 @@ export default function ExperienceViewer() {
   const [showQR, setShowQR] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [isVideoMuted, setIsVideoMuted] = useState(true)
+  const [targetFound, setTargetFound] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     setIsClient(true)
@@ -40,6 +44,41 @@ export default function ExperienceViewer() {
     }
     // eslint-disable-next-line
   }, [params.id])
+
+  useEffect(() => {
+    // Add event listeners for AR interactions
+    const handleTargetFound = () => {
+      setTargetFound(true)
+      if (videoRef.current && !isVideoPlaying) {
+        videoRef.current.play()
+        setIsVideoPlaying(true)
+      }
+    }
+
+    const handleTargetLost = () => {
+      setTargetFound(false)
+    }
+
+    const handleVideoPlay = () => {
+      setIsVideoPlaying(true)
+    }
+
+    const handleVideoPause = () => {
+      setIsVideoPlaying(false)
+    }
+
+    window.addEventListener('targetFound', handleTargetFound)
+    window.addEventListener('targetLost', handleTargetLost)
+    window.addEventListener('videoPlay', handleVideoPlay)
+    window.addEventListener('videoPause', handleVideoPause)
+
+    return () => {
+      window.removeEventListener('targetFound', handleTargetFound)
+      window.removeEventListener('targetLost', handleTargetLost)
+      window.removeEventListener('videoPlay', handleVideoPlay)
+      window.removeEventListener('videoPause', handleVideoPause)
+    }
+  }, [isVideoPlaying])
 
   const fetchExperience = async () => {
     try {
@@ -66,6 +105,26 @@ export default function ExperienceViewer() {
       toast.error('Failed to copy link')
     }
   }
+
+  const toggleVideoPlayback = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play()
+      }
+      setIsVideoPlaying(!isVideoPlaying)
+    }
+  }
+
+  const toggleVideoMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isVideoMuted
+      setIsVideoMuted(!isVideoMuted)
+    }
+  }
+
+
 
   if (loading || !isClient) {
     return (
@@ -145,10 +204,11 @@ export default function ExperienceViewer() {
             <a-assets>
               <img id="marker" src={experience.marker_image_url} />
               <video
+                ref={videoRef}
                 id="videoTexture"
                 src={experience.video_url}
                 loop
-                muted
+                muted={isVideoMuted}
                 playsInline
                 crossOrigin="anonymous"
               ></video>
@@ -156,7 +216,11 @@ export default function ExperienceViewer() {
 
             <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-            <a-entity mindar-image-target="targetIndex: 0" id="target">
+            <a-entity 
+              mindar-image-target="targetIndex: 0" 
+              id="target"
+              events="targetFound: targetFound; targetLost: targetLost"
+            >
               {/* Marker image plane */}
               <a-plane 
                 src="#marker"
@@ -164,6 +228,7 @@ export default function ExperienceViewer() {
                 height={experience.plane_height}
                 width={experience.plane_width}
                 rotation="0 0 0"
+                material="transparent: true; opacity: 0.3"
               ></a-plane>
 
               {/* Video plane */}
@@ -174,14 +239,49 @@ export default function ExperienceViewer() {
                 position="0 0 0.01"
                 rotation={`0 0 ${experience.video_rotation * Math.PI / 180}`}
                 material="shader: flat; src: #videoTexture"
+                events="click: toggleVideoPlayback"
+                class="clickable"
+                style="cursor: pointer;"
               ></a-plane>
             </a-entity>
           </a-scene>
         )}
 
+        {/* Video Controls Overlay */}
+        {targetFound && (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleVideoPlayback}
+                className="flex items-center space-x-2 hover:text-gray-300"
+              >
+                {isVideoPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                <span>{isVideoPlaying ? 'Pause' : 'Play'}</span>
+              </button>
+              <button
+                onClick={toggleVideoMute}
+                className="flex items-center space-x-2 hover:text-gray-300"
+              >
+                {isVideoMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                <span>{isVideoMuted ? 'Unmute' : 'Mute'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Target Detection Status */}
+        <div className="absolute top-20 right-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${targetFound ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm">
+              {targetFound ? 'Target Detected' : 'Point camera at marker'}
+            </span>
+          </div>
+        </div>
+
         {/* Instructions Overlay */}
         {!isMobile && (
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
+          <div className="absolute bottom-8 left-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
             <div className="flex items-center space-x-2">
               <Smartphone className="h-5 w-5" />
               <span>Open this page on your mobile device for the best AR experience</span>
@@ -195,6 +295,20 @@ export default function ExperienceViewer() {
           {experience.description && (
             <p className="text-sm text-gray-300 mt-1">{experience.description}</p>
           )}
+        </div>
+
+        {/* Marker Reference */}
+        <div className="absolute top-20 right-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <img 
+              src={experience.marker_image_url} 
+              alt="Marker reference" 
+              className="w-12 h-12 object-cover rounded"
+            />
+            <div>
+              <p className="text-xs text-gray-300">Point camera at this image</p>
+            </div>
+          </div>
         </div>
 
         {/* QR Code Modal */}
@@ -218,6 +332,39 @@ export default function ExperienceViewer() {
           </div>
         )}
       </div>
+
+      {/* JavaScript for AR interactions */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('DOMContentLoaded', () => {
+              const video = document.querySelector("#videoTexture");
+              const target = document.querySelector("#target");
+              
+              if (target) {
+                target.addEventListener("targetFound", () => {
+                  window.dispatchEvent(new CustomEvent('targetFound'));
+                  if (video) video.play();
+                });
+                
+                target.addEventListener("targetLost", () => {
+                  window.dispatchEvent(new CustomEvent('targetLost'));
+                });
+              }
+              
+              if (video) {
+                video.addEventListener("play", () => {
+                  window.dispatchEvent(new CustomEvent('videoPlay'));
+                });
+                
+                video.addEventListener("pause", () => {
+                  window.dispatchEvent(new CustomEvent('videoPause'));
+                });
+              }
+            });
+          `
+        }}
+      />
     </div>
   )
 } 

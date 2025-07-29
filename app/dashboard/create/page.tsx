@@ -18,6 +18,7 @@ export default function CreateExperience() {
   const [planeHeight, setPlaneHeight] = useState(0.5625)
   const [videoRotation, setVideoRotation] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [compilationProgress, setCompilationProgress] = useState<string>('')
   
   const [markerFile, setMarkerFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
@@ -101,25 +102,30 @@ export default function CreateExperience() {
         .from('videos')
         .getPublicUrl(videoFileName)
 
-      // Generate .mind file using the compiler
-      const mindFileName = `${user?.id}/${Date.now()}-marker.mind`
-      
-      // For now, we'll use a placeholder .mind file
-      // In a real implementation, you'd use @maherboughdiri/mind-ar-compiler
-      const mindFileContent = new Blob(['placeholder mind file'], { type: 'application/octet-stream' })
-      
-      const { data: mindData, error: mindError } = await supabase.storage
-        .from('mind-files')
-        .upload(mindFileName, mindFileContent)
+      // Generate .mind file using the real MindAR compiler
+      setCompilationProgress('Compiling MindAR file...')
+      const compileResponse = await fetch('/api/compile-mind', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrl: markerUrlData.publicUrl,
+          userId: user?.id
+        })
+      })
 
-      if (mindError) throw mindError
+      if (!compileResponse.ok) {
+        const errorData = await compileResponse.json()
+        throw new Error(errorData.error || 'Failed to compile MindAR file')
+      }
 
-      // Get mind file URL
-      const { data: mindUrlData } = supabase.storage
-        .from('mind-files')
-        .getPublicUrl(mindFileName)
+      const compileData = await compileResponse.json()
+      const mindFileUrl = compileData.mindFileUrl
+      setCompilationProgress('MindAR compilation completed!')
 
       // Save to database
+      setCompilationProgress('Saving experience to database...')
       const { error: dbError } = await supabase
         .from('ar_experiences')
         .insert({
@@ -127,7 +133,7 @@ export default function CreateExperience() {
           title,
           description: description || null,
           marker_image_url: markerUrlData.publicUrl,
-          mind_file_url: mindUrlData.publicUrl,
+          mind_file_url: mindFileUrl,
           video_url: videoUrlData.publicUrl,
           plane_width: planeWidth,
           plane_height: planeHeight,
@@ -142,6 +148,7 @@ export default function CreateExperience() {
       toast.error(error.message || 'Failed to create experience')
     } finally {
       setSubmitting(false)
+      setCompilationProgress('')
     }
   }
 
@@ -318,6 +325,16 @@ export default function CreateExperience() {
                 </div>
               </div>
             </div>
+
+            {/* Progress Indicator */}
+            {compilationProgress && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+                  <span className="text-sm text-blue-800">{compilationProgress}</span>
+                </div>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-end space-x-3">
