@@ -156,6 +156,7 @@ export async function GET(
       let mindarLoaded = false;
       let aframeLoaded = false;
       let fallbackActivated = false;
+      let sceneLoaded = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -168,6 +169,14 @@ export async function GET(
         const loading = document.getElementById('loading');
         const debugInfo = document.getElementById('debug-info');
         debugInfo.innerHTML = message;
+      }
+
+      function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+          updateDebug("Hiding loading screen");
+          loading.style.display = "none";
+        }
       }
 
       function activateFallback() {
@@ -187,14 +196,12 @@ export async function GET(
             fallbackCamera.style.display = 'block';
             updateDebug("✅ Fallback camera activated");
             updateLoading("Fallback camera active");
-            
-            // Hide loading
-            const loading = document.getElementById('loading');
-            if (loading) loading.style.display = "none";
+            hideLoading();
           })
           .catch(error => {
             updateDebug("❌ Fallback camera failed: " + error.message);
             updateLoading("Fallback camera failed");
+            hideLoading();
           });
       }
 
@@ -228,13 +235,14 @@ export async function GET(
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
             updateLoading("AR Scene loaded");
-            if (loading) loading.style.display = "none";
+            sceneLoaded = true;
+            hideLoading();
           });
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
             updateLoading("AR rendering started");
-            if (loading) loading.style.display = "none";
+            hideLoading();
           });
 
           scene.addEventListener("error", (error) => {
@@ -250,7 +258,7 @@ export async function GET(
             } else {
               updateDebug("⚠️ Scene loaded attribute missing");
             }
-          }, 5000);
+          }, 3000);
         }
         
         if (target) {
@@ -296,21 +304,29 @@ export async function GET(
           }
         }, 2000);
 
-        // Activate fallback if MindAR doesn't load within 10 seconds
+        // Activate fallback if MindAR doesn't load within 5 seconds
         setTimeout(() => {
           if (!mindarLoaded || !aframeLoaded) {
-            updateDebug("⏰ Timeout - activating fallback");
+            updateDebug("⏰ 5s timeout - activating fallback");
             activateFallback();
           }
-        }, 10000);
+        }, 5000);
 
-        // Hide loading after 15 seconds as fallback
+        // Force hide loading after 8 seconds
         setTimeout(() => {
-          if (loading) {
-            updateDebug("⏰ Auto-hiding loading screen");
-            loading.style.display = "none";
+          if (!sceneLoaded && !fallbackActivated) {
+            updateDebug("⏰ 8s timeout - forcing fallback");
+            activateFallback();
           }
-        }, 15000);
+        }, 8000);
+
+        // Hide loading after 10 seconds as final fallback
+        setTimeout(() => {
+          if (!sceneLoaded && !fallbackActivated) {
+            updateDebug("⏰ 10s final timeout - hiding loading");
+            hideLoading();
+          }
+        }, 10000);
       });
     </script>
   </body>
