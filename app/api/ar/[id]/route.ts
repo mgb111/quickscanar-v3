@@ -21,11 +21,13 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Use the user's actual MindAR file and marker image
+    // Use the user's actual MindAR file and marker image with fallback
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
+    const workingMindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    const workingMarkerUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
 
-    // Create the AR HTML with mobile optimizations
+    // Create the AR HTML with proper MindAR integration
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -144,6 +146,7 @@ export async function GET(
     >
       <a-assets>
         <img id="marker" src="${markerImageUrl}" />
+        <img id="working-marker" src="${workingMarkerUrl}" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -184,6 +187,8 @@ export async function GET(
       let fallbackActivated = false;
       let sceneLoaded = false;
       let isMobile = false;
+      let customMindFileFailed = false;
+      let mindarSystem = null;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -248,6 +253,58 @@ export async function GET(
           });
       }
 
+      function tryWorkingMindAR() {
+        if (customMindFileFailed) return;
+        customMindFileFailed = true;
+        
+        updateDebug("🔄 Trying working MindAR file as fallback");
+        updateLoading("Trying working MindAR file");
+        
+        const scene = document.querySelector("a-scene");
+        if (scene) {
+          // Update the scene to use working MindAR file
+          scene.setAttribute('mindar-image', 'imageTargetSrc: ${workingMindFileUrl};');
+          
+          // Update the marker image
+          const markerPlane = document.querySelector("#target a-plane");
+          if (markerPlane) {
+            markerPlane.setAttribute('src', '#working-marker');
+            markerPlane.setAttribute('height', '0.552');
+            markerPlane.setAttribute('width', '1');
+          }
+          
+          updateDebug("✅ Switched to working MindAR file");
+          updateLoading("Using working MindAR file");
+        }
+      }
+
+      function checkMindARSystem() {
+        const scene = document.querySelector("a-scene");
+        if (scene) {
+          // Wait for A-Frame to be ready
+          scene.addEventListener('loaded', () => {
+            setTimeout(() => {
+              // Check if MindAR system is available
+              if (typeof AFRAME !== 'undefined' && AFRAME.systems['mindar-image-system']) {
+                mindarSystem = AFRAME.systems['mindar-image-system'];
+                updateDebug("✅ MindAR system found");
+                
+                // Check if MindAR is properly initialized
+                if (mindarSystem.arProfile) {
+                  updateDebug("✅ MindAR profile loaded");
+                } else {
+                  updateDebug("⚠️ MindAR profile not loaded");
+                  tryWorkingMindAR();
+                }
+              } else {
+                updateDebug("❌ MindAR system not found");
+                tryWorkingMindAR();
+              }
+            }, 2000);
+          });
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
         updateLoading("DOM loaded");
@@ -301,6 +358,9 @@ export async function GET(
             updateLoading("AR Scene loaded");
             sceneLoaded = true;
             hideLoading();
+            
+            // Check MindAR system after scene loads
+            checkMindARSystem();
           });
           
           scene.addEventListener("renderstart", () => {
@@ -312,7 +372,7 @@ export async function GET(
           scene.addEventListener("error", (error) => {
             updateDebug("❌ AR Scene error: " + error);
             updateLoading("AR Scene error occurred");
-            activateFallback();
+            tryWorkingMindAR();
           });
 
           // Check if scene is actually loading
@@ -321,6 +381,7 @@ export async function GET(
               updateDebug("✅ Scene loaded attribute present");
             } else {
               updateDebug("⚠️ Scene loaded attribute missing");
+              tryWorkingMindAR();
             }
           }, 3000);
         }
@@ -368,13 +429,21 @@ export async function GET(
           }
         }, 2000);
 
-        // Activate fallback if MindAR doesn't load within 5 seconds
+        // Try working MindAR file if custom file fails within 4 seconds
+        setTimeout(() => {
+          if (!sceneLoaded && !fallbackActivated) {
+            updateDebug("⏰ 4s timeout - trying working MindAR file");
+            tryWorkingMindAR();
+          }
+        }, 4000);
+
+        // Activate fallback if MindAR doesn't load within 6 seconds
         setTimeout(() => {
           if (!mindarLoaded || !aframeLoaded) {
-            updateDebug("⏰ 5s timeout - activating fallback");
+            updateDebug("⏰ 6s timeout - activating fallback");
             activateFallback();
           }
-        }, 5000);
+        }, 6000);
 
         // Force hide loading after 8 seconds
         setTimeout(() => {
