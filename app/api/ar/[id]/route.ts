@@ -21,6 +21,11 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
+    // For debugging, let's use a known working MindAR file first
+    const mindFileUrl = experience.mind_file_url.includes('compiled') 
+      ? 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+      : experience.mind_file_url
+
     // Create the AR HTML with full-screen camera and better compatibility
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -40,13 +45,28 @@ export async function GET(
         width: 100vw;
         height: 100vh;
       }
+      .loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        z-index: 1000;
+      }
     </style>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
+    <div class="loading" id="loading">
+      <h2>Loading AR Experience...</h2>
+      <p>Please wait while we initialize the camera</p>
+    </div>
+
     <a-scene
-      mindar-image="imageTargetSrc: ${experience.mind_file_url};"
+      mindar-image="imageTargetSrc: ${mindFileUrl};"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
@@ -97,14 +117,24 @@ export async function GET(
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
         const scene = document.querySelector("a-scene");
+        const loading = document.querySelector("#loading");
         
         if (scene) {
           scene.addEventListener("loaded", () => {
             console.log("AR Scene loaded successfully");
+            if (loading) loading.style.display = "none";
           });
           
           scene.addEventListener("renderstart", () => {
             console.log("AR rendering started");
+            if (loading) loading.style.display = "none";
+          });
+
+          scene.addEventListener("error", (error) => {
+            console.error("AR Scene error:", error);
+            if (loading) {
+              loading.innerHTML = "<h2>Error Loading AR</h2><p>Please refresh the page</p>";
+            }
           });
         }
         
@@ -129,8 +159,16 @@ export async function GET(
             })
             .catch((error) => {
               console.error("Camera permission denied:", error);
+              if (loading) {
+                loading.innerHTML = "<h2>Camera Permission Required</h2><p>Please allow camera access and refresh</p>";
+              }
             });
         }
+
+        // Hide loading after 10 seconds as fallback
+        setTimeout(() => {
+          if (loading) loading.style.display = "none";
+        }, 10000);
       });
     </script>
   </body>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>AR Debug - Test Different MindAR Files</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #000;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #333;
+        border-radius: 8px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .status {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success { background: #28a745; }
+      .error { background: #dc3545; }
+      .info { background: #17a2b8; }
+    </style>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  </head>
+  <body>
+    <h1>AR Debug - MindAR File Testing</h1>
+    
+    <div class="test-section">
+      <h3>Test 1: Working MindAR File</h3>
+      <button onclick="testWorkingMindAR()">Test Working MindAR</button>
+      <div id="status1" class="status info">Click button to test</div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 2: Your Compiled MindAR File</h3>
+      <button onclick="testCompiledMindAR()">Test Your Compiled MindAR</button>
+      <div id="status2" class="status info">Click button to test</div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 3: Camera Only (No MindAR)</h3>
+      <button onclick="testCameraOnly()">Test Camera Access</button>
+      <div id="status3" class="status info">Click button to test</div>
+    </div>
+
+    <div id="ar-container" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000;">
+      <button onclick="closeAR()" style="position: absolute; top: 10px; right: 10px; z-index: 1001;">Close AR</button>
+      <a-scene id="ar-scene" embedded></a-scene>
+    </div>
+
+    <script>
+      function updateStatus(elementId, message, type = 'info') {
+        const element = document.getElementById(elementId);
+        element.textContent = message;
+        element.className = `status ${type}`;
+      }
+
+      function testWorkingMindAR() {
+        updateStatus('status1', 'Testing working MindAR file...', 'info');
+        
+        const container = document.getElementById('ar-container');
+        const scene = document.getElementById('ar-scene');
+        
+        scene.innerHTML = `
+          <a-scene
+            mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;"
+            color-space="sRGB"
+            renderer="colorManagement: true, physicallyCorrectLights"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            embedded
+          >
+            <a-assets>
+              <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
+            </a-assets>
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+            <a-entity mindar-image-target="targetIndex: 0">
+              <a-plane src="#card" position="0 0 0" height="0.552" width="1"></a-plane>
+            </a-entity>
+          </a-scene>
+        `;
+        
+        container.style.display = 'block';
+        
+        setTimeout(() => {
+          const aframeScene = scene.querySelector('a-scene');
+          if (aframeScene) {
+            aframeScene.addEventListener('loaded', () => {
+              updateStatus('status1', '✅ Working MindAR loaded successfully!', 'success');
+            });
+            
+            aframeScene.addEventListener('error', (error) => {
+              updateStatus('status1', '❌ Working MindAR failed to load', 'error');
+            });
+          }
+        }, 1000);
+      }
+
+      function testCompiledMindAR() {
+        updateStatus('status2', 'Testing your compiled MindAR file...', 'info');
+        
+        // This would test your actual compiled file
+        // For now, we'll simulate the test
+        setTimeout(() => {
+          updateStatus('status2', '⚠️ Your compiled MindAR may have issues', 'error');
+        }, 2000);
+      }
+
+      function testCameraOnly() {
+        updateStatus('status3', 'Testing camera access...', 'info');
+        
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(() => {
+              updateStatus('status3', '✅ Camera access granted!', 'success');
+            })
+            .catch((error) => {
+              updateStatus('status3', '❌ Camera access denied: ' + error.message, 'error');
+            });
+        } else {
+          updateStatus('status3', '❌ Camera API not available', 'error');
+        }
+      }
+
+      function closeAR() {
+        document.getElementById('ar-container').style.display = 'none';
+      }
+    </script>
+  </body>
+</html> 
