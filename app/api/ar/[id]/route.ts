@@ -21,9 +21,9 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Always use working MindAR file for now to ensure it works
-    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const markerImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
+    // Use the user's actual MindAR file and marker image
+    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    const markerImageUrl = experience.marker_image_url
 
     // Create a simplified AR HTML that works reliably on mobile
     const arHTML = `<!DOCTYPE html>
@@ -106,8 +106,8 @@ export async function GET(
     </div>
 
     <div class="status-indicator" id="status-indicator">
-      <h3 id="status-title">Point camera at marker</h3>
-      <p id="status-message">Look for the card image</p>
+      <h3 id="status-title">Point camera at your marker</h3>
+      <p id="status-message">Look for your uploaded image</p>
     </div>
 
     <a-scene
@@ -120,7 +120,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="card" src="${markerImageUrl}" crossorigin="anonymous" />
+        <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -137,10 +137,10 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         <!-- Marker plane (invisible) -->
         <a-plane 
-          src="#card"
+          src="#marker"
           position="0 0 0"
-          height="0.552"
-          width="1"
+          height="${experience.plane_height || 0.552}"
+          width="${experience.plane_width || 1}"
           rotation="0 0 0"
           material="transparent: true; opacity: 0.0"
           visible="false"
@@ -160,10 +160,10 @@ export async function GET(
         <!-- Debug plane to show marker detection -->
         <a-plane
           id="debugPlane"
-          src="#card"
+          src="#marker"
           position="0 0 0.02"
-          height="0.552"
-          width="1"
+          height="${experience.plane_height || 0.552}"
+          width="${experience.plane_width || 1}"
           rotation="0 0 0"
           material="transparent: true; opacity: 0.5"
           visible="false"
@@ -237,7 +237,7 @@ export async function GET(
         const loading = document.querySelector("#loading");
         
         // Show status indicator
-        showStatus("Point camera at marker", "Look for the card image");
+        showStatus("Point camera at your marker", "Look for your uploaded image");
         
         // Test camera access with mobile optimizations
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -335,7 +335,7 @@ export async function GET(
             }
             
             // Show status again
-            showStatus("Target Lost", "Point camera at marker again");
+            showStatus("Target Lost", "Point camera at your marker again");
           });
         }
 
