@@ -25,7 +25,7 @@ export async function GET(
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
-    // Create a simplified AR HTML that works reliably on mobile
+    // Clean, professional AR HTML - no loading screen
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -49,19 +49,6 @@ export async function GET(
       a-scene {
         width: 100vw;
         height: 100vh;
-      }
-      .loading {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        z-index: 1000;
-        background: rgba(0,0,0,0.8);
-        padding: 20px;
-        border-radius: 10px;
       }
       .debug-panel {
         position: fixed;
@@ -94,14 +81,8 @@ export async function GET(
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
-    <div class="loading" id="loading">
-      <h2>Loading AR Experience...</h2>
-      <p>Please wait while we initialize the camera</p>
-      <div id="debug-info"></div>
-    </div>
-
     <div class="debug-panel" id="debug-panel">
-      <strong>Debug Info:</strong><br>
+      <strong>AR Status:</strong><br>
       <div id="debug-content"></div>
     </div>
 
@@ -210,13 +191,6 @@ export async function GET(
 
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
-        
-        // IMMEDIATELY hide loading screen
-        const loading = document.getElementById('loading');
-        if (loading) {
-          loading.style.display = "none";
-          updateDebug("✅ Loading screen hidden immediately");
-        }
         
         // Detect mobile device
         detectMobile();
