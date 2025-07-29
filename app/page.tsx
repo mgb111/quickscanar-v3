@@ -1,8 +1,9 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import Link from 'next/link'
-import { Camera, Video, Upload, ArrowRight } from 'lucide-react'
+import { Camera, Video, Upload, ArrowRight, AlertTriangle } from 'lucide-react'
 
 export default function Home() {
   const { user, loading } = useAuth()
@@ -17,6 +18,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Configuration Warning */}
+      {!isSupabaseConfigured() && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex">
+            <AlertTriangle className="h-5 w-5 text-yellow-400" />
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Configuration Required:</strong> Please set up your Supabase environment variables in <code>.env.local</code> to use this application.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

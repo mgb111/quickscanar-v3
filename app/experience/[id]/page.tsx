@@ -67,16 +67,28 @@ export default function ExperienceViewer() {
       setIsVideoPlaying(false)
     }
 
-    window.addEventListener('targetFound', handleTargetFound)
-    window.addEventListener('targetLost', handleTargetLost)
-    window.addEventListener('videoPlay', handleVideoPlay)
-    window.addEventListener('videoPause', handleVideoPause)
+    // Use a simpler approach - just set up basic event listeners
+    const scene = document.querySelector('a-scene')
+    if (scene) {
+      scene.addEventListener('targetFound', handleTargetFound)
+      scene.addEventListener('targetLost', handleTargetLost)
+    }
+
+    const video = document.querySelector('#videoTexture')
+    if (video) {
+      video.addEventListener('play', handleVideoPlay)
+      video.addEventListener('pause', handleVideoPause)
+    }
 
     return () => {
-      window.removeEventListener('targetFound', handleTargetFound)
-      window.removeEventListener('targetLost', handleTargetLost)
-      window.removeEventListener('videoPlay', handleVideoPlay)
-      window.removeEventListener('videoPause', handleVideoPause)
+      if (scene) {
+        scene.removeEventListener('targetFound', handleTargetFound)
+        scene.removeEventListener('targetLost', handleTargetLost)
+      }
+      if (video) {
+        video.removeEventListener('play', handleVideoPlay)
+        video.removeEventListener('pause', handleVideoPause)
+      }
     }
   }, [isVideoPlaying])
 
@@ -219,7 +231,6 @@ export default function ExperienceViewer() {
             <a-entity 
               mindar-image-target="targetIndex: 0" 
               id="target"
-              events="targetFound: targetFound; targetLost: targetLost"
             >
               {/* Marker image plane */}
               <a-plane 
@@ -239,9 +250,6 @@ export default function ExperienceViewer() {
                 position="0 0 0.01"
                 rotation={`0 0 ${experience.video_rotation * Math.PI / 180}`}
                 material="shader: flat; src: #videoTexture"
-                events="click: toggleVideoPlayback"
-                class="clickable"
-                style="cursor: pointer;"
               ></a-plane>
             </a-entity>
           </a-scene>
@@ -332,39 +340,6 @@ export default function ExperienceViewer() {
           </div>
         )}
       </div>
-
-      {/* JavaScript for AR interactions */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            document.addEventListener('DOMContentLoaded', () => {
-              const video = document.querySelector("#videoTexture");
-              const target = document.querySelector("#target");
-              
-              if (target) {
-                target.addEventListener("targetFound", () => {
-                  window.dispatchEvent(new CustomEvent('targetFound'));
-                  if (video) video.play();
-                });
-                
-                target.addEventListener("targetLost", () => {
-                  window.dispatchEvent(new CustomEvent('targetLost'));
-                });
-              }
-              
-              if (video) {
-                video.addEventListener("play", () => {
-                  window.dispatchEvent(new CustomEvent('videoPlay'));
-                });
-                
-                video.addEventListener("pause", () => {
-                  window.dispatchEvent(new CustomEvent('videoPause'));
-                });
-              }
-            });
-          `
-        }}
-      />
     </div>
   )
 } 

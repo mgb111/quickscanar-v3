@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 type AuthContextType = {
   user: User | null
@@ -27,9 +27,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase not configured. Please set up your environment variables.')
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      setLoading(false)
+    }).catch((error) => {
+      console.error('Error getting session:', error)
       setLoading(false)
     })
 
@@ -45,6 +55,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured. Please set up your environment variables.')
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -53,6 +66,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   const signUp = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured. Please set up your environment variables.')
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -61,6 +77,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   const signOut = async () => {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured. Please set up your environment variables.')
+    }
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }
