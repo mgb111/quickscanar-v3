@@ -76,6 +76,32 @@ export async function GET(
         border-radius: 10px;
         display: none;
       }
+      
+      /* Force hide all A-Frame loading screens */
+      .a-loader-title,
+      .a-loader-spinner,
+      .a-loader-logo,
+      .a-loader-progress,
+      .a-loader-progress-bar,
+      .a-loader-progress-text,
+      .a-loader-progress-container,
+      .a-loader,
+      .a-enter-vr,
+      .a-orientation-modal,
+      .a-fullscreen,
+      .a-enter-ar,
+      .a-enter-vr-button,
+      .a-orientation-modal__content,
+      .a-orientation-modal__content__message,
+      .a-orientation-modal__content__icon,
+      .a-orientation-modal__content__button,
+      .a-orientation-modal__content__button--primary,
+      .a-orientation-modal__content__button--secondary {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
     </style>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -99,6 +125,9 @@ export async function GET(
       device-orientation-permission-ui="enabled: false"
       embedded
       loading-screen="enabled: false"
+      loading-screen-color="#000000"
+      loading-screen-logo=""
+      loading-screen-title=""
     >
       <a-assets>
         <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
@@ -191,6 +220,15 @@ export async function GET(
 
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
+        
+        // Force remove all loading screens
+        const loadingElements = document.querySelectorAll('.a-loader, .a-loader-title, .a-loader-spinner, .a-loader-logo, .a-loader-progress, .a-enter-vr, .a-orientation-modal, .a-fullscreen, .a-enter-ar');
+        loadingElements.forEach(el => {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        });
         
         // Detect mobile device
         detectMobile();
