@@ -25,7 +25,7 @@ export async function GET(
     const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
 
-    // Create a simplified AR HTML that works reliably
+    // Create a simplified AR HTML that works reliably on mobile
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -137,6 +137,8 @@ export async function GET(
     </a-scene>
 
     <script>
+      let isMobile = false;
+
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
         const timestamp = new Date().toLocaleTimeString();
@@ -158,19 +160,39 @@ export async function GET(
         }
       }
 
+      function detectMobile() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+        updateDebug(\`Device: \${isMobile ? 'Mobile' : 'Desktop'}\`);
+        return isMobile;
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
         updateLoading("DOM loaded");
+        
+        // Detect mobile device
+        detectMobile();
         
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
         const scene = document.querySelector("a-scene");
         const loading = document.querySelector("#loading");
         
-        // Test camera access
+        // Test camera access with mobile optimizations
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           updateDebug("Testing camera access...");
-          navigator.mediaDevices.getUserMedia({ video: true })
+          
+          const constraints = {
+            video: {
+              width: { ideal: isMobile ? 1280 : 1920 },
+              height: { ideal: isMobile ? 720 : 1080 },
+              facingMode: 'environment', // Use back camera on mobile
+              frameRate: { ideal: 30 }
+            }
+          };
+          
+          navigator.mediaDevices.getUserMedia(constraints)
             .then(() => {
               updateDebug("✅ Camera permission granted");
               updateLoading("Camera access confirmed");
