@@ -24,11 +24,13 @@ export async function GET(
     // Always use working MindAR file for now to isolate the issue
     const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
 
-    // Create the AR HTML with comprehensive debugging and fallback
+    // Create the AR HTML with mobile optimizations
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>${experience.title} - AR Experience</title>
     <style>
       body {
@@ -38,6 +40,10 @@ export async function GET(
         height: 100vh;
         overflow: hidden;
         background: #000;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
       }
       a-scene {
         width: 100vw;
@@ -82,6 +88,19 @@ export async function GET(
         height: 100%;
         object-fit: cover;
       }
+      .mobile-notice {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        z-index: 1002;
+        display: none;
+      }
     </style>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -96,6 +115,12 @@ export async function GET(
     <div class="debug-panel" id="debug-panel">
       <strong>Debug Info:</strong><br>
       <div id="debug-content"></div>
+    </div>
+
+    <div class="mobile-notice" id="mobile-notice">
+      <h3>Mobile AR Experience</h3>
+      <p>Point your camera at the card image to see AR content</p>
+      <p>Make sure you're in a well-lit environment</p>
     </div>
 
     <!-- Fallback camera view -->
@@ -157,6 +182,7 @@ export async function GET(
       let aframeLoaded = false;
       let fallbackActivated = false;
       let sceneLoaded = false;
+      let isMobile = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -179,6 +205,13 @@ export async function GET(
         }
       }
 
+      function detectMobile() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+        updateDebug(\`Device: \${isMobile ? 'Mobile' : 'Desktop'}\`);
+        return isMobile;
+      }
+
       function activateFallback() {
         if (fallbackActivated) return;
         fallbackActivated = true;
@@ -189,8 +222,17 @@ export async function GET(
         const fallbackCamera = document.getElementById('fallback-camera');
         const fallbackVideo = document.getElementById('fallback-video');
         
-        // Get camera stream
-        navigator.mediaDevices.getUserMedia({ video: true })
+        // Get camera stream with mobile optimizations
+        const constraints = {
+          video: {
+            width: { ideal: isMobile ? 1280 : 1920 },
+            height: { ideal: isMobile ? 720 : 1080 },
+            facingMode: 'environment', // Use back camera on mobile
+            frameRate: { ideal: 30 }
+          }
+        };
+        
+        navigator.mediaDevices.getUserMedia(constraints)
           .then(stream => {
             fallbackVideo.srcObject = stream;
             fallbackCamera.style.display = 'block';
@@ -209,15 +251,36 @@ export async function GET(
         updateDebug("AR Experience loaded");
         updateLoading("DOM loaded");
         
+        // Detect mobile device
+        detectMobile();
+        
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
         const scene = document.querySelector("a-scene");
         const loading = document.querySelector("#loading");
+        const mobileNotice = document.getElementById('mobile-notice');
         
-        // Test camera access first
+        // Show mobile notice for mobile devices
+        if (isMobile) {
+          mobileNotice.style.display = 'block';
+          setTimeout(() => {
+            mobileNotice.style.display = 'none';
+          }, 5000);
+        }
+        
+        // Test camera access first with mobile optimizations
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           updateDebug("Testing camera access...");
-          navigator.mediaDevices.getUserMedia({ video: true })
+          const constraints = {
+            video: {
+              width: { ideal: isMobile ? 1280 : 1920 },
+              height: { ideal: isMobile ? 720 : 1080 },
+              facingMode: 'environment',
+              frameRate: { ideal: 30 }
+            }
+          };
+          
+          navigator.mediaDevices.getUserMedia(constraints)
             .then(() => {
               updateDebug("✅ Camera permission granted");
               updateLoading("Camera access confirmed");
