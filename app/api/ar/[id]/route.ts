@@ -174,6 +174,7 @@ export async function GET(
     <script>
       let isMobile = false;
       let targetFound = false;
+      let loadingHidden = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -185,14 +186,19 @@ export async function GET(
       function updateLoading(message) {
         const loading = document.getElementById('loading');
         const debugInfo = document.getElementById('debug-info');
-        debugInfo.innerHTML = message;
+        if (debugInfo) {
+          debugInfo.innerHTML = message;
+        }
       }
 
       function hideLoading() {
+        if (loadingHidden) return;
+        
         const loading = document.getElementById('loading');
         if (loading) {
           updateDebug("Hiding loading screen");
           loading.style.display = "none";
+          loadingHidden = true;
         }
       }
 
@@ -222,6 +228,19 @@ export async function GET(
         return isMobile;
       }
 
+      // Multiple ways to detect when AR is ready
+      function checkARReady() {
+        const scene = document.querySelector("a-scene");
+        const target = document.querySelector("#target");
+        
+        if (scene && target) {
+          updateDebug("✅ AR elements found");
+          hideLoading();
+          return true;
+        }
+        return false;
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
         updateLoading("DOM loaded");
@@ -234,7 +253,6 @@ export async function GET(
         const videoPlane = document.querySelector("#videoPlane");
         const debugPlane = document.querySelector("#debugPlane");
         const scene = document.querySelector("a-scene");
-        const loading = document.querySelector("#loading");
         
         // Show status indicator
         showStatus("Point camera at your marker", "Look for your uploaded image");
@@ -256,10 +274,12 @@ export async function GET(
             .then(() => {
               updateDebug("✅ Camera permission granted");
               updateLoading("Camera access confirmed");
+              hideLoading(); // Hide loading when camera is ready
             })
             .catch((error) => {
               updateDebug("❌ Camera permission denied: " + error.message);
               updateLoading("Camera access failed: " + error.message);
+              hideLoading(); // Hide loading even if camera fails
             });
         }
         
@@ -281,6 +301,12 @@ export async function GET(
             updateLoading("AR Scene error occurred");
             hideLoading();
           });
+
+          // Check if scene is already loaded
+          if (scene.hasLoaded) {
+            updateDebug("✅ Scene already loaded");
+            hideLoading();
+          }
         }
         
         if (target) {
@@ -360,17 +386,26 @@ export async function GET(
           } else {
             updateDebug("❌ Not HTTPS - camera may not work");
           }
+
+          // Check if AR is ready
+          checkARReady();
         }, 2000);
 
-        // Force hide loading after 5 seconds
+        // Force hide loading after 3 seconds
         setTimeout(() => {
-          updateDebug("⏰ 5s timeout - forcing loading screen to hide");
+          updateDebug("⏰ 3s timeout - forcing loading screen to hide");
+          hideLoading();
+        }, 3000);
+
+        // Final fallback - hide loading after 5 seconds
+        setTimeout(() => {
+          updateDebug("⏰ 5s final timeout - hiding loading");
           hideLoading();
         }, 5000);
 
-        // Final fallback - hide loading after 8 seconds
+        // Emergency fallback - hide loading after 8 seconds
         setTimeout(() => {
-          updateDebug("⏰ 8s final timeout - hiding loading");
+          updateDebug("⏰ 8s emergency timeout - hiding loading");
           hideLoading();
         }, 8000);
       });
