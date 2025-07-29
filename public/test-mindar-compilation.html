@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>MindAR Compilation Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #logs {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MindAR Compilation Test</h1>
+        
+        <div class="status info" id="status">Ready to test MindAR compilation</div>
+        
+        <button onclick="testCompilation()">Test MindAR Compilation</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="logs"></div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ecdc4' : '#ffffff';
+            logs.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function testCompilation() {
+            log('Starting MindAR compilation test...');
+            updateStatus('Testing MindAR compilation...', 'info');
+            
+            try {
+                // Test with a sample image URL (you can replace this with your actual image)
+                const testImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png';
+                const testExperienceId = 'test-experience-id';
+                
+                log(`Testing with image: ${testImageUrl}`);
+                
+                const response = await fetch('/api/compile-mind', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageUrl: testImageUrl,
+                        experienceId: testExperienceId
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                log('✅ MindAR compilation successful!', 'success');
+                log(`MindAR file URL: ${result.mindFileUrl}`, 'success');
+                log(`File size: ${result.mindFileUrl ? 'Generated' : 'Unknown'}`, 'success');
+                
+                updateStatus('MindAR compilation test successful!', 'success');
+                
+                // Test if the generated file can be accessed
+                log('Testing file accessibility...');
+                try {
+                    const fileResponse = await fetch(result.mindFileUrl);
+                    if (fileResponse.ok) {
+                        log('✅ Generated MindAR file is accessible', 'success');
+                    } else {
+                        log('❌ Generated MindAR file is not accessible', 'error');
+                    }
+                } catch (fileError) {
+                    log(`❌ File access error: ${fileError.message}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ MindAR compilation failed: ${error.message}`, 'error');
+                updateStatus(`Compilation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            updateStatus('Logs cleared', 'info');
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('MindAR compilation test page loaded');
+            log('Click "Test MindAR Compilation" to start testing');
+        });
+    </script>
+</body>
+</html> 

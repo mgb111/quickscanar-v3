@@ -2,9 +2,9 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Create a proper MindAR file that actually works with MindAR.js
 function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
@@ -103,98 +103,72 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrl, userId } = await request.json()
+    const { imageUrl, experienceId } = await request.json()
 
-    if (!imageUrl || !userId) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      )
+    if (!imageUrl || !experienceId) {
+      return NextResponse.json({ error: 'Missing imageUrl or experienceId' }, { status: 400 })
     }
 
-    // Validate image URL
-    if (!imageUrl.startsWith('http')) {
-      return NextResponse.json(
-        { error: 'Invalid image URL' },
-        { status: 400 }
-      )
-    }
+    console.log('Compiling MindAR file for:', imageUrl)
 
-    // Download the image from Supabase Storage
-    console.log('Downloading image from:', imageUrl)
+    // Fetch the image
     const imageResponse = await fetch(imageUrl)
     if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
     }
 
     const imageBuffer = await imageResponse.arrayBuffer()
-    console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes')
+    console.log('Image fetched, size:', imageBuffer.byteLength)
 
-    // Validate image size (should be reasonable for AR markers)
-    if (imageBuffer.byteLength < 1000) {
-      throw new Error('Image file is too small to be a valid marker')
-    }
+    // Generate the MindAR file
+    const mindFile = createMindARFile(imageBuffer)
+    console.log('MindAR file created, size:', mindFile.length)
 
-    if (imageBuffer.byteLength > 10 * 1024 * 1024) { // 10MB limit
-      throw new Error('Image file is too large')
-    }
-
-    // Create MindAR file from the image
-    console.log('Creating MindAR file...')
-    const mindFileBuffer = createMindARFile(imageBuffer)
-    console.log('MindAR file created, size:', mindFileBuffer.byteLength, 'bytes')
-
-    // Validate compiled file
-    if (mindFileBuffer.byteLength < 100) {
-      throw new Error('Generated MindAR file is too small')
-    }
-
-    // Upload the compiled .mind file to Supabase Storage
-    const mindFileName = `${userId}/${Date.now()}-compiled.mind`
-    console.log('Uploading compiled file:', mindFileName)
-    
-    const { data: mindData, error: mindError } = await supabase.storage
+    // Upload to Supabase Storage
+    const fileName = `mind-${Date.now()}.mind`
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('mind-files')
-      .upload(mindFileName, mindFileBuffer, {
-        contentType: 'application/octet-stream'
+      .upload(fileName, mindFile, {
+        contentType: 'application/octet-stream',
+        upsert: false
       })
 
-    if (mindError) {
-      console.error('Storage upload error:', mindError)
-      throw mindError
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw new Error(`Failed to upload MindAR file: ${uploadError.message}`)
     }
 
-    // Get the public URL for the .mind file
-    const { data: mindUrlData } = supabase.storage
+    // Get the public URL
+    const { data: urlData } = supabase.storage
       .from('mind-files')
-      .getPublicUrl(mindFileName)
+      .getPublicUrl(fileName)
 
-    console.log('MindAR compilation successful:', mindUrlData.publicUrl)
+    const mindFileUrl = urlData.publicUrl
+    console.log('MindAR file uploaded:', mindFileUrl)
+
+    // Update the experience with the MindAR file URL
+    const { error: updateError } = await supabase
+      .from('ar_experiences')
+      .update({ mind_file_url: mindFileUrl })
+      .eq('id', experienceId)
+
+    if (updateError) {
+      console.error('Update error:', updateError)
+      throw new Error(`Failed to update experience: ${updateError.message}`)
+    }
+
+    console.log('Experience updated with MindAR file URL')
 
     return NextResponse.json({
       success: true,
-      mindFileUrl: mindUrlData.publicUrl,
-      fileSize: mindFileBuffer.byteLength
+      mindFileUrl,
+      message: 'MindAR file compiled and uploaded successfully'
     })
 
-  } catch (error: any) {
-    console.error('Error compiling MindAR file:', error)
-    
-    // Provide more specific error messages
-    let errorMessage = error.message || 'Failed to compile MindAR file'
-    
-    if (error.message.includes('download')) {
-      errorMessage = 'Failed to download marker image. Please try again.'
-    } else if (error.message.includes('too small')) {
-      errorMessage = 'Marker image is too small. Please use a larger, clearer image.'
-    } else if (error.message.includes('too large')) {
-      errorMessage = 'Marker image is too large. Please use an image smaller than 10MB.'
-    } else if (error.message.includes('compilation')) {
-      errorMessage = 'Failed to compile marker image. Please try a different image.'
-    }
-    
+  } catch (error) {
+    console.error('MindAR compilation error:', error)
     return NextResponse.json(
-      { error: errorMessage },
+      { error: `MindAR compilation failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
   }

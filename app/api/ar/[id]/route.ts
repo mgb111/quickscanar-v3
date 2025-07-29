@@ -350,6 +350,9 @@ export async function GET(
             const cameraStyle = window.getComputedStyle(camera);
             updateDebug(\`Camera visibility: \${cameraStyle.visibility}, display: \${cameraStyle.display}\`);
           }
+          
+          // Check MindAR file URL
+          updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
         }, 2000);
       });
     </script>
