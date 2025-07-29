@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Camera, ArrowLeft, Share2, Smartphone } from 'lucide-react'
 import Link from 'next/link'
@@ -25,6 +25,7 @@ type ARExperience = {
 
 export default function ExperienceViewer() {
   const params = useParams()
+  const router = useRouter()
   const [experience, setExperience] = useState<ARExperience | null>(null)
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)
@@ -63,6 +64,14 @@ export default function ExperienceViewer() {
       toast.success('Link copied to clipboard!')
     } catch (error) {
       toast.error('Failed to copy link')
+    }
+  }
+
+  const openARExperience = () => {
+    if (experience) {
+      // Open the AR experience using the API route
+      const arUrl = `${window.location.origin}/api/ar/${experience.id}`
+      window.open(arUrl, '_blank')
     }
   }
 
@@ -125,114 +134,26 @@ export default function ExperienceViewer() {
         </div>
       </nav>
 
-      {/* AR Experience - Using simple HTML approach */}
-      <div className="relative w-full h-screen">
-        {isClient && (
-          <div
-            dangerouslySetInnerHTML={{
-              __html: `
-                <!DOCTYPE html>
-                <html>
-                  <head>
-                    <meta name="viewport" content="width=device-width, initial-scale=1" />
-                    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-                    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-                  </head>
-                  <body>
-                    <a-scene
-                      mindar-image="imageTargetSrc: ${experience.mind_file_url};"
-                      color-space="sRGB"
-                      renderer="colorManagement: true, physicallyCorrectLights"
-                      vr-mode-ui="enabled: false"
-                      device-orientation-permission-ui="enabled: false"
-                      embedded
-                    >
-                      <a-assets>
-                        <img id="marker" src="${experience.marker_image_url}" />
-                        <video
-                          id="videoTexture"
-                          src="${experience.video_url}"
-                          loop
-                          muted
-                          playsinline
-                          crossorigin="anonymous"
-                          preload="auto"
-                        ></video>
-                      </a-assets>
-
-                      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-                      <a-entity mindar-image-target="targetIndex: 0" id="target">
-                        <a-plane 
-                          src="#marker"
-                          position="0 0 0"
-                          height="${experience.plane_height}"
-                          width="${experience.plane_width}"
-                          rotation="0 0 0"
-                          material="transparent: true; opacity: 0.3"
-                        ></a-plane>
-
-                        <a-plane
-                          id="videoPlane"
-                          width="${experience.plane_width}"
-                          height="${experience.plane_height}"
-                          position="0 0 0.01"
-                          rotation="0 0 ${experience.video_rotation * Math.PI / 180}"
-                          material="shader: flat; src: #videoTexture"
-                        ></a-plane>
-                      </a-entity>
-                    </a-scene>
-
-                    <script>
-                      document.addEventListener('DOMContentLoaded', () => {
-                        const video = document.querySelector("#videoTexture");
-                        const target = document.querySelector("#target");
-                        
-                        if (target) {
-                          target.addEventListener("targetFound", () => {
-                            if (video) video.play();
-                          });
-                        }
-                      });
-                    </script>
-                  </body>
-                </html>
-              `
-            }}
-          />
-        )}
-
-        {/* Instructions Overlay */}
-        {!isMobile && (
-          <div className="absolute bottom-8 left-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Smartphone className="h-5 w-5" />
-              <span>Open this page on your mobile device for the best AR experience</span>
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Instructions */}
-        {isMobile && (
-          <div className="absolute bottom-8 left-4 right-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
-            <div className="text-center">
-              <h3 className="font-bold mb-2">How to Use AR</h3>
-              <ol className="text-sm space-y-1">
-                <li>1. Allow camera permission when prompted</li>
-                <li>2. Point your camera at the marker image (shown on the right)</li>
-                <li>3. Hold steady until the video appears</li>
-                <li>4. The video will play automatically when marker is detected</li>
-              </ol>
-            </div>
-          </div>
-        )}
-
-        {/* Experience Info */}
-        <div className="absolute top-20 left-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg max-w-xs">
-          <h2 className="font-bold text-lg">{experience.title}</h2>
+      {/* AR Experience Launch */}
+      <div className="relative w-full h-screen flex items-center justify-center">
+        <div className="text-center text-white">
+          <Camera className="mx-auto h-16 w-16 mb-4" />
+          <h1 className="text-2xl font-bold mb-2">{experience.title}</h1>
           {experience.description && (
-            <p className="text-sm text-gray-300 mt-1">{experience.description}</p>
+            <p className="text-gray-300 mb-6">{experience.description}</p>
           )}
+          
+          <button
+            onClick={openARExperience}
+            className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 transition-colors"
+          >
+            Launch AR Experience
+          </button>
+          
+          <div className="mt-6 text-sm text-gray-400">
+            <p>Click the button above to open the AR experience in a new window</p>
+            <p className="mt-2">Make sure to allow camera permissions when prompted</p>
+          </div>
         </div>
 
         {/* Marker Reference */}
@@ -246,6 +167,19 @@ export default function ExperienceViewer() {
             <div>
               <p className="text-xs text-gray-300">Point camera at this image</p>
             </div>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="absolute bottom-8 left-4 right-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
+          <div className="text-center">
+            <h3 className="font-bold mb-2">How to Use AR</h3>
+            <ol className="text-sm space-y-1">
+              <li>1. Click "Launch AR Experience" above</li>
+              <li>2. Allow camera permission when prompted</li>
+              <li>3. Point your camera at the marker image (shown on the right)</li>
+              <li>4. Hold steady until the video appears</li>
+            </ol>
           </div>
         </div>
 
