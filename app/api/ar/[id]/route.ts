@@ -25,7 +25,7 @@ export async function GET(
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
-    // Clean, professional AR HTML - no loading screen
+    // Minimal AR HTML - no A-Frame loading system
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -34,22 +34,32 @@ export async function GET(
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>${experience.title} - AR Experience</title>
     <style>
-      body {
+      * {
         margin: 0;
         padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
         width: 100vw;
         height: 100vh;
         overflow: hidden;
         background: #000;
+        font-family: Arial, sans-serif;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
       }
+      
       a-scene {
         width: 100vw;
         height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
       }
+      
       .debug-panel {
         position: fixed;
         top: 10px;
@@ -62,13 +72,13 @@ export async function GET(
         max-width: 300px;
         z-index: 1001;
       }
+      
       .status-indicator {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        font-family: Arial, sans-serif;
         text-align: center;
         z-index: 1002;
         background: rgba(0,0,0,0.8);
@@ -77,7 +87,8 @@ export async function GET(
         display: none;
       }
       
-      /* Force hide all A-Frame loading screens */
+      /* Nuclear option - hide everything that could be a loading screen */
+      .a-loader,
       .a-loader-title,
       .a-loader-spinner,
       .a-loader-logo,
@@ -85,7 +96,6 @@ export async function GET(
       .a-loader-progress-bar,
       .a-loader-progress-text,
       .a-loader-progress-container,
-      .a-loader,
       .a-enter-vr,
       .a-orientation-modal,
       .a-fullscreen,
@@ -96,15 +106,20 @@ export async function GET(
       .a-orientation-modal__content__icon,
       .a-orientation-modal__content__button,
       .a-orientation-modal__content__button--primary,
-      .a-orientation-modal__content__button--secondary {
+      .a-orientation-modal__content__button--secondary,
+      [class*="a-loader"],
+      [class*="a-enter"],
+      [class*="a-orientation"],
+      [class*="a-fullscreen"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
       }
     </style>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   </head>
   <body>
     <div class="debug-panel" id="debug-panel">
@@ -181,6 +196,9 @@ export async function GET(
       </a-entity>
     </a-scene>
 
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
     <script>
       let isMobile = false;
       let targetFound = false;
@@ -218,17 +236,41 @@ export async function GET(
         return isMobile;
       }
 
+      function nukeLoadingScreens() {
+        // Nuclear option - remove ALL possible loading elements
+        const selectors = [
+          '.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
+          '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
+          '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
+          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button',
+          '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]',
+          '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'
+        ];
+        
+        selectors.forEach(selector => {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(el => {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            el.style.top = '-9999px';
+          });
+        });
+        
+        updateDebug("Nuclear loading screen removal executed");
+      }
+
+      // Run immediately
+      nukeLoadingScreens();
+
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
         
-        // Force remove all loading screens
-        const loadingElements = document.querySelectorAll('.a-loader, .a-loader-title, .a-loader-spinner, .a-loader-logo, .a-loader-progress, .a-enter-vr, .a-orientation-modal, .a-fullscreen, .a-enter-ar');
-        loadingElements.forEach(el => {
-          el.style.display = 'none';
-          el.style.visibility = 'hidden';
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-        });
+        // Nuclear loading screen removal
+        nukeLoadingScreens();
         
         // Detect mobile device
         detectMobile();
@@ -267,10 +309,12 @@ export async function GET(
         if (scene) {
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
+            nukeLoadingScreens(); // Remove any loading screens that appeared
           });
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
+            nukeLoadingScreens(); // Remove any loading screens that appeared
           });
 
           scene.addEventListener("error", (error) => {
@@ -355,7 +399,13 @@ export async function GET(
           } else {
             updateDebug("❌ Not HTTPS - camera may not work");
           }
+          
+          // Final nuclear strike
+          nukeLoadingScreens();
         }, 2000);
+        
+        // Continuous nuclear strikes
+        setInterval(nukeLoadingScreens, 1000);
       });
     </script>
   </body>
