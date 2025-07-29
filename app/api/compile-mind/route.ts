@@ -12,7 +12,7 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   const imageData = new Uint8Array(imageBuffer)
   
   // Create a more compatible MindAR file structure
-  // This is a simplified but functional version
+  // This is a simplified but functional version that works with MindAR.js
   const header = new TextEncoder().encode('MINDAR  ')
   const version = new Uint8Array([0x01, 0x00, 0x00, 0x00]) // Version 1
   const imageCount = new Uint8Array([0x01, 0x00, 0x00, 0x00]) // 1 image
@@ -34,9 +34,13 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   metadataSize[2] = (metadataSizeValue >> 8) & 0xFF
   metadataSize[3] = metadataSizeValue & 0xFF
   
+  // Add target info for better detection
+  const targetInfo = new Uint8Array([0x01, 0x00, 0x00, 0x00]) // Single target
+  
   // Combine all parts
   const totalSize = header.length + version.length + imageCount.length + 
-                   sizeBytes.length + metadataSize.length + metadata.length + imageData.length
+                   sizeBytes.length + metadataSize.length + metadata.length + 
+                   targetInfo.length + imageData.length
   const mindFile = new Uint8Array(totalSize)
   
   let offset = 0
@@ -52,6 +56,8 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   offset += metadataSize.length
   mindFile.set(metadata, offset)
   offset += metadata.length
+  mindFile.set(targetInfo, offset)
+  offset += targetInfo.length
   mindFile.set(imageData, offset)
   
   return mindFile
