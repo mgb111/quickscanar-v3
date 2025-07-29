@@ -25,7 +25,7 @@ export async function GET(
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
-    // Clean AR HTML with targeted loading screen removal
+    // Simple, clean AR HTML - no loading screen removal
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -86,25 +86,6 @@ export async function GET(
         border-radius: 10px;
         display: none;
       }
-      
-      /* Targeted loading screen removal - only hide specific loading elements */
-      .a-loader-title,
-      .a-loader-spinner,
-      .a-loader-logo,
-      .a-loader-progress,
-      .a-loader-progress-bar,
-      .a-loader-progress-text,
-      .a-loader-progress-container,
-      .a-enter-vr,
-      .a-orientation-modal,
-      .a-fullscreen,
-      .a-enter-ar,
-      .a-enter-vr-button {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
     </style>
   </head>
   <body>
@@ -126,9 +107,6 @@ export async function GET(
       device-orientation-permission-ui="enabled: false"
       embedded
       loading-screen="enabled: false"
-      loading-screen-color="#000000"
-      loading-screen-logo=""
-      loading-screen-title=""
     >
       <a-assets>
         <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
@@ -222,33 +200,8 @@ export async function GET(
         return isMobile;
       }
 
-      function removeLoadingScreens() {
-        // Targeted removal - only specific loading elements
-        const loadingSelectors = [
-          '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
-          '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
-          '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
-          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button'
-        ];
-        
-        loadingSelectors.forEach(selector => {
-          const elements = document.querySelectorAll(selector);
-          elements.forEach(el => {
-            el.style.display = 'none';
-            el.style.visibility = 'hidden';
-            el.style.opacity = '0';
-            el.style.pointerEvents = 'none';
-          });
-        });
-        
-        updateDebug("Loading screens removed");
-      }
-
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
-        
-        // Remove loading screens
-        removeLoadingScreens();
         
         // Detect mobile device
         detectMobile();
@@ -287,12 +240,10 @@ export async function GET(
         if (scene) {
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
-            removeLoadingScreens();
           });
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
-            removeLoadingScreens();
           });
 
           scene.addEventListener("error", (error) => {
@@ -377,9 +328,6 @@ export async function GET(
           } else {
             updateDebug("❌ Not HTTPS - camera may not work");
           }
-          
-          // Final loading screen removal
-          removeLoadingScreens();
         }, 2000);
       });
     </script>
