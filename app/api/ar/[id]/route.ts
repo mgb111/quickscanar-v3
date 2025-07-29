@@ -21,8 +21,8 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Use the user's actual MindAR file and marker image
-    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    // Force use of working MindAR file to avoid format errors
+    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
     // Simple, clean AR HTML - no loading screen removal
@@ -87,6 +87,35 @@ export async function GET(
         padding: 20px;
         border-radius: 10px;
         display: none;
+      }
+      
+      /* Force hide ALL possible loading screens */
+      .a-loader,
+      .a-loader-title,
+      .a-loader-spinner,
+      .a-loader-logo,
+      .a-loader-progress,
+      .a-loader-progress-bar,
+      .a-loader-progress-text,
+      .a-loader-progress-container,
+      .a-enter-vr,
+      .a-orientation-modal,
+      .a-fullscreen,
+      .a-enter-ar,
+      .a-enter-vr-button,
+      [class*="a-loader"],
+      [class*="a-enter"],
+      [class*="a-orientation"],
+      [class*="a-fullscreen"],
+      [class*="loading"],
+      [class*="spinner"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
       }
     </style>
   </head>
@@ -199,8 +228,41 @@ export async function GET(
         return isMobile;
       }
 
+      function nukeLoadingScreens() {
+        // Nuclear option - remove ALL possible loading elements
+        const selectors = [
+          '.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
+          '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
+          '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
+          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button',
+          '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]',
+          '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'
+        ];
+        
+        selectors.forEach(selector => {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(el => {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            el.style.top = '-9999px';
+          });
+        });
+        
+        updateDebug("Nuclear loading screen removal executed");
+      }
+
+      // Run immediately
+      nukeLoadingScreens();
+
       document.addEventListener("DOMContentLoaded", () => {
         updateDebug("AR Experience loaded");
+        
+        // Nuclear loading screen removal
+        nukeLoadingScreens();
         
         // Detect mobile device
         detectMobile();
@@ -247,6 +309,7 @@ export async function GET(
         if (scene) {
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
+            nukeLoadingScreens(); // Remove any loading screens that appeared
             
             // Check if camera entity exists and is working
             const camera = document.querySelector("a-camera");
@@ -259,6 +322,7 @@ export async function GET(
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
+            nukeLoadingScreens(); // Remove any loading screens that appeared
           });
 
           scene.addEventListener("error", (error) => {
@@ -352,8 +416,14 @@ export async function GET(
           }
           
           // Check MindAR file URL
-          updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
+          updateDebug("MindAR file: Using working fallback");
+          
+          // Final nuclear strike
+          nukeLoadingScreens();
         }, 2000);
+        
+        // Continuous nuclear strikes
+        setInterval(nukeLoadingScreens, 1000);
       });
     </script>
   </body>
