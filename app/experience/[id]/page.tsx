@@ -39,6 +39,12 @@ export default function ExperienceViewer() {
   useEffect(() => {
     setIsClient(true)
     setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+    
+    // Check for HTTPS requirement
+    if (typeof window !== 'undefined' && window.location.protocol !== 'https:') {
+      toast.error('AR requires HTTPS. Please use https:// for the best experience.')
+    }
+    
     if (params.id) {
       fetchExperience()
     }
@@ -67,30 +73,59 @@ export default function ExperienceViewer() {
       setIsVideoPlaying(false)
     }
 
-    // Use a simpler approach - just set up basic event listeners
-    const scene = document.querySelector('a-scene')
-    if (scene) {
-      scene.addEventListener('targetFound', handleTargetFound)
-      scene.addEventListener('targetLost', handleTargetLost)
+    // Initialize AR scene properly
+    const initializeAR = () => {
+      const scene = document.querySelector('a-scene')
+      if (scene) {
+        // Wait for scene to be ready
+        scene.addEventListener('loaded', () => {
+          console.log('AR Scene loaded')
+          
+          // Request camera permissions
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+              .then(() => {
+                console.log('Camera permission granted')
+              })
+              .catch((error) => {
+                console.error('Camera permission denied:', error)
+                toast.error('Camera permission is required for AR. Please allow camera access.')
+              })
+          }
+        })
+
+        // Add event listeners for AR events
+        scene.addEventListener('targetFound', handleTargetFound)
+        scene.addEventListener('targetLost', handleTargetLost)
+      }
+
+      const video = document.querySelector('#videoTexture')
+      if (video) {
+        video.addEventListener('play', handleVideoPlay)
+        video.addEventListener('pause', handleVideoPause)
+      }
     }
 
-    const video = document.querySelector('#videoTexture')
-    if (video) {
-      video.addEventListener('play', handleVideoPlay)
-      video.addEventListener('pause', handleVideoPause)
+    // Initialize AR when component mounts
+    if (isClient && experience) {
+      // Small delay to ensure DOM is ready
+      setTimeout(initializeAR, 1000)
     }
 
     return () => {
+      const scene = document.querySelector('a-scene')
       if (scene) {
         scene.removeEventListener('targetFound', handleTargetFound)
         scene.removeEventListener('targetLost', handleTargetLost)
       }
+      
+      const video = document.querySelector('#videoTexture')
       if (video) {
         video.removeEventListener('play', handleVideoPlay)
         video.removeEventListener('pause', handleVideoPause)
       }
     }
-  }, [isVideoPlaying])
+  }, [isClient, experience, isVideoPlaying])
 
   const fetchExperience = async () => {
     try {
@@ -212,6 +247,7 @@ export default function ExperienceViewer() {
             vr-mode-ui="enabled: false"
             device-orientation-permission-ui="enabled: false"
             embedded
+            loading-screen="enabled: false"
           >
             <a-assets>
               <img id="marker" src={experience.marker_image_url} />
@@ -223,6 +259,7 @@ export default function ExperienceViewer() {
                 muted={isVideoMuted}
                 playsInline
                 crossOrigin="anonymous"
+                preload="auto"
               ></video>
             </a-assets>
 
@@ -232,24 +269,14 @@ export default function ExperienceViewer() {
               mindar-image-target="targetIndex: 0" 
               id="target"
             >
-              {/* Marker image plane */}
-              <a-plane 
-                src="#marker"
-                position="0 0 0"
-                height={experience.plane_height}
-                width={experience.plane_width}
-                rotation="0 0 0"
-                material="transparent: true; opacity: 0.3"
-              ></a-plane>
-
-              {/* Video plane */}
+              {/* Video plane - this will show the video over the marker */}
               <a-plane
                 id="videoPlane"
                 width={experience.plane_width}
                 height={experience.plane_height}
                 position="0 0 0.01"
                 rotation={`0 0 ${experience.video_rotation * Math.PI / 180}`}
-                material="shader: flat; src: #videoTexture"
+                material="shader: flat; src: #videoTexture; transparent: true; opacity: 1"
               ></a-plane>
             </a-entity>
           </a-scene>
@@ -294,6 +321,31 @@ export default function ExperienceViewer() {
               <Smartphone className="h-5 w-5" />
               <span>Open this page on your mobile device for the best AR experience</span>
             </div>
+          </div>
+        )}
+
+        {/* Mobile Instructions */}
+        {isMobile && !targetFound && (
+          <div className="absolute bottom-8 left-4 right-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
+            <div className="text-center">
+              <h3 className="font-bold mb-2">How to Use AR</h3>
+              <ol className="text-sm space-y-1">
+                <li>1. Allow camera permission when prompted</li>
+                <li>2. Point your camera at the marker image (shown on the right)</li>
+                <li>3. Hold steady until the video appears</li>
+                <li>4. Use the controls to play/pause/mute the video</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {/* Debug Information */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="absolute top-32 left-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg text-xs">
+            <div>MindAR File: {experience.mind_file_url.includes('compiled') ? '✅ Compiled' : '❌ Not Compiled'}</div>
+            <div>Target Found: {targetFound ? '✅ Yes' : '❌ No'}</div>
+            <div>Video Playing: {isVideoPlaying ? '✅ Yes' : '❌ No'}</div>
+            <div>HTTPS: {typeof window !== 'undefined' && window.location.protocol === 'https:' ? '✅ Yes' : '❌ No'}</div>
           </div>
         )}
 

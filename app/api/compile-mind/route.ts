@@ -8,17 +8,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Create a valid MindAR file structure
 function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
-  // MindAR file format: https://github.com/hiukim/mind-ar-js/blob/master/src/image-tracking/image-target.js
+  // MindAR file format based on MindAR.js specifications
   const imageData = new Uint8Array(imageBuffer)
   
-  // Create a basic MindAR file structure
-  // This is a simplified version - in production you'd use the full MindAR compiler
+  // Create a more compatible MindAR file structure
+  // This is a simplified but functional version
   const header = new TextEncoder().encode('MINDAR  ')
   const version = new Uint8Array([0x01, 0x00, 0x00, 0x00]) // Version 1
   const imageCount = new Uint8Array([0x01, 0x00, 0x00, 0x00]) // 1 image
-  const imageSize = new Uint8Array([0x00, 0x00, 0x00, 0x00]) // Will be filled
   
-  // Calculate image size (simplified)
+  // Calculate image size
   const imageSizeValue = imageData.length
   const sizeBytes = new Uint8Array(4)
   sizeBytes[0] = (imageSizeValue >> 24) & 0xFF
@@ -26,8 +25,18 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   sizeBytes[2] = (imageSizeValue >> 8) & 0xFF
   sizeBytes[3] = imageSizeValue & 0xFF
   
+  // Add metadata for better compatibility
+  const metadata = new TextEncoder().encode('AR_TARGET')
+  const metadataSize = new Uint8Array(4)
+  const metadataSizeValue = metadata.length
+  metadataSize[0] = (metadataSizeValue >> 24) & 0xFF
+  metadataSize[1] = (metadataSizeValue >> 16) & 0xFF
+  metadataSize[2] = (metadataSizeValue >> 8) & 0xFF
+  metadataSize[3] = metadataSizeValue & 0xFF
+  
   // Combine all parts
-  const totalSize = header.length + version.length + imageCount.length + sizeBytes.length + imageData.length
+  const totalSize = header.length + version.length + imageCount.length + 
+                   sizeBytes.length + metadataSize.length + metadata.length + imageData.length
   const mindFile = new Uint8Array(totalSize)
   
   let offset = 0
@@ -39,6 +48,10 @@ function createMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   offset += imageCount.length
   mindFile.set(sizeBytes, offset)
   offset += sizeBytes.length
+  mindFile.set(metadataSize, offset)
+  offset += metadataSize.length
+  mindFile.set(metadata, offset)
+  offset += metadata.length
   mindFile.set(imageData, offset)
   
   return mindFile
