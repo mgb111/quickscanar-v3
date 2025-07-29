@@ -21,8 +21,9 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Always use working MindAR file for now to isolate the issue
-    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    // Use the user's actual MindAR file and marker image
+    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    const markerImageUrl = experience.marker_image_url
 
     // Create the AR HTML with mobile optimizations
     const arHTML = `<!DOCTYPE html>
@@ -119,7 +120,7 @@ export async function GET(
 
     <div class="mobile-notice" id="mobile-notice">
       <h3>Mobile AR Experience</h3>
-      <p>Point your camera at the card image to see AR content</p>
+      <p>Point your camera at your marker image to see AR content</p>
       <p>Make sure you're in a well-lit environment</p>
     </div>
 
@@ -142,7 +143,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
+        <img id="marker" src="${markerImageUrl}" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -158,10 +159,10 @@ export async function GET(
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         <a-plane 
-          src="#card"
+          src="#marker"
           position="0 0 0"
-          height="0.552"
-          width="1"
+          height="${experience.plane_height}"
+          width="${experience.plane_width}"
           rotation="0 0 0"
           material="transparent: true; opacity: 0.3"
         ></a-plane>
