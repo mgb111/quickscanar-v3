@@ -215,7 +215,7 @@ export async function GET(
         // Show status indicator
         showStatus("Point camera at your marker", "Look for your uploaded image");
         
-        // Test camera access
+        // Explicitly test camera access first
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           updateDebug("Testing camera access...");
           
@@ -229,8 +229,16 @@ export async function GET(
           };
           
           navigator.mediaDevices.getUserMedia(constraints)
-            .then(() => {
+            .then((stream) => {
               updateDebug("✅ Camera permission granted");
+              updateDebug("✅ Camera stream received");
+              
+              // Ensure the camera is working by checking the stream
+              if (stream && stream.active) {
+                updateDebug("✅ Camera stream is active");
+              } else {
+                updateDebug("❌ Camera stream not active");
+              }
             })
             .catch((error) => {
               updateDebug("❌ Camera permission denied: " + error.message);
@@ -240,6 +248,14 @@ export async function GET(
         if (scene) {
           scene.addEventListener("loaded", () => {
             updateDebug("✅ AR Scene loaded successfully");
+            
+            // Check if camera entity exists and is working
+            const camera = document.querySelector("a-camera");
+            if (camera) {
+              updateDebug("✅ Camera entity found");
+            } else {
+              updateDebug("❌ Camera entity not found");
+            }
           });
           
           scene.addEventListener("renderstart", () => {
@@ -327,6 +343,13 @@ export async function GET(
             updateDebug("✅ HTTPS/localhost detected");
           } else {
             updateDebug("❌ Not HTTPS - camera may not work");
+          }
+          
+          // Check if camera is visible
+          const camera = document.querySelector("a-camera");
+          if (camera) {
+            const cameraStyle = window.getComputedStyle(camera);
+            updateDebug(\`Camera visibility: \${cameraStyle.visibility}, display: \${cameraStyle.display}\`);
           }
         }, 2000);
       });

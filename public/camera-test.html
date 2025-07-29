@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Camera Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        .status {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status">Testing camera...</div>
+    <video id="video" autoplay playsinline muted></video>
+    
+    <script>
+        const video = document.getElementById('video');
+        const status = document.getElementById('status');
+        
+        function updateStatus(message) {
+            status.textContent = message;
+            console.log(message);
+        }
+        
+        updateStatus("Starting camera test...");
+        
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            updateStatus("Requesting camera permission...");
+            
+            const constraints = {
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'environment'
+                }
+            };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    updateStatus("✅ Camera working - stream received");
+                    video.srcObject = stream;
+                    video.play().then(() => {
+                        updateStatus("✅ Camera feed playing");
+                    }).catch(e => {
+                        updateStatus("❌ Video play error: " + e.message);
+                    });
+                })
+                .catch(error => {
+                    updateStatus("❌ Camera error: " + error.message);
+                });
+        } else {
+            updateStatus("❌ getUserMedia not supported");
+        }
+    </script>
+</body>
+</html> 
