@@ -75,6 +75,20 @@ export async function GET(
         max-width: 300px;
         z-index: 1001;
       }
+      .status-indicator {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        z-index: 1002;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+      }
     </style>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -89,6 +103,11 @@ export async function GET(
     <div class="debug-panel" id="debug-panel">
       <strong>Debug Info:</strong><br>
       <div id="debug-content"></div>
+    </div>
+
+    <div class="status-indicator" id="status-indicator">
+      <h3 id="status-title">Point camera at marker</h3>
+      <p id="status-message">Look for the card image</p>
     </div>
 
     <a-scene
@@ -116,28 +135,45 @@ export async function GET(
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
+        <!-- Marker plane (invisible) -->
         <a-plane 
           src="#card"
           position="0 0 0"
           height="0.552"
           width="1"
           rotation="0 0 0"
-          material="transparent: true; opacity: 0.3"
+          material="transparent: true; opacity: 0.0"
+          visible="false"
         ></a-plane>
 
+        <!-- Video plane (visible when target found) -->
         <a-plane
           id="videoPlane"
-          width="${experience.plane_width}"
-          height="${experience.plane_height}"
+          width="${experience.plane_width || 1}"
+          height="${experience.plane_height || 0.552}"
           position="0 0 0.01"
-          rotation="0 0 ${experience.video_rotation * Math.PI / 180}"
+          rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
           material="shader: flat; src: #videoTexture"
+          visible="false"
+        ></a-plane>
+
+        <!-- Debug plane to show marker detection -->
+        <a-plane
+          id="debugPlane"
+          src="#card"
+          position="0 0 0.02"
+          height="0.552"
+          width="1"
+          rotation="0 0 0"
+          material="transparent: true; opacity: 0.5"
+          visible="false"
         ></a-plane>
       </a-entity>
     </a-scene>
 
     <script>
       let isMobile = false;
+      let targetFound = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -160,6 +196,25 @@ export async function GET(
         }
       }
 
+      function showStatus(title, message) {
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusTitle = document.getElementById('status-title');
+        const statusMessage = document.getElementById('status-message');
+        
+        if (statusIndicator && statusTitle && statusMessage) {
+          statusTitle.textContent = title;
+          statusMessage.textContent = message;
+          statusIndicator.style.display = 'block';
+        }
+      }
+
+      function hideStatus() {
+        const statusIndicator = document.getElementById('status-indicator');
+        if (statusIndicator) {
+          statusIndicator.style.display = 'none';
+        }
+      }
+
       function detectMobile() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
@@ -176,8 +231,13 @@ export async function GET(
         
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
+        const videoPlane = document.querySelector("#videoPlane");
+        const debugPlane = document.querySelector("#debugPlane");
         const scene = document.querySelector("a-scene");
         const loading = document.querySelector("#loading");
+        
+        // Show status indicator
+        showStatus("Point camera at marker", "Look for the card image");
         
         // Test camera access with mobile optimizations
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -225,14 +285,57 @@ export async function GET(
         
         if (target) {
           target.addEventListener("targetFound", () => {
-            updateDebug("🎯 Target found - playing video");
+            updateDebug("🎯 Target found - showing AR content");
+            targetFound = true;
+            
+            // Show video plane
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'true');
+              updateDebug("✅ Video plane made visible");
+            }
+            
+            // Show debug plane
+            if (debugPlane) {
+              debugPlane.setAttribute('visible', 'true');
+              updateDebug("✅ Debug plane made visible");
+            }
+            
+            // Play video
             if (video) {
               video.play().catch(e => updateDebug("❌ Video play error: " + e));
+              updateDebug("✅ Video started playing");
             }
+            
+            // Update status
+            showStatus("Target Found!", "AR content should be visible");
+            
+            // Hide status after 3 seconds
+            setTimeout(() => {
+              hideStatus();
+            }, 3000);
           });
           
           target.addEventListener("targetLost", () => {
             updateDebug("❌ Target lost");
+            targetFound = false;
+            
+            // Hide video plane
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', 'false');
+            }
+            
+            // Hide debug plane
+            if (debugPlane) {
+              debugPlane.setAttribute('visible', 'false');
+            }
+            
+            // Pause video
+            if (video) {
+              video.pause();
+            }
+            
+            // Show status again
+            showStatus("Target Lost", "Point camera at marker again");
           });
         }
 
