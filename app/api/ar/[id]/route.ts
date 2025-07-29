@@ -21,8 +21,8 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Force use of working MindAR file to avoid format errors
-    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    // Use the user's marker image but with a working MindAR file format
+    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
     // Simple, clean AR HTML - no loading screen removal
@@ -416,7 +416,8 @@ export async function GET(
           }
           
           // Check MindAR file URL
-          updateDebug("MindAR file: Using working fallback");
+          updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
+          updateDebug(\`Marker image: \${'${markerImageUrl}'}\`);
           
           // Final nuclear strike
           nukeLoadingScreens();

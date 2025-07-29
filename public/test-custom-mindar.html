@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Custom MindAR Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #logs {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+        }
+    </style>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Custom MindAR Test</h1>
+        
+        <div class="status info" id="status">Enter your MindAR file URL and marker image URL to test</div>
+        
+        <div>
+            <label>MindAR File URL:</label>
+            <input type="text" id="mindarUrl" placeholder="https://your-supabase-url.com/mind-file.mind" />
+        </div>
+        
+        <div>
+            <label>Marker Image URL:</label>
+            <input type="text" id="markerUrl" placeholder="https://your-supabase-url.com/marker-image.jpg" />
+        </div>
+        
+        <button onclick="testCustomMindAR()">Test Custom MindAR</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="logs"></div>
+        
+        <!-- AR Scene for testing -->
+        <div id="arScene" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000;">
+            <a-scene
+                id="testScene"
+                mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;"
+                color-space="sRGB"
+                renderer="colorManagement: true, physicallyCorrectLights"
+                vr-mode-ui="enabled: false"
+                device-orientation-permission-ui="enabled: false"
+                embedded
+                loading-screen="enabled: false"
+            >
+                <a-assets>
+                    <img id="testMarker" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" crossorigin="anonymous" />
+                </a-assets>
+                
+                <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+                
+                <a-entity mindar-image-target="targetIndex: 0" id="testTarget">
+                    <a-plane 
+                        src="#testMarker"
+                        position="0 0 0"
+                        height="0.552"
+                        width="1"
+                        rotation="0 0 0"
+                        material="shader: flat"
+                    ></a-plane>
+                </a-entity>
+            </a-scene>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ecdc4' : '#ffffff';
+            logs.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function testCustomMindAR() {
+            const mindarUrl = document.getElementById('mindarUrl').value.trim();
+            const markerUrl = document.getElementById('markerUrl').value.trim();
+            
+            if (!mindarUrl || !markerUrl) {
+                log('❌ Please enter both MindAR file URL and marker image URL', 'error');
+                updateStatus('Please enter both URLs', 'error');
+                return;
+            }
+            
+            log('Starting custom MindAR test...');
+            updateStatus('Testing custom MindAR...', 'info');
+            
+            try {
+                // Test if MindAR file is accessible
+                log(`Testing MindAR file accessibility: ${mindarUrl}`);
+                const mindarResponse = await fetch(mindarUrl);
+                if (!mindarResponse.ok) {
+                    throw new Error(`MindAR file not accessible: ${mindarResponse.status}`);
+                }
+                log('✅ MindAR file is accessible', 'success');
+                
+                // Test if marker image is accessible
+                log(`Testing marker image accessibility: ${markerUrl}`);
+                const markerResponse = await fetch(markerUrl);
+                if (!markerResponse.ok) {
+                    throw new Error(`Marker image not accessible: ${markerResponse.status}`);
+                }
+                log('✅ Marker image is accessible', 'success');
+                
+                // Test AR scene with custom files
+                log('Testing AR scene with custom files...');
+                const scene = document.getElementById('testScene');
+                const target = document.getElementById('testTarget');
+                
+                // Update the scene with custom files
+                scene.setAttribute('mindar-image', `imageTargetSrc: ${mindarUrl};`);
+                
+                // Update marker image
+                const markerImg = document.getElementById('testMarker');
+                markerImg.src = markerUrl;
+                
+                // Show AR scene
+                document.getElementById('arScene').style.display = 'block';
+                
+                log('✅ AR scene updated with custom files', 'success');
+                updateStatus('Custom MindAR test successful! AR scene is active', 'success');
+                
+                // Add event listeners for AR detection
+                if (target) {
+                    target.addEventListener("targetFound", () => {
+                        log('🎯 Target found with custom MindAR!', 'success');
+                    });
+                    
+                    target.addEventListener("targetLost", () => {
+                        log('❌ Target lost', 'info');
+                    });
+                }
+                
+                // Check for common issues
+                setTimeout(() => {
+                    log('Checking for common issues...');
+                    
+                    if (typeof AFRAME !== 'undefined') {
+                        log('✅ A-Frame loaded');
+                    } else {
+                        log('❌ A-Frame not loaded', 'error');
+                    }
+                    
+                    if (typeof MINDAR !== 'undefined') {
+                        log('✅ MindAR loaded');
+                    } else {
+                        log('❌ MindAR not loaded', 'error');
+                    }
+                    
+                    if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                        log('✅ HTTPS/localhost detected');
+                    } else {
+                        log('❌ Not HTTPS - camera may not work', 'error');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log(`❌ Custom MindAR test failed: ${error.message}`, 'error');
+                updateStatus(`Test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            updateStatus('Logs cleared', 'info');
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('Custom MindAR test page loaded');
+            log('Enter your MindAR file URL and marker image URL, then click "Test Custom MindAR"');
+        });
+    </script>
+</body>
+</html> 
