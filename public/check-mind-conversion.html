@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check .mind Conversion</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Check .mind Conversion (v2)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -68,8 +71,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Check .mind Conversion</h1>
+        <h1>🔍 Check .mind Conversion (v2)</h1>
         <p>This page helps you verify if your .mind file conversion is working correctly.</p>
+        <p><strong>Version:</strong> Updated with valid UUID - cache cleared</p>
         
         <div class="test-section info">
             <h3>📋 Quick Tests</h3>
@@ -116,6 +120,8 @@
                     imageUrl: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png',
                     experienceId: 'ee852cc1-e042-444c-bc5b-78ea14d7c73b' // Use the existing experience ID
                 };
+                
+                log('Using valid UUID: ee852cc1-e042-444c-bc5b-78ea14d7c73b');
                 
                 const response = await fetch('/api/compile-mind', {
                     method: 'POST',
@@ -301,7 +307,8 @@
 
         // Auto-test on load
         window.addEventListener('load', () => {
-            log('🚀 .mind Conversion Check Tool Loaded');
+            log('🚀 .mind Conversion Check Tool Loaded (v2)');
+            log('Using valid UUID: ee852cc1-e042-444c-bc5b-78ea14d7c73b');
             log('Use the buttons above to test different aspects of .mind conversion');
             updateStatus('Ready to check .mind conversion', 'success');
         });

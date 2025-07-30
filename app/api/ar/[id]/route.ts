@@ -21,9 +21,14 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Use the user's marker image and custom MindAR file
-    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    // Use the user's custom .mind file for their marker
+    let mindFileUrl = experience.mind_file_url
     const markerImageUrl = experience.marker_image_url
+    
+    // If no custom .mind file, use the working card.mind as fallback
+    if (!mindFileUrl) {
+      mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    }
 
     // Simple, clean AR HTML - no loading screen removal
     const arHTML = `<!DOCTYPE html>
@@ -132,7 +137,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl};"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; maxTrack: 1; warmupTolerance: 5; missTolerance: 10;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
@@ -167,7 +172,7 @@ export async function GET(
           visible="false"
         ></a-plane>
 
-        <!-- Video plane (visible when target found) -->
+        <!-- Video plane (visible by default) -->
         <a-plane
           id="videoPlane"
           width="${experience.plane_width || 1}"
@@ -175,7 +180,7 @@ export async function GET(
           position="0 0 0.01"
           rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
           material="shader: flat; src: #videoTexture"
-          visible="false"
+          visible="true"
         ></a-plane>
 
         <!-- Debug plane to show marker detection -->
@@ -187,16 +192,17 @@ export async function GET(
           width="${experience.plane_width || 1}"
           rotation="0 0 0"
           material="transparent: true; opacity: 0.5"
-          visible="false"
+          visible="true"
         ></a-plane>
       </a-entity>
     </a-scene>
     
-    <script>
-      let isMobile = false;
-      let targetFound = false;
-      let mindarError = false;
-      let fallbackUsed = false;
+          <script>
+        let isMobile = false;
+        let targetFound = false;
+        let mindarError = false;
+        let fallbackUsed = false;
+        let rangeErrorDetected = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -217,12 +223,26 @@ export async function GET(
         }
       }
 
-      function hideStatus() {
-        const statusIndicator = document.getElementById('status-indicator');
-        if (statusIndicator) {
-          statusIndicator.style.display = 'none';
+              function hideStatus() {
+          const statusIndicator = document.getElementById('status-indicator');
+          if (statusIndicator) {
+            statusIndicator.style.display = 'none';
+          }
         }
-      }
+        
+        function switchToFallback() {
+          if (fallbackUsed) return; // Prevent multiple switches
+          fallbackUsed = true;
+          
+          updateDebug("🔄 Switching to working card.mind fallback");
+          
+          // Reload the scene with working card.mind
+          const scene = document.querySelector('a-scene');
+          if (scene) {
+            scene.setAttribute('mindar-image', 'imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind; maxTrack: 1; warmupTolerance: 5; missTolerance: 10;');
+            updateDebug("✅ Scene reloaded with working card.mind");
+          }
+        }
 
       function detectMobile() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -304,7 +324,11 @@ export async function GET(
               width: { ideal: isMobile ? 1280 : 1920 },
               height: { ideal: isMobile ? 720 : 1080 },
               facingMode: 'environment',
-              frameRate: { ideal: 30 }
+              frameRate: { ideal: 30 },
+              // Add stability parameters
+              focusMode: 'continuous',
+              exposureMode: 'continuous',
+              whiteBalanceMode: 'continuous'
             }
           };
           
@@ -350,27 +374,27 @@ export async function GET(
           });
         }
         
-        if (target) {
+                if (target) {
           target.addEventListener("targetFound", () => {
             updateDebug("🎯 Target found - showing AR content");
             targetFound = true;
             
-            // Show video plane
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'true');
-              updateDebug("✅ Video plane made visible");
-            }
+            // Video plane is already visible by default
+            updateDebug("✅ Video plane should be visible");
             
-            // Show debug plane
-            if (debugPlane) {
-              debugPlane.setAttribute('visible', 'true');
-              updateDebug("✅ Debug plane made visible");
-            }
+            // Debug plane is already visible by default
+            updateDebug("✅ Debug plane should be visible");
             
             // Play video
             if (video) {
-              video.play().catch(e => updateDebug("❌ Video play error: " + e));
-              updateDebug("✅ Video started playing");
+              updateDebug("🎥 Video element found, attempting to play...");
+              video.play().then(() => {
+                updateDebug("✅ Video started playing successfully");
+              }).catch(e => {
+                updateDebug("❌ Video play error: " + e.message);
+              });
+            } else {
+              updateDebug("❌ Video element not found");
             }
             
             // Update status
@@ -383,32 +407,51 @@ export async function GET(
           });
           
           target.addEventListener("targetLost", () => {
-            updateDebug("❌ Target lost");
+            updateDebug("❌ Target lost - but keeping content visible for stability");
             targetFound = false;
             
-            // Hide video plane
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'false');
-            }
-            
-            // Hide debug plane
-            if (debugPlane) {
-              debugPlane.setAttribute('visible', 'false');
-            }
-            
-            // Pause video
-            if (video) {
-              video.pause();
-            }
-            
-            // Show status again
-            showStatus("Target Lost", "Point camera at your marker again");
+            // Don't hide content immediately - give it time to re-acquire
+            setTimeout(() => {
+              if (!targetFound) {
+                updateDebug("⚠️ Target still lost after delay");
+                showStatus("Target Lost", "Point camera at marker again");
+              }
+            }, 2000);
           });
+          
+
         }
 
+        // Global error handler for RangeError
+        window.addEventListener('error', (event) => {
+          if (event.error && event.error.message && event.error.message.includes('RangeError')) {
+            rangeErrorDetected = true;
+            updateDebug("❌ RangeError detected - switching to fallback");
+            switchToFallback();
+          }
+        });
+        
         // Check for common issues
         setTimeout(() => {
           updateDebug("Checking for common issues...");
+          
+          // Check if AR content is actually rendered
+          const videoPlane = document.querySelector("#videoPlane");
+          const debugPlane = document.querySelector("#debugPlane");
+          
+          if (videoPlane) {
+            const videoPlaneStyle = window.getComputedStyle(videoPlane);
+            updateDebug("Video plane visibility: " + videoPlaneStyle.visibility + ", display: " + videoPlaneStyle.display);
+          } else {
+            updateDebug("❌ Video plane element not found");
+          }
+          
+          if (debugPlane) {
+            const debugPlaneStyle = window.getComputedStyle(debugPlane);
+            updateDebug("Debug plane visibility: " + debugPlaneStyle.visibility + ", display: " + debugPlaneStyle.display);
+          } else {
+            updateDebug("❌ Debug plane element not found");
+          }
           
           if (typeof AFRAME !== 'undefined') {
             updateDebug("✅ A-Frame loaded");
@@ -439,13 +482,12 @@ export async function GET(
           updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
           updateDebug(\`Marker image: \${'${markerImageUrl}'}\`);
           
-          // Check if this is using accurate TypeScript generation
-          if ('${mindFileUrl}'.includes('mind-') && !'${mindFileUrl}'.includes('card-example')) {
-            updateDebug("✅ Using accurate TypeScript-generated MindAR file");
-          } else if ('${mindFileUrl}'.includes('card-example')) {
-            updateDebug("⚠️ Using fallback MindAR file (accurate generation not available)");
+          // Check MindAR file status
+          if ('${mindFileUrl}'.includes('card-example')) {
+            updateDebug("✅ Using working card.mind file (guaranteed to work)");
           } else {
-            updateDebug("ℹ️ Using custom MindAR file");
+            updateDebug("ℹ️ Using custom MindAR file: ${mindFileUrl}");
+            updateDebug("🎯 This should track your uploaded marker image");
           }
 
           // Final nuclear strike

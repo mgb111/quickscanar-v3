@@ -1,32 +1,65 @@
 #!/usr/bin/env python3
 """
-MindAR Compiler - Standalone Python Script
-This script converts images to proper .mind files for MindAR tracking.
+Senior Engineer MindAR Compiler
+Converts uploaded marker images to working .mind files
 """
 
 import cv2
 import numpy as np
+import struct
 import json
 import sys
 import os
-import requests
-import struct
 from PIL import Image
 import io
 
-def process_image_for_mindar(image_data):
-    """
-    Process image to be optimal for MindAR tracking
-    """
+def validate_image(image_data):
+    """Validate image quality for AR tracking"""
     try:
         # Convert bytes to numpy array
         nparr = np.frombuffer(image_data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
-            raise ValueError("Could not decode image")
+            return False, "Could not decode image"
         
-        # Resize to optimal dimensions (power of 2, max 512x512 for performance)
+        # Convert to grayscale for analysis
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # Check dimensions
+        height, width = gray.shape
+        if width < 200 or height < 200:
+            return False, f"Image too small ({width}x{height}, need 200x200+)"
+        
+        # Check sharpness (Laplacian variance)
+        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+        if laplacian_var < 100:
+            return False, f"Image too blurry (sharpness: {laplacian_var:.1f})"
+        
+        # Detect features
+        orb = cv2.ORB_create(nfeatures=1000)
+        keypoints, descriptors = orb.detectAndCompute(gray, None)
+        feature_count = len(keypoints) if keypoints else 0
+        
+        if feature_count < 50:
+            return False, f"Not enough trackable features ({feature_count} found, need 50+)"
+        
+        return True, f"Valid image: {feature_count} features, sharpness: {laplacian_var:.1f}"
+        
+    except Exception as e:
+        return False, f"Validation error: {str(e)}"
+
+def optimize_image_for_tracking(image_data):
+    """Optimize image for better AR tracking"""
+    try:
+        # Convert bytes to numpy array
+        nparr = np.frombuffer(image_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            return None
+        
+        # Resize to optimal dimensions (power of 2, max 512x512)
         height, width = img.shape[:2]
         max_size = 512
         
@@ -40,215 +73,136 @@ def process_image_for_mindar(image_data):
             
             img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
         
-        # Enhance contrast and sharpness
-        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(lab)
-        
-        # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        l = clahe.apply(l)
-        
-        img = cv2.merge([l, a, b])
-        img = cv2.cvtColor(img, cv2.COLOR_LAB2BGR)
-        
-        # Sharpen the image
-        kernel = np.array([[-1,-1,-1],
-                          [-1, 9,-1],
-                          [-1,-1,-1]])
-        img = cv2.filter2D(img, -1, kernel)
-        
-        return img
-        
-    except Exception as e:
-        print(f"Image processing error: {e}")
-        return None
-
-def create_mindar_file(processed_image):
-    """
-    Create a proper .mind file that matches the working card.mind format
-    """
-    try:
-        # Convert to grayscale for feature detection
-        gray = cv2.cvtColor(processed_image, cv2.COLOR_BGR2GRAY)
-        
-        # Detect ORB features (similar to what MindAR uses)
-        orb = cv2.ORB_create(nfeatures=1000)
-        keypoints, descriptors = orb.detectAndCompute(gray, None)
-        
-        if descriptors is None or len(keypoints) < 50:
-            raise ValueError("Not enough features detected - image may not be suitable for AR tracking")
-        
-        # Get image dimensions
-        height, width = gray.shape
-        
-        # Create the MindAR file structure
-        # Header: "MINDAR\0" (8 bytes)
-        header = b'MINDAR\0'
-        
-        # Version: 4 bytes (little endian) - 1
-        version = (1).to_bytes(4, byteorder='little')
-        
-        # Target count: 4 bytes (little endian) - 1
-        target_count = (1).to_bytes(4, byteorder='little')
-        
-        # Target ID: 4 bytes (little endian) - 0
-        target_id = (0).to_bytes(4, byteorder='little')
-        
-        # Target width: 4 bytes float (little endian) - 1.0
-        target_width = struct.pack('<f', 1.0)
-        
-        # Target height: 4 bytes float (little endian) - 1.0
-        target_height = struct.pack('<f', 1.0)
-        
-        # Convert processed image to JPEG
-        success, jpeg_data = cv2.imencode('.jpg', processed_image)
-        if not success:
-            raise ValueError("Failed to encode image to JPEG")
-        
-        image_data = jpeg_data.tobytes()
-        image_size = len(image_data)
-        
-        # Image size: 4 bytes (little endian)
-        image_size_bytes = image_size.to_bytes(4, byteorder='little')
-        
-        # Feature count: 4 bytes (little endian) - 100 features
-        feature_count = (100).to_bytes(4, byteorder='little')
-        
-        # Feature data: 100 features * 8 bytes each = 800 bytes
-        feature_data = bytearray(100 * 8)
-        
-        # Fill with proper feature data (x, y coordinates as floats)
-        for i in range(100):
-            offset = i * 8
-            x = (i % 10) / 10.0  # 0.0 to 0.9
-            y = (i // 10) / 10.0  # 0.0 to 0.9
-            
-            # Convert to little-endian float32
-            x_bytes = struct.pack('<f', x)
-            y_bytes = struct.pack('<f', y)
-            
-            feature_data[offset:offset+4] = x_bytes
-            feature_data[offset+4:offset+8] = y_bytes
-        
-        # Combine all parts
-        mind_file = header + version + target_count + target_id + target_width + target_height + image_size_bytes + image_data + feature_count + feature_data
-        
-        return mind_file
-        
-    except Exception as e:
-        print(f"MindAR file creation error: {e}")
-        return None
-
-def validate_image(image_data):
-    """
-    Validate if an image is suitable for AR tracking
-    """
-    try:
-        # Process image
-        nparr = np.frombuffer(image_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        if img is None:
-            return {'valid': False, 'reason': 'Could not decode image'}
-        
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
-        # Detect features
-        orb = cv2.ORB_create(nfeatures=1000)
-        keypoints, descriptors = orb.detectAndCompute(gray, None)
+        # Enhance contrast using CLAHE
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        gray = clahe.apply(gray)
         
-        feature_count = len(keypoints) if keypoints else 0
+        # Convert back to bytes
+        success, buffer = cv2.imencode('.jpg', gray, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        if success:
+            return buffer.tobytes()
         
-        # Check image quality
-        height, width = gray.shape
-        
-        # Calculate image sharpness (Laplacian variance)
-        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-        
-        # Validation criteria
-        valid = True
-        issues = []
-        
-        if feature_count < 50:
-            valid = False
-            issues.append(f"Not enough trackable features ({feature_count} found, need 50+)")
-        
-        if laplacian_var < 100:
-            valid = False
-            issues.append(f"Image too blurry (sharpness: {laplacian_var:.1f})")
-        
-        if width < 200 or height < 200:
-            valid = False
-            issues.append(f"Image too small ({width}x{height}, need 200x200+)")
-        
-        return {
-            'valid': valid,
-            'featureCount': feature_count,
-            'sharpness': float(laplacian_var),
-            'dimensions': [width, height],
-            'issues': issues,
-            'recommendation': 'Good for AR tracking' if valid else 'Improve image quality for better tracking'
-        }
+        return None
         
     except Exception as e:
-        return {'valid': False, 'reason': str(e)}
+        print(json.dumps({"error": f"Image optimization error: {e}"}), file=sys.stderr)
+        return None
+
+def create_mindar_file(optimized_image_data):
+    """Create a working MindAR file from optimized image data"""
+    try:
+        # Convert to numpy array for processing
+        nparr = np.frombuffer(optimized_image_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+        
+        if img is None:
+            raise ValueError("Could not decode optimized image")
+        
+        height, width = img.shape
+        
+        # Detect ORB features
+        orb = cv2.ORB_create(nfeatures=1000, scaleFactor=1.2, nlevels=8)
+        keypoints, descriptors = orb.detectAndCompute(img, None)
+        
+        if descriptors is None or len(keypoints) < 50:
+            raise ValueError("Not enough features detected")
+        
+        # Limit to top 500 features
+        max_features = min(500, len(keypoints))
+        keypoints = keypoints[:max_features]
+        descriptors = descriptors[:max_features]
+        
+        # Create a simple but valid .mind file structure
+        mind_file = bytearray()
+        
+        # Header (8 bytes) - MINDAR\0\0
+        mind_file.extend(b'MINDAR\0\0')
+        
+        # Version (4 bytes)
+        mind_file.extend(struct.pack('<I', 1))
+        
+        # Image dimensions (8 bytes)
+        mind_file.extend(struct.pack('<II', width, height))
+        
+        # Feature count (4 bytes)
+        mind_file.extend(struct.pack('<I', max_features))
+        
+        # Feature points (20 bytes per feature)
+        for kp in keypoints:
+            x = float(kp.pt[0] / width)  # Normalize to 0-1
+            y = float(kp.pt[1] / height) # Normalize to 0-1
+            angle = float(kp.angle)      # Degrees
+            response = float(kp.response) # Strength
+            size = float(kp.size)        # Scale
+            
+            mind_file.extend(struct.pack('<fffff', x, y, angle, response, size))
+        
+        # Descriptors (32 bytes per descriptor)
+        for desc in descriptors:
+            mind_file.extend(desc.tobytes())
+        
+        # Image data
+        # First write the size (4 bytes)
+        mind_file.extend(struct.pack('<I', len(optimized_image_data)))
+        # Then write the actual image data
+        mind_file.extend(optimized_image_data)
+        
+        # Add padding to align to 8 bytes
+        padding_size = (8 - (len(mind_file) % 8)) % 8
+        if padding_size > 0:
+            mind_file.extend(b'\0' * padding_size)
+        
+        return bytes(mind_file)
+        
+    except Exception as e:
+        print(json.dumps({"error": f"MindAR file creation error: {e}"}), file=sys.stderr)
+        return None
 
 def main():
-    """
-    Main function to handle command line arguments
-    """
-    
-    if len(sys.argv) < 2:
-        print("Usage: python python-mindar-compiler.py <image_url> [output_file]")
-        print("Example: python python-mindar-compiler.py https://example.com/image.jpg output.mind")
-        sys.exit(1)
-    
-    image_url = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "output.mind"
-    
-    print(f"Processing image: {image_url}")
-    
+    """Main function to process image and create .mind file"""
     try:
-        # Download image
-        response = requests.get(image_url)
-        response.raise_for_status()
-        image_data = response.content
+        # Read image data from stdin
+        image_data = sys.stdin.buffer.read()
         
-        print(f"Image downloaded, size: {len(image_data)} bytes")
+        if not image_data:
+            print(json.dumps({"error": "No image data provided"}), file=sys.stderr)
+            sys.exit(1)
+        
+        print(json.dumps({"status": "processing", "size": len(image_data)}), file=sys.stderr)
         
         # Validate image
-        validation = validate_image(image_data)
-        if not validation['valid']:
-            print(f"❌ Image validation failed: {validation['issues']}")
+        is_valid, message = validate_image(image_data)
+        if not is_valid:
+            print(json.dumps({"error": f"Image validation failed: {message}"}), file=sys.stderr)
             sys.exit(1)
         
-        print(f"✅ Image validation passed: {validation['featureCount']} features, sharpness: {validation['sharpness']:.1f}")
+        print(json.dumps({"status": "validated", "message": message}), file=sys.stderr)
         
-        # Process image
-        processed_image = process_image_for_mindar(image_data)
-        if processed_image is None:
-            print("❌ Failed to process image")
+        # Optimize image for tracking
+        optimized_image = optimize_image_for_tracking(image_data)
+        if optimized_image is None:
+            print(json.dumps({"error": "Failed to optimize image"}), file=sys.stderr)
             sys.exit(1)
         
-        print("✅ Image processed successfully")
+        print(json.dumps({"status": "optimized", "size": len(optimized_image)}), file=sys.stderr)
         
         # Create MindAR file
-        mind_file_data = create_mindar_file(processed_image)
-        if mind_file_data is None:
-            print("❌ Failed to create MindAR file")
+        mind_file = create_mindar_file(optimized_image)
+        if mind_file is None:
+            print(json.dumps({"error": "Failed to create MindAR file"}), file=sys.stderr)
             sys.exit(1)
         
-        print(f"✅ MindAR file created, size: {len(mind_file_data)} bytes")
+        print(json.dumps({"status": "completed", "size": len(mind_file)}), file=sys.stderr)
         
-        # Save to file
-        with open(output_file, 'wb') as f:
-            f.write(mind_file_data)
-        
-        print(f"✅ MindAR file saved to: {output_file}")
+        # Output the .mind file to stdout
+        sys.stdout.buffer.write(mind_file)
+        sys.stdout.buffer.flush()
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(json.dumps({"error": f"Unexpected error: {str(e)}"}), file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

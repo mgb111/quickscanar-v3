@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AR Experience</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .ar-link { background: #28a745; color: white; padding: 15px; border-radius: 5px; margin: 10px 0; text-align: center; }
+        .ar-link a { color: white; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test AR Experience</h1>
+        <p>This page helps you test if the AR experience works with your generated .mind file.</p>
+        
+        <button onclick="testARExperience()">Test AR Experience</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testARExperience() {
+            addResult('🧪 Testing AR experience...', 'info');
+            
+            try {
+                // Test the AR experience endpoint
+                const response = await fetch('/api/ar/ee852cc1-e042-444c-bc5b-78ea14d7c73b');
+                
+                if (response.ok) {
+                    addResult('✅ AR experience endpoint accessible', 'success');
+                    
+                    // Get the AR HTML content
+                    const arHtml = await response.text();
+                    
+                    // Check if it contains the expected elements
+                    const hasMindAR = arHtml.includes('mindar-image-aframe');
+                    const hasAFrame = arHtml.includes('a-scene');
+                    const hasCustomMarker = arHtml.includes('ee852cc1-e042-444c-bc5b-78ea14d7c73b');
+                    
+                    addResult(`🔍 MindAR script: ${hasMindAR ? '✅ Found' : '❌ Missing'}`, hasMindAR ? 'success' : 'error');
+                    addResult(`🔍 A-Frame scene: ${hasAFrame ? '✅ Found' : '❌ Missing'}`, hasAFrame ? 'success' : 'error');
+                    addResult(`🔍 Custom marker: ${hasCustomMarker ? '✅ Found' : '❌ Missing'}`, hasCustomMarker ? 'success' : 'error');
+                    
+                    // Display AR experience link
+                    const results = document.getElementById('results');
+                    results.innerHTML += `
+                        <div class="ar-link">
+                            <h3>🎯 AR Experience Ready!</h3>
+                            <p>Click the link below to test the AR experience:</p>
+                            <a href="http://localhost:3000/experience/ee852cc1-e042-444c-bc5b-78ea14d7c73b" target="_blank">
+                                🚀 Open AR Experience
+                            </a>
+                        </div>
+                        <div class="result info">
+                            <h4>📋 Expected Results:</h4>
+                            <ul>
+                                <li>✅ Camera permission granted</li>
+                                <li>✅ Scanner icon appears</li>
+                                <li>✅ Your custom marker image is tracked</li>
+                                <li>✅ AR content appears when marker is detected</li>
+                                <li>✅ No RangeError in console</li>
+                            </ul>
+                        </div>
+                        <div class="result info">
+                            <h4>🔧 Debug Steps:</h4>
+                            <ol>
+                                <li>Open the AR experience link</li>
+                                <li>Allow camera permission when prompted</li>
+                                <li>Point camera at your marker image</li>
+                                <li>Check browser console (F12) for any errors</li>
+                                <li>Look for the scanner icon and AR content</li>
+                            </ol>
+                        </div>
+                    `;
+                    
+                } else {
+                    addResult(`❌ AR experience endpoint returned ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ AR experience test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            addResult('🚀 AR Experience Test Tool Loaded', 'info');
+            addResult('🎯 Click "Test AR Experience" to start', 'info');
+        });
+    </script>
+</body>
+</html> 

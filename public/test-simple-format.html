@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple MindAR Format</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #007bff; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Simple MindAR Format</h1>
+        <p>Testing the new simple .mind file format</p>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            log.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        async function analyzeMindFile(url) {
+            try {
+                logMessage('🔍 Analyzing .mind file: ' + url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const buffer = await response.arrayBuffer();
+                const data = new Uint8Array(buffer);
+                
+                logMessage(`📦 File size: ${data.length} bytes`);
+                
+                                 // Check header
+                 const header = new TextDecoder().decode(data.slice(0, 8));
+                 logMessage(`📋 Header: "${header}"`);
+                 
+                 if (!header.startsWith('MINDAR')) {
+                     logMessage('❌ Invalid header - should start with "MINDAR"', 'error');
+                     logMessage('🔍 First 100 bytes as hex:', 'info');
+                     logMessage(Array.from(data.slice(0, 100))
+                         .map(b => b.toString(16).padStart(2, '0'))
+                         .join(' '));
+                     return;
+                 }
+                
+                // Check version
+                const version = new DataView(buffer, 8, 4).getUint32(0, true);
+                logMessage(`📋 Version: ${version}`);
+                
+                // Get dimensions
+                const width = new DataView(buffer, 12, 4).getUint32(0, true);
+                const height = new DataView(buffer, 16, 4).getUint32(0, true);
+                logMessage(`📋 Dimensions: ${width}x${height}`);
+                
+                // Get feature count
+                const featureCount = new DataView(buffer, 20, 4).getUint32(0, true);
+                logMessage(`📋 Feature count: ${featureCount}`);
+                
+                // Calculate offsets
+                const featureDataOffset = 24;
+                const featureDataSize = featureCount * 20; // 5 floats per feature
+                const descriptorOffset = featureDataOffset + featureDataSize;
+                const descriptorSize = featureCount * 32; // 32 bytes per descriptor
+                const imageDataOffset = descriptorOffset + descriptorSize;
+                
+                // Check feature data
+                const featureView = new DataView(buffer, featureDataOffset, featureDataSize);
+                const firstFeature = {
+                    x: featureView.getFloat32(0, true),
+                    y: featureView.getFloat32(4, true),
+                    angle: featureView.getFloat32(8, true),
+                    response: featureView.getFloat32(12, true),
+                    size: featureView.getFloat32(16, true)
+                };
+                
+                logMessage('📍 First feature:', 'info');
+                logMessage(JSON.stringify(firstFeature, null, 2));
+                
+                // Check image data
+                const imageSize = new DataView(buffer, imageDataOffset, 4).getUint32(0, true);
+                logMessage(`📋 Image data size: ${imageSize} bytes`);
+                
+                logMessage('✅ Analysis complete', 'success');
+                logMessage(`📊 Summary:
+- Header: Valid
+- Version: ${version}
+- Dimensions: ${width}x${height}
+- Features: ${featureCount}
+- Image size: ${imageSize} bytes
+- Total size: ${data.length} bytes`);
+                
+            } catch (error) {
+                logMessage(`❌ Analysis failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test our new format
+        async function runTest() {
+            logMessage('🚀 Starting test...');
+            
+            const response = await fetch('/api/compile-mind', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    experienceId: 'ee852cc1-e042-444c-bc5b-78ea14d7c73b'
+                })
+            });
+            
+            if (!response.ok) {
+                logMessage(`❌ Failed to generate .mind file: ${response.statusText}`, 'error');
+                return;
+            }
+            
+            const result = await response.json();
+            await analyzeMindFile(result.mindFileUrl);
+        }
+        
+        // Run the test
+        runTest();
+    </script>
+</body>
+</html> 
