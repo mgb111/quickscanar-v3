@@ -155,7 +155,7 @@ def validate_image(image_data):
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         """Handle GET requests (health check)"""
-        if self.path == '/api/python/health':
+        if self.path == '/health':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -187,7 +187,7 @@ class handler(BaseHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         
         try:
-            if path == '/api/python/generate-mind':
+            if path == '/generate-mind':
                 # Generate mind file
                 filename = self.headers.get('X-Filename', 'marker.jpg')
                 
@@ -221,7 +221,7 @@ class handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(mind_file_data)
                 
-            elif path == '/api/python/validate-image':
+            elif path == '/validate-image':
                 # Validate image
                 result = validate_image(post_data)
                 
@@ -255,8 +255,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Filename')
         self.end_headers()
         error_response = {'error': message}
         self.wfile.write(json.dumps(error_response).encode()) 
