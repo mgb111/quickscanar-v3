@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check .mind Conversion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .info { border-color: #2196F3; background: #e3f2fd; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .file-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Check .mind Conversion</h1>
+        <p>This page helps you verify if your .mind file conversion is working correctly.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Quick Tests</h3>
+            <p>Click the buttons below to test different aspects of .mind conversion:</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test .mind Generation</h3>
+            <button onclick="testMindGeneration()">Test .mind Generation</button>
+            <button onclick="testARExperience()">Test AR Experience</button>
+            <button onclick="compareWithWorking()">Compare with Working File</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+            <div id="status" class="status info">Ready to test...</div>
+            <div id="logs" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Results</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        async function testMindGeneration() {
+            log('Testing .mind file generation...');
+            updateStatus('Testing .mind generation...', 'info');
+            
+            try {
+                // Test the compile-mind endpoint with a valid UUID
+                const testData = {
+                    imageUrl: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png',
+                    experienceId: 'ee852cc1-e042-444c-bc5b-78ea14d7c73b' // Use the existing experience ID
+                };
+                
+                const response = await fetch('/api/compile-mind', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log('✅ .mind generation successful', 'success');
+                    log(`Method: ${result.method}`, 'info');
+                    log(`File URL: ${result.mindFileUrl}`, 'info');
+                    
+                    // Test the generated file
+                    const mindResponse = await fetch(result.mindFileUrl);
+                    if (mindResponse.ok) {
+                        const mindFile = await mindResponse.arrayBuffer();
+                        log(`Generated file size: ${mindFile.byteLength} bytes`, 'info');
+                        
+                        // Analyze the file structure
+                        const fileData = new Uint8Array(mindFile);
+                        
+                        // Check header
+                        const header = fileData.slice(0, 8);
+                        const headerText = new TextDecoder().decode(header);
+                        log(`Header: "${headerText}"`, 'info');
+                        
+                        // Check version
+                        const version = fileData.slice(8, 12);
+                        const versionValue = new DataView(version.buffer).getUint32(0, true);
+                        log(`Version: ${versionValue}`, 'info');
+                        
+                        // Check image size
+                        const imageSize = fileData.slice(28, 32);
+                        const imageSizeValue = new DataView(imageSize.buffer).getUint32(0, true);
+                        log(`Image size: ${imageSizeValue} bytes`, 'info');
+                        
+                        // Check feature count
+                        const featureCountOffset = 32 + imageSizeValue;
+                        const featureCount = fileData.slice(featureCountOffset, featureCountOffset + 4);
+                        const featureCountValue = new DataView(featureCount.buffer).getUint32(0, true);
+                        log(`Feature count: ${featureCountValue}`, 'info');
+                        
+                        // Display file info
+                        const results = document.getElementById('results');
+                        results.innerHTML = `
+                            <div class="file-info">
+                                <h4>✅ .mind File Generated Successfully</h4>
+                                <p><strong>File Size:</strong> ${mindFile.byteLength} bytes</p>
+                                <p><strong>Header:</strong> "${headerText}"</p>
+                                <p><strong>Version:</strong> ${versionValue}</p>
+                                <p><strong>Image Size:</strong> ${imageSizeValue} bytes</p>
+                                <p><strong>Feature Count:</strong> ${featureCountValue}</p>
+                                <p><strong>Method:</strong> ${result.method}</p>
+                                <p><strong>File URL:</strong> <a href="${result.mindFileUrl}" target="_blank">${result.mindFileUrl}</a></p>
+                            </div>
+                        `;
+                        
+                        updateStatus('.mind generation successful - file structure looks correct', 'success');
+                    } else {
+                        log('⚠️ Could not fetch generated file', 'error');
+                        updateStatus('Could not fetch generated file', 'error');
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`⚠️ .mind generation failed: ${error}`, 'error');
+                    updateStatus('.mind generation failed', 'error');
+                }
+            } catch (error) {
+                log(`❌ .mind generation test failed: ${error.message}`, 'error');
+                updateStatus('.mind generation test failed', 'error');
+            }
+        }
+
+        async function testARExperience() {
+            log('Testing AR experience with generated .mind file...');
+            updateStatus('Testing AR experience...', 'info');
+            
+            try {
+                // Test the AR experience endpoint
+                const response = await fetch('/api/ar/ee852cc1-e042-444c-bc5b-78ea14d7c73b');
+                if (response.ok) {
+                    log('✅ AR experience endpoint accessible', 'success');
+                    updateStatus('AR experience ready for testing', 'success');
+                    
+                    // Provide link to test
+                    const results = document.getElementById('results');
+                    results.innerHTML += `
+                        <div class="test-section success">
+                            <h4>✅ AR Experience Ready</h4>
+                            <p>Visit this URL to test the AR experience:</p>
+                            <p><strong>http://localhost:3000/experience/ee852cc1-e042-444c-bc5b-78ea14d7c73b</strong></p>
+                            <p>Expected results:</p>
+                            <ul>
+                                <li>✅ No RangeError in console</li>
+                                <li>✅ Scanner icon appears</li>
+                                <li>✅ Your custom marker image is tracked</li>
+                                <li>✅ AR content appears when marker is detected</li>
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    log(`⚠️ AR experience endpoint returned ${response.status}`, 'error');
+                    updateStatus('AR experience endpoint issue', 'error');
+                }
+            } catch (error) {
+                log(`❌ AR experience test failed: ${error.message}`, 'error');
+                updateStatus('AR experience test failed', 'error');
+            }
+        }
+
+        async function compareWithWorking() {
+            log('Comparing generated .mind file with working card.mind...');
+            updateStatus('Comparing with working file...', 'info');
+            
+            try {
+                // Get working file
+                const workingResponse = await fetch('https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind');
+                const workingFile = new Uint8Array(await workingResponse.arrayBuffer());
+                
+                // Get our generated file
+                const testData = {
+                    imageUrl: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png',
+                    experienceId: 'ee852cc1-e042-444c-bc5b-78ea14d7c73b' // Use the existing experience ID
+                };
+                
+                const compileResponse = await fetch('/api/compile-mind', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (compileResponse.ok) {
+                    const result = await compileResponse.json();
+                    const ourResponse = await fetch(result.mindFileUrl);
+                    const ourFile = new Uint8Array(await ourResponse.arrayBuffer());
+                    
+                    log(`Working file size: ${workingFile.length} bytes`);
+                    log(`Our file size: ${ourFile.length} bytes`);
+                    
+                    // Compare headers
+                    const workingHeader = workingFile.slice(0, 8);
+                    const ourHeader = ourFile.slice(0, 8);
+                    const workingHeaderText = new TextDecoder().decode(workingHeader);
+                    const ourHeaderText = new TextDecoder().decode(ourHeader);
+                    
+                    log(`Working header: "${workingHeaderText}"`);
+                    log(`Our header: "${ourHeaderText}"`);
+                    
+                    // Compare first 32 bytes
+                    const workingFirst32 = workingFile.slice(0, 32);
+                    const ourFirst32 = ourFile.slice(0, 32);
+                    
+                    const workingHex = Array.from(workingFirst32).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    const ourHex = Array.from(ourFirst32).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    
+                    log(`Working first 32: ${workingHex}`);
+                    log(`Our first 32: ${ourHex}`);
+                    
+                    // Check if headers match
+                    const headersMatch = workingHeaderText === ourHeaderText;
+                    log(`Headers match: ${headersMatch ? '✅ YES' : '❌ NO'}`);
+                    
+                    updateStatus('Comparison complete', headersMatch ? 'success' : 'error');
+                } else {
+                    log('⚠️ Could not generate our file for comparison', 'error');
+                    updateStatus('Could not generate file for comparison', 'error');
+                }
+            } catch (error) {
+                log(`❌ Comparison failed: ${error.message}`, 'error');
+                updateStatus('Comparison failed', 'error');
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('status').textContent = 'Ready to test...';
+            document.getElementById('status').className = 'status info';
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            log('🚀 .mind Conversion Check Tool Loaded');
+            log('Use the buttons above to test different aspects of .mind conversion');
+            updateStatus('Ready to check .mind conversion', 'success');
+        });
+    </script>
+</body>
+</html> 

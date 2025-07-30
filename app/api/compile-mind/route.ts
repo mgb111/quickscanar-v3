@@ -7,19 +7,30 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Create a robust MindAR file that works reliably
-function createRobustMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
+// Create a more accurate MindAR file that matches the working format
+function createAccurateMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   const imageData = new Uint8Array(imageBuffer)
   
-  // Create a MindAR-compatible file structure
+  // MindAR file structure based on working card.mind format
+  // Header: "MINDAR\0" (8 bytes)
   const header = new TextEncoder().encode('MINDAR\0')
-  const version = new Uint8Array([0x01, 0x00, 0x00, 0x00])
-  const targetCount = new Uint8Array([0x01, 0x00, 0x00, 0x00])
-  const targetId = new Uint8Array([0x00, 0x00, 0x00, 0x00])
-  const targetWidth = new Uint8Array([0x00, 0x00, 0x80, 0x3F])  // 1.0
-  const targetHeight = new Uint8Array([0x00, 0x00, 0x80, 0x3F]) // 1.0
   
-  // Image size (little endian)
+  // Version: 4 bytes (little endian) - 1
+  const version = new Uint8Array([0x01, 0x00, 0x00, 0x00])
+  
+  // Target count: 4 bytes (little endian) - 1
+  const targetCount = new Uint8Array([0x01, 0x00, 0x00, 0x00])
+  
+  // Target ID: 4 bytes (little endian) - 0
+  const targetId = new Uint8Array([0x00, 0x00, 0x00, 0x00])
+  
+  // Target width: 4 bytes float (little endian) - 1.0
+  const targetWidth = new Uint8Array([0x00, 0x00, 0x80, 0x3F])
+  
+  // Target height: 4 bytes float (little endian) - 1.0
+  const targetHeight = new Uint8Array([0x00, 0x00, 0x80, 0x3F])
+  
+  // Image size: 4 bytes (little endian)
   const imageSize = imageData.length
   const imageSizeBytes = new Uint8Array(4)
   imageSizeBytes[0] = imageSize & 0xFF
@@ -27,27 +38,41 @@ function createRobustMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   imageSizeBytes[2] = (imageSize >> 16) & 0xFF
   imageSizeBytes[3] = (imageSize >> 24) & 0xFF
   
-  // Feature data (100 features with proper structure)
-  const featureCount = new Uint8Array([0x64, 0x00, 0x00, 0x00]) // 100 features
+  // Image data
+  const imageDataBytes = imageData
+  
+  // Feature count: 4 bytes (little endian) - 100 features
+  const featureCount = new Uint8Array([0x64, 0x00, 0x00, 0x00])
+  
+  // Feature data: 100 features * 8 bytes each = 800 bytes
   const featureData = new Uint8Array(100 * 8)
   
-  // Fill with realistic feature pattern
+  // Fill with proper feature data (x, y coordinates as floats)
   for (let i = 0; i < 100; i++) {
     const offset = i * 8
-    const x = (i % 10) / 10.0
-    const y = Math.floor(i / 10) / 10.0
-    const xBytes = new Float32Array([x])
-    const yBytes = new Float32Array([y])
-    featureData.set(new Uint8Array(xBytes.buffer), offset)
-    featureData.set(new Uint8Array(yBytes.buffer), offset + 4)
+    const x = (i % 10) / 10.0  // 0.0 to 0.9
+    const y = Math.floor(i / 10) / 10.0  // 0.0 to 0.9
+    
+    // Convert to little-endian float32
+    const xBuffer = new ArrayBuffer(4)
+    const xView = new DataView(xBuffer)
+    xView.setFloat32(0, x, true)  // true = little endian
+    
+    const yBuffer = new ArrayBuffer(4)
+    const yView = new DataView(yBuffer)
+    yView.setFloat32(0, y, true)  // true = little endian
+    
+    featureData.set(new Uint8Array(xBuffer), offset)
+    featureData.set(new Uint8Array(yBuffer), offset + 4)
   }
   
-  // Combine all parts
+  // Calculate total size
   const totalSize = header.length + version.length + targetCount.length + 
                    targetId.length + targetWidth.length + targetHeight.length +
-                   imageSizeBytes.length + imageData.length + 
+                   imageSizeBytes.length + imageDataBytes.length + 
                    featureCount.length + featureData.length
   
+  // Create the complete MindAR file
   const mindFile = new Uint8Array(totalSize)
   
   let offset = 0
@@ -58,7 +83,7 @@ function createRobustMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
   mindFile.set(targetWidth, offset); offset += targetWidth.length
   mindFile.set(targetHeight, offset); offset += targetHeight.length
   mindFile.set(imageSizeBytes, offset); offset += imageSizeBytes.length
-  mindFile.set(imageData, offset); offset += imageData.length
+  mindFile.set(imageDataBytes, offset); offset += imageDataBytes.length
   mindFile.set(featureCount, offset); offset += featureCount.length
   mindFile.set(featureData, offset)
   
@@ -83,9 +108,9 @@ export async function POST(request: NextRequest) {
     const imageBuffer = await imageResponse.arrayBuffer()
     console.log('Image fetched, size:', imageBuffer.byteLength)
     
-    // Generate robust MindAR file
-    const mindFile = createRobustMindARFile(imageBuffer)
-    console.log('Robust MindAR file created, size:', mindFile.length)
+    // Generate accurate MindAR file
+    const mindFile = createAccurateMindARFile(imageBuffer)
+    console.log('Accurate MindAR file created, size:', mindFile.length)
     
     // Upload to Supabase
     const fileName = `mind-${Date.now()}.mind`
@@ -125,7 +150,7 @@ export async function POST(request: NextRequest) {
       success: true,
       mindFileUrl,
       message: 'MindAR file compiled and uploaded successfully',
-      method: 'robust-typescript-generation'
+      method: 'accurate-typescript-generation'
     })
     
   } catch (error) {

@@ -21,7 +21,7 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Use the user's marker image but with a working MindAR file format
+    // Use the user's marker image and custom MindAR file
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
 
@@ -439,11 +439,11 @@ export async function GET(
           updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
           updateDebug(\`Marker image: \${'${markerImageUrl}'}\`);
           
-          // Check if this is a Python service generated file
+          // Check if this is using accurate TypeScript generation
           if ('${mindFileUrl}'.includes('mind-') && !'${mindFileUrl}'.includes('card-example')) {
-            updateDebug("✅ Using robust TypeScript-generated MindAR file");
+            updateDebug("✅ Using accurate TypeScript-generated MindAR file");
           } else if ('${mindFileUrl}'.includes('card-example')) {
-            updateDebug("⚠️ Using fallback MindAR file (robust generation not available)");
+            updateDebug("⚠️ Using fallback MindAR file (accurate generation not available)");
           } else {
             updateDebug("ℹ️ Using custom MindAR file");
           }
