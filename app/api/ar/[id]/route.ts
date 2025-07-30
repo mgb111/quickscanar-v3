@@ -441,9 +441,9 @@ export async function GET(
           
           // Check if this is a Python service generated file
           if ('${mindFileUrl}'.includes('mind-') && !'${mindFileUrl}'.includes('card-example')) {
-            updateDebug("✅ Using integrated Python service generated MindAR file");
+            updateDebug("✅ Using robust TypeScript-generated MindAR file");
           } else if ('${mindFileUrl}'.includes('card-example')) {
-            updateDebug("⚠️ Using fallback MindAR file (integrated Python service not available)");
+            updateDebug("⚠️ Using fallback MindAR file (robust generation not available)");
           } else {
             updateDebug("ℹ️ Using custom MindAR file");
           }

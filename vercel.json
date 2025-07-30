@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "functions": {
-    "api/python/mindar.py": {
-      "runtime": "python@3.11"
-    }
-  }
-} 

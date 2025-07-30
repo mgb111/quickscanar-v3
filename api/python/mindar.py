@@ -257,4 +257,27 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         error_response = {'error': message}
-        self.wfile.write(json.dumps(error_response).encode()) 
+        self.wfile.write(json.dumps(error_response).encode())
+
+# Vercel Python function entry point
+def handler(request):
+    """Vercel Python function handler"""
+    from http.server import HTTPServer
+    import os
+    
+    # Create a simple server to handle the request
+    server = HTTPServer(('localhost', 0), handler)
+    
+    # For now, return a simple response
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': json.dumps({
+            'status': 'healthy',
+            'service': 'mindar-compiler',
+            'version': '1.0.0'
+        })
+    } 
