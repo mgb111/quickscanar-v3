@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Current AR Setup Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #logs {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Current AR Setup Test</h1>
+        
+        <div class="status info" id="status">Testing current AR setup with automatic fallback</div>
+        
+        <div class="test-section">
+            <h3>Test 1: Check Current AR Experience</h3>
+            <p>This will test your current AR experience with automatic fallback handling.</p>
+            <button onclick="testCurrentAR()">Test Current AR Experience</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2: Check Python Service (if deployed)</h3>
+            <p>This will test if the Python MindAR service is available.</p>
+            <button onclick="testPythonService()">Test Python Service</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 3: Test MindAR Compilation</h3>
+            <p>This will test the MindAR compilation endpoint.</p>
+            <button onclick="testMindARCompilation()">Test MindAR Compilation</button>
+        </div>
+        
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="logs"></div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ecdc4' : '#ffffff';
+            logs.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function testCurrentAR() {
+            log('Testing current AR experience...');
+            updateStatus('Testing current AR experience...', 'info');
+            
+            try {
+                // Test the current AR experience URL
+                const experienceId = 'ee852cc1-e042-444c-bc5b-78ea14d7c73b';
+                const arUrl = `/api/ar/${experienceId}`;
+                
+                log(`Testing AR URL: ${arUrl}`);
+                
+                const response = await fetch(arUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const html = await response.text();
+                
+                // Check if the HTML contains expected elements
+                if (html.includes('mindar-image')) {
+                    log('✅ AR HTML generated successfully', 'success');
+                } else {
+                    log('❌ AR HTML missing mindar-image attribute', 'error');
+                }
+                
+                if (html.includes('RangeError')) {
+                    log('❌ HTML contains RangeError handling', 'error');
+                } else {
+                    log('✅ No RangeError in HTML', 'success');
+                }
+                
+                if (html.includes('switchToFallback')) {
+                    log('✅ Automatic fallback system detected', 'success');
+                } else {
+                    log('❌ Automatic fallback system not found', 'error');
+                }
+                
+                if (html.includes('Python service')) {
+                    log('✅ Python service integration detected', 'success');
+                } else {
+                    log('ℹ️ Python service integration not detected', 'info');
+                }
+                
+                updateStatus('Current AR experience test completed', 'success');
+                
+            } catch (error) {
+                log(`❌ Current AR test failed: ${error.message}`, 'error');
+                updateStatus(`Test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPythonService() {
+            log('Testing integrated Python MindAR service...');
+            updateStatus('Testing integrated Python service...', 'info');
+            
+            try {
+                // Test the integrated Python service
+                const pythonServiceUrl = '/api/python/health';
+                
+                log(`Testing integrated Python service at: ${pythonServiceUrl}`);
+                
+                const response = await fetch(pythonServiceUrl);
+                if (!response.ok) {
+                    throw new Error(`Service not responding: ${response.status}`);
+                }
+                
+                const health = await response.json();
+                log('✅ Integrated Python service is healthy', 'success');
+                log(`Service info: ${JSON.stringify(health)}`, 'info');
+                
+                updateStatus('Integrated Python service is available and healthy', 'success');
+                
+            } catch (error) {
+                log(`⚠️ Integrated Python service not available: ${error.message}`, 'error');
+                log('This is expected if the service is not deployed yet', 'info');
+                updateStatus('Integrated Python service not available (expected if not deployed)', 'info');
+            }
+        }
+        
+        async function testMindARCompilation() {
+            log('Testing MindAR compilation endpoint...');
+            updateStatus('Testing MindAR compilation...', 'info');
+            
+            try {
+                // Test with a sample image
+                const testImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png';
+                const testExperienceId = 'test-experience-id';
+                
+                log(`Testing compilation with image: ${testImageUrl}`);
+                
+                const response = await fetch('/api/compile-mind', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageUrl: testImageUrl,
+                        experienceId: testExperienceId
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                log('✅ MindAR compilation successful!', 'success');
+                log(`Method used: ${result.method}`, 'info');
+                log(`MindAR file URL: ${result.mindFileUrl}`, 'success');
+                
+                updateStatus(`MindAR compilation successful (${result.method})`, 'success');
+                
+            } catch (error) {
+                log(`❌ MindAR compilation failed: ${error.message}`, 'error');
+                updateStatus(`Compilation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            updateStatus('Logs cleared', 'info');
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('Current AR setup test page loaded');
+            log('Click buttons to test different components');
+        });
+    </script>
+</body>
+</html> 

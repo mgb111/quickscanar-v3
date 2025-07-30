@@ -131,6 +131,7 @@ export async function GET(
     </div>
 
     <a-scene
+      id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl};"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
@@ -194,6 +195,8 @@ export async function GET(
     <script>
       let isMobile = false;
       let targetFound = false;
+      let mindarError = false;
+      let fallbackUsed = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
@@ -253,6 +256,22 @@ export async function GET(
         });
         
         updateDebug("Nuclear loading screen removal executed");
+      }
+
+      function switchToFallback() {
+        if (fallbackUsed) return; // Prevent infinite loops
+        
+        fallbackUsed = true;
+        updateDebug("🔄 Switching to fallback MindAR file due to format error");
+        
+        const scene = document.getElementById('arScene');
+        const fallbackMindFile = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
+        
+        // Update the scene with fallback MindAR file
+        scene.setAttribute('mindar-image', \`imageTargetSrc: \${fallbackMindFile};\`);
+        
+        updateDebug("✅ Switched to fallback MindAR file");
+        updateDebug("Note: Using fallback MindAR file but your marker image is still displayed");
       }
 
       // Run immediately
@@ -327,6 +346,7 @@ export async function GET(
 
           scene.addEventListener("error", (error) => {
             updateDebug("❌ AR Scene error: " + error);
+            mindarError = true;
           });
         }
         
@@ -419,12 +439,39 @@ export async function GET(
           updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
           updateDebug(\`Marker image: \${'${markerImageUrl}'}\`);
           
+          // Check if this is a Python service generated file
+          if ('${mindFileUrl}'.includes('mind-') && !'${mindFileUrl}'.includes('card-example')) {
+            updateDebug("✅ Using integrated Python service generated MindAR file");
+          } else if ('${mindFileUrl}'.includes('card-example')) {
+            updateDebug("⚠️ Using fallback MindAR file (integrated Python service not available)");
+          } else {
+            updateDebug("ℹ️ Using custom MindAR file");
+          }
+
           // Final nuclear strike
           nukeLoadingScreens();
         }, 2000);
         
         // Continuous nuclear strikes
         setInterval(nukeLoadingScreens, 1000);
+      });
+
+      // Global error handler for MindAR errors
+      window.addEventListener('error', (event) => {
+        if (event.error && event.error.message && event.error.message.includes('RangeError')) {
+          updateDebug("❌ MindAR RangeError detected - switching to fallback");
+          mindarError = true;
+          switchToFallback();
+        }
+      });
+
+      // Handle unhandled promise rejections
+      window.addEventListener('unhandledrejection', (event) => {
+        if (event.reason && event.reason.message && event.reason.message.includes('RangeError')) {
+          updateDebug("❌ MindAR RangeError in promise - switching to fallback");
+          mindarError = true;
+          switchToFallback();
+        }
       });
     </script>
   </body>
