@@ -83,7 +83,7 @@ export default function CreateExperience() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Check if we have either a marker image or a custom .mind file
+    // Check if we have either a marker image OR a custom .mind file
     if (!markerFile && !useCustomMind) {
       toast.error('Please upload a marker image or enable custom .mind file upload')
       return
@@ -97,6 +97,7 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
+      // Handle marker image upload (optional if custom .mind file is provided)
       let markerImageUrl: string
       
       if (markerFile) {
@@ -115,7 +116,7 @@ export default function CreateExperience() {
         
         markerImageUrl = markerUrlData.publicUrl
       } else {
-        // Use a placeholder image when no marker is uploaded
+        // Use a placeholder image if no marker file but custom .mind file is provided
         markerImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
       }
 
@@ -277,7 +278,7 @@ export default function CreateExperience() {
                   {...getMarkerRootProps()}
                   className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
                     isMarkerDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  } ${useCustomMind ? 'opacity-60' : ''}`}
+                  } ${useCustomMind ? 'opacity-75' : ''}`}
                 >
                   <input {...getMarkerInputProps()} />
                   <Image className="mx-auto h-12 w-12 text-gray-400" />
@@ -295,6 +296,13 @@ export default function CreateExperience() {
                 {markerPreview && (
                   <div className="mt-2">
                     <img src={markerPreview} alt="Marker preview" className="h-20 w-20 object-cover rounded" />
+                  </div>
+                )}
+                {useCustomMind && !markerFile && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-sm text-blue-700">
+                      ℹ️ Marker image is optional when using a custom .mind file
+                    </p>
                   </div>
                 )}
               </div>

@@ -25,9 +25,6 @@ export async function GET(
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
     const usingCustomMind = !!experience.mind_file_url
-    
-    // Check if marker image is the placeholder (no custom marker uploaded)
-    const isPlaceholderMarker = markerImageUrl && markerImageUrl.includes('card-example/card.png')
 
     // Simple, clean AR HTML - no loading screen removal
     const arHTML = `<!DOCTYPE html>
@@ -145,7 +142,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        ${!isPlaceholderMarker ? `<img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />` : ''}
+        <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -160,8 +157,7 @@ export async function GET(
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Marker plane (only if real marker image exists) -->
-        ${!isPlaceholderMarker ? `
+        <!-- Marker plane (invisible) -->
         <a-plane 
           src="#marker"
           position="0 0 0"
@@ -171,7 +167,6 @@ export async function GET(
           material="transparent: true; opacity: 0.0"
           visible="false"
         ></a-plane>
-        ` : ''}
 
         <!-- Background plane (black) -->
         <a-plane
@@ -195,8 +190,7 @@ export async function GET(
           visible="false"
         ></a-plane>
 
-        <!-- Debug plane to show marker detection (only if real marker image exists) -->
-        ${!isPlaceholderMarker ? `
+        <!-- Debug plane to show marker detection (completely hidden when video plays) -->
         <a-plane
           id="debugPlane"
           src="#marker"
@@ -207,7 +201,6 @@ export async function GET(
           material="transparent: true; opacity: 0.0"
           visible="false"
         ></a-plane>
-        ` : ''}
       </a-entity>
     </a-scene>
     
@@ -349,7 +342,7 @@ export async function GET(
         }
         
         // Show status indicator
-        showStatus("Point camera at your marker", isPlaceholderMarker ? "Look for your target" : "Look for your uploaded image");
+        showStatus("Point camera at your marker", "Look for your uploaded image");
         
         // Explicitly test camera access first
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -477,7 +470,7 @@ export async function GET(
             }
             
             // Show status again
-            showStatus("Target Lost", isPlaceholderMarker ? "Point camera at your target again" : "Point camera at your marker again");
+            showStatus("Target Lost", "Point camera at your marker again");
           });
         }
 
@@ -519,13 +512,6 @@ export async function GET(
             updateDebug("✅ Using custom .mind file for your marker");
           } else {
             updateDebug("✅ Using fallback card.mind file (guaranteed to work)");
-          }
-          
-          // Check marker image status
-          if (isPlaceholderMarker) {
-            updateDebug("ℹ️ No custom marker image - using .mind file for tracking only");
-          } else {
-            updateDebug("✅ Custom marker image available for visual reference");
           }
 
           // Final nuclear strike
