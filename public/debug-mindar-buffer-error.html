@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Debug MindAR Buffer Error</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: #000;
+        color: #fff;
+      }
+      .debug-panel {
+        background: rgba(0,0,0,0.8);
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #333;
+        border-radius: 5px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .error {
+        color: #ff6b6b;
+      }
+      .success {
+        color: #51cf66;
+      }
+      .warning {
+        color: #ffd43b;
+      }
+    </style>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  </head>
+  <body>
+    <h1>MindAR Buffer Error Debug</h1>
+    
+    <div class="debug-panel" id="debug-panel">
+      <strong>Debug Log:</strong><br>
+      <div id="debug-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 1: Working Card.mind</h3>
+      <p>This should work without buffer errors:</p>
+      <button onclick="testWorkingMind()">Test Working MindAR</button>
+      <div id="test1-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 2: Custom MindAR File</h3>
+      <p>This will test your custom MindAR file and catch buffer errors:</p>
+      <button onclick="testCustomMind()">Test Custom MindAR</button>
+      <div id="test2-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h3>Test 3: Error Monitoring</h3>
+      <p>Monitor for RangeError and other MindAR errors:</p>
+      <button onclick="startErrorMonitoring()">Start Error Monitoring</button>
+      <div id="test3-result"></div>
+    </div>
+
+    <div id="ar-scene-container" style="display: none;">
+      <a-scene
+        id="arScene"
+        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;"
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+        embedded
+        loading-screen="enabled: false"
+      >
+        <a-assets>
+          <img id="card" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0" id="target">
+          <a-plane 
+            src="#card"
+            position="0 0 0"
+            height="0.552"
+            width="1"
+            rotation="0 0 0"
+          ></a-plane>
+        </a-entity>
+      </a-scene>
+    </div>
+
+    <script>
+      let errorCount = 0;
+      let rangeErrorDetected = false;
+      let customMindFileUrl = '';
+
+      function updateDebug(message, type = 'info') {
+        const debugContent = document.getElementById('debug-content');
+        const timestamp = new Date().toLocaleTimeString();
+        const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+        debugContent.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span><br>`;
+        console.log(message);
+      }
+
+      function testWorkingMind() {
+        updateDebug('🧪 Testing working card.mind file...', 'info');
+        const resultDiv = document.getElementById('test1-result');
+        resultDiv.innerHTML = '<p class="warning">Testing...</p>';
+        
+        // Show AR scene
+        const container = document.getElementById('ar-scene-container');
+        container.style.display = 'block';
+        
+        const scene = document.getElementById('arScene');
+        scene.setAttribute('mindar-image', 'imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;');
+        
+        scene.addEventListener('loaded', () => {
+          updateDebug('✅ Working card.mind loaded successfully', 'success');
+          resultDiv.innerHTML = '<p class="success">✅ Working card.mind loaded successfully</p>';
+        });
+        
+        scene.addEventListener('error', (error) => {
+          updateDebug('❌ Working card.mind failed: ' + error, 'error');
+          resultDiv.innerHTML = '<p class="error">❌ Working card.mind failed</p>';
+        });
+      }
+
+      function testCustomMind() {
+        updateDebug('🧪 Testing custom MindAR file...', 'info');
+        const resultDiv = document.getElementById('test2-result');
+        resultDiv.innerHTML = '<p class="warning">Testing...</p>';
+        
+        // You can replace this URL with your custom MindAR file URL
+        const customUrl = prompt('Enter your custom MindAR file URL:', 'https://your-domain.com/path/to/your.mind');
+        
+        if (!customUrl) {
+          updateDebug('❌ No custom URL provided', 'error');
+          resultDiv.innerHTML = '<p class="error">❌ No custom URL provided</p>';
+          return;
+        }
+        
+        customMindFileUrl = customUrl;
+        
+        const scene = document.getElementById('arScene');
+        scene.setAttribute('mindar-image', `imageTargetSrc: ${customUrl};`);
+        
+        scene.addEventListener('loaded', () => {
+          updateDebug('✅ Custom MindAR file loaded successfully', 'success');
+          resultDiv.innerHTML = '<p class="success">✅ Custom MindAR file loaded successfully</p>';
+        });
+        
+        scene.addEventListener('error', (error) => {
+          updateDebug('❌ Custom MindAR file failed: ' + error, 'error');
+          resultDiv.innerHTML = '<p class="error">❌ Custom MindAR file failed</p>';
+        });
+      }
+
+      function startErrorMonitoring() {
+        updateDebug('🔍 Starting error monitoring...', 'info');
+        const resultDiv = document.getElementById('test3-result');
+        resultDiv.innerHTML = '<p class="warning">Monitoring...</p>';
+        
+        // Monitor for RangeError
+        window.addEventListener('error', (event) => {
+          if (event.error && event.error.message && event.error.message.includes('RangeError')) {
+            rangeErrorDetected = true;
+            errorCount++;
+            updateDebug(`❌ RangeError detected (${errorCount}): ${event.error.message}`, 'error');
+            resultDiv.innerHTML = `<p class="error">❌ RangeError detected (${errorCount}): ${event.error.message}</p>`;
+          }
+        });
+        
+        // Monitor for unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+          if (event.reason && event.reason.message && event.reason.message.includes('RangeError')) {
+            rangeErrorDetected = true;
+            errorCount++;
+            updateDebug(`❌ RangeError in promise (${errorCount}): ${event.reason.message}`, 'error');
+            resultDiv.innerHTML = `<p class="error">❌ RangeError in promise (${errorCount}): ${event.reason.message}</p>`;
+          }
+        });
+        
+        // Monitor for MindAR specific errors
+        window.addEventListener('error', (event) => {
+          if (event.error && event.error.message && event.error.message.includes('mindar')) {
+            updateDebug(`⚠️ MindAR error: ${event.error.message}`, 'warning');
+          }
+        });
+        
+        updateDebug('✅ Error monitoring started', 'success');
+        resultDiv.innerHTML = '<p class="success">✅ Error monitoring started</p>';
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', () => {
+        updateDebug('🚀 Debug page loaded', 'success');
+        updateDebug('📱 Device: ' + (navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'), 'info');
+        updateDebug('🔒 HTTPS: ' + (location.protocol === 'https:' ? 'Yes' : 'No'), 'info');
+        
+        // Check if A-Frame and MindAR are loaded
+        setTimeout(() => {
+          if (typeof AFRAME !== 'undefined') {
+            updateDebug('✅ A-Frame loaded', 'success');
+          } else {
+            updateDebug('❌ A-Frame not loaded', 'error');
+          }
+          
+          if (typeof MINDAR !== 'undefined') {
+            updateDebug('✅ MindAR loaded', 'success');
+          } else {
+            updateDebug('❌ MindAR not loaded', 'error');
+          }
+        }, 1000);
+      });
+    </script>
+  </body>
+</html> 

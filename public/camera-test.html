@@ -1,80 +1,169 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <title>Camera Test</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        #video {
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-        }
-        .status {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.8);
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
-        }
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: #000;
+        color: #fff;
+      }
+      .camera-container {
+        width: 100%;
+        max-width: 640px;
+        margin: 20px auto;
+        text-align: center;
+      }
+      #video {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        border: 2px solid #333;
+        border-radius: 8px;
+      }
+      .status {
+        background: rgba(0,0,0,0.8);
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: left;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 16px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .error {
+        color: #ff6b6b;
+      }
+      .success {
+        color: #51cf66;
+      }
+      .warning {
+        color: #ffd43b;
+      }
     </style>
-</head>
-<body>
-    <div class="status" id="status">Testing camera...</div>
-    <video id="video" autoplay playsinline muted></video>
+  </head>
+  <body>
+    <h1>Camera Test</h1>
+    <p>This page will test if your camera is working properly for AR experiences.</p>
     
+    <div class="camera-container">
+      <button id="startCamera">Start Camera</button>
+      <button id="stopCamera">Stop Camera</button>
+      <button id="switchCamera">Switch Camera</button>
+      
+      <video id="video" autoplay playsinline muted></video>
+      
+      <div class="status" id="status">
+        <strong>Camera Status:</strong> <span id="status-text">Ready to test</span><br>
+        <strong>Camera Info:</strong> <span id="camera-info">-</span><br>
+        <strong>Resolution:</strong> <span id="resolution">-</span><br>
+        <strong>FPS:</strong> <span id="fps">-</span>
+      </div>
+    </div>
+
     <script>
-        const video = document.getElementById('video');
-        const status = document.getElementById('status');
-        
-        function updateStatus(message) {
-            status.textContent = message;
-            console.log(message);
+      let stream = null;
+      let currentFacingMode = 'environment';
+
+      function updateStatus(message, type = 'info') {
+        const statusText = document.getElementById('status-text');
+        const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+        statusText.innerHTML = `<span class="${className}">${message}</span>`;
+        console.log(message);
+      }
+
+      function updateCameraInfo(info) {
+        document.getElementById('camera-info').textContent = info;
+      }
+
+      function updateResolution(width, height) {
+        document.getElementById('resolution').textContent = `${width}x${height}`;
+      }
+
+      function updateFPS(fps) {
+        document.getElementById('fps').textContent = fps;
+      }
+
+      async function startCamera() {
+        try {
+          updateStatus('Requesting camera permission...', 'info');
+          
+          const constraints = {
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: currentFacingMode,
+              frameRate: { ideal: 30 }
+            }
+          };
+
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          const video = document.getElementById('video');
+          video.srcObject = stream;
+          
+          updateStatus('Camera started successfully!', 'success');
+          updateCameraInfo(`Facing: ${currentFacingMode}`);
+          
+          // Get video track info
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack) {
+            const settings = videoTrack.getSettings();
+            updateResolution(settings.width, settings.height);
+            updateFPS(settings.frameRate || 'Unknown');
+          }
+          
+        } catch (error) {
+          updateStatus(`Camera error: ${error.message}`, 'error');
+          console.error('Camera error:', error);
         }
-        
-        updateStatus("Starting camera test...");
-        
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            updateStatus("Requesting camera permission...");
-            
-            const constraints = {
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    facingMode: 'environment'
-                }
-            };
-            
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(stream => {
-                    updateStatus("✅ Camera working - stream received");
-                    video.srcObject = stream;
-                    video.play().then(() => {
-                        updateStatus("✅ Camera feed playing");
-                    }).catch(e => {
-                        updateStatus("❌ Video play error: " + e.message);
-                    });
-                })
-                .catch(error => {
-                    updateStatus("❌ Camera error: " + error.message);
-                });
-        } else {
-            updateStatus("❌ getUserMedia not supported");
+      }
+
+      function stopCamera() {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+          document.getElementById('video').srcObject = null;
+          updateStatus('Camera stopped', 'info');
+          updateCameraInfo('-');
+          updateResolution('-', '-');
+          updateFPS('-');
         }
+      }
+
+      async function switchCamera() {
+        stopCamera();
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        await startCamera();
+      }
+
+      document.getElementById('startCamera').addEventListener('click', startCamera);
+      document.getElementById('stopCamera').addEventListener('click', stopCamera);
+      document.getElementById('switchCamera').addEventListener('click', switchCamera);
+
+      // Auto-start camera when page loads
+      window.addEventListener('load', () => {
+        updateStatus('Page loaded, click "Start Camera" to test', 'info');
+      });
+
+      // Check if camera API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        updateStatus('Camera API not available in this browser', 'error');
+      } else {
+        updateStatus('Camera API available', 'success');
+      }
     </script>
-</body>
+  </body>
 </html> 

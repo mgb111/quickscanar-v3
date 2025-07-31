@@ -94,6 +94,18 @@ export async function GET(
         display: none;
       }
       
+      .camera-status {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        z-index: 1001;
+      }
+      
       /* Force hide ALL possible loading screens */
       .a-loader,
       .a-loader-title,
@@ -133,6 +145,10 @@ export async function GET(
     <div class="status-indicator" id="status-indicator">
       <h3 id="status-title">Point camera at your marker</h3>
       <p id="status-message">Look for your uploaded image</p>
+    </div>
+
+    <div class="camera-status" id="camera-status">
+      <strong>Camera Status:</strong> <span id="camera-status-text">Initializing...</span>
     </div>
 
     <a-scene
@@ -197,18 +213,28 @@ export async function GET(
       </a-entity>
     </a-scene>
     
-          <script>
-        let isMobile = false;
-        let targetFound = false;
-        let mindarError = false;
-        let fallbackUsed = false;
-        let rangeErrorDetected = false;
+    <script>
+      let isMobile = false;
+      let targetFound = false;
+      let mindarError = false;
+      let fallbackUsed = false;
+      let rangeErrorDetected = false;
+      let customMindFileFailed = false;
+      let getObject3DError = false;
+      let cameraInitialized = false;
 
       function updateDebug(message) {
         const debugContent = document.getElementById('debug-content');
         const timestamp = new Date().toLocaleTimeString();
         debugContent.innerHTML += \`[\${timestamp}] \${message}<br>\`;
         console.log(message);
+      }
+
+      function updateCameraStatus(status) {
+        const cameraStatusText = document.getElementById('camera-status-text');
+        if (cameraStatusText) {
+          cameraStatusText.textContent = status;
+        }
       }
 
       function showStatus(title, message) {
@@ -223,26 +249,27 @@ export async function GET(
         }
       }
 
-              function hideStatus() {
-          const statusIndicator = document.getElementById('status-indicator');
-          if (statusIndicator) {
-            statusIndicator.style.display = 'none';
-          }
+      function hideStatus() {
+        const statusIndicator = document.getElementById('status-indicator');
+        if (statusIndicator) {
+          statusIndicator.style.display = 'none';
         }
+      }
+      
+      function switchToFallback() {
+        if (fallbackUsed) return; // Prevent multiple switches
+        fallbackUsed = true;
         
-        function switchToFallback() {
-          if (fallbackUsed) return; // Prevent multiple switches
-          fallbackUsed = true;
-          
-          updateDebug("🔄 Switching to working card.mind fallback");
-          
-          // Reload the scene with working card.mind
-          const scene = document.querySelector('a-scene');
-          if (scene) {
-            scene.setAttribute('mindar-image', 'imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind; maxTrack: 1; warmupTolerance: 5; missTolerance: 10;');
-            updateDebug("✅ Scene reloaded with working card.mind");
-          }
+        updateDebug("🔄 Switching to working card.mind fallback due to error");
+        
+        // Reload the scene with working card.mind
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+          scene.setAttribute('mindar-image', 'imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind; maxTrack: 1; warmupTolerance: 5; missTolerance: 10;');
+          updateDebug("✅ Scene reloaded with working card.mind");
+          showStatus("Using Fallback", "Your marker image is still displayed for reference");
         }
+      }
 
       function detectMobile() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -278,22 +305,6 @@ export async function GET(
         updateDebug("Nuclear loading screen removal executed");
       }
 
-      function switchToFallback() {
-        if (fallbackUsed) return; // Prevent infinite loops
-        
-        fallbackUsed = true;
-        updateDebug("🔄 Switching to fallback MindAR file due to format error");
-        
-        const scene = document.getElementById('arScene');
-        const fallbackMindFile = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
-        
-        // Update the scene with fallback MindAR file
-        scene.setAttribute('mindar-image', \`imageTargetSrc: \${fallbackMindFile};\`);
-        
-        updateDebug("✅ Switched to fallback MindAR file");
-        updateDebug("Note: Using fallback MindAR file but your marker image is still displayed");
-      }
-
       // Run immediately
       nukeLoadingScreens();
 
@@ -318,6 +329,7 @@ export async function GET(
         // Explicitly test camera access first
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           updateDebug("Testing camera access...");
+          updateCameraStatus("Requesting camera permission...");
           
           const constraints = {
             video: {
@@ -336,17 +348,25 @@ export async function GET(
             .then((stream) => {
               updateDebug("✅ Camera permission granted");
               updateDebug("✅ Camera stream received");
+              updateCameraStatus("Camera active");
+              cameraInitialized = true;
               
               // Ensure the camera is working by checking the stream
               if (stream && stream.active) {
                 updateDebug("✅ Camera stream is active");
+                updateCameraStatus("Camera stream active");
               } else {
                 updateDebug("❌ Camera stream not active");
+                updateCameraStatus("Camera stream inactive");
               }
             })
             .catch((error) => {
               updateDebug("❌ Camera permission denied: " + error.message);
+              updateCameraStatus("Camera permission denied");
             });
+        } else {
+          updateDebug("❌ Camera API not available");
+          updateCameraStatus("Camera API not available");
         }
         
         if (scene) {
@@ -358,23 +378,27 @@ export async function GET(
             const camera = document.querySelector("a-camera");
             if (camera) {
               updateDebug("✅ Camera entity found");
+              updateCameraStatus("Camera entity ready");
             } else {
               updateDebug("❌ Camera entity not found");
+              updateCameraStatus("Camera entity missing");
             }
           });
           
           scene.addEventListener("renderstart", () => {
             updateDebug("✅ AR rendering started");
             nukeLoadingScreens(); // Remove any loading screens that appeared
+            updateCameraStatus("AR rendering active");
           });
 
           scene.addEventListener("error", (error) => {
             updateDebug("❌ AR Scene error: " + error);
             mindarError = true;
+            updateCameraStatus("AR scene error");
           });
         }
         
-                if (target) {
+        if (target) {
           target.addEventListener("targetFound", () => {
             updateDebug("🎯 Target found - showing AR content");
             targetFound = true;
@@ -418,16 +442,39 @@ export async function GET(
               }
             }, 2000);
           });
-          
-
         }
 
-        // Global error handler for RangeError
+        // Global error handler for RangeError and getObject3D errors
         window.addEventListener('error', (event) => {
-          if (event.error && event.error.message && event.error.message.includes('RangeError')) {
-            rangeErrorDetected = true;
-            updateDebug("❌ RangeError detected - switching to fallback");
-            switchToFallback();
+          if (event.error && event.error.message) {
+            if (event.error.message.includes('RangeError')) {
+              rangeErrorDetected = true;
+              customMindFileFailed = true;
+              updateDebug("❌ RangeError detected - switching to fallback");
+              switchToFallback();
+            } else if (event.error.message.includes('getObject3D')) {
+              getObject3DError = true;
+              updateDebug("❌ getObject3D error detected - this may be a scene setup issue");
+            } else if (event.error.message.includes('Cannot read properties of undefined')) {
+              updateDebug("❌ Undefined property error detected - this may be a scene setup issue");
+            }
+          }
+        });
+        
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+          if (event.reason && event.reason.message) {
+            if (event.reason.message.includes('RangeError')) {
+              rangeErrorDetected = true;
+              customMindFileFailed = true;
+              updateDebug("❌ RangeError in promise - switching to fallback");
+              switchToFallback();
+            } else if (event.reason.message.includes('getObject3D')) {
+              getObject3DError = true;
+              updateDebug("❌ getObject3D error in promise - this may be a scene setup issue");
+            } else if (event.reason.message.includes('Cannot read properties of undefined')) {
+              updateDebug("❌ Undefined property error in promise - this may be a scene setup issue");
+            }
           }
         });
         
@@ -476,6 +523,7 @@ export async function GET(
           if (camera) {
             const cameraStyle = window.getComputedStyle(camera);
             updateDebug(\`Camera visibility: \${cameraStyle.visibility}, display: \${cameraStyle.display}\`);
+            updateCameraStatus(\`Camera: \${cameraStyle.visibility} / \${cameraStyle.display}\`);
           }
           
           // Check MindAR file URL
@@ -488,6 +536,11 @@ export async function GET(
           } else {
             updateDebug("ℹ️ Using custom MindAR file: ${mindFileUrl}");
             updateDebug("🎯 This should track your uploaded marker image");
+            
+            // If we're using a custom file, monitor for errors
+            if (!customMindFileFailed) {
+              updateDebug("⚠️ Monitoring for buffer errors with custom MindAR file");
+            }
           }
 
           // Final nuclear strike
@@ -500,19 +553,33 @@ export async function GET(
 
       // Global error handler for MindAR errors
       window.addEventListener('error', (event) => {
-        if (event.error && event.error.message && event.error.message.includes('RangeError')) {
-          updateDebug("❌ MindAR RangeError detected - switching to fallback");
-          mindarError = true;
-          switchToFallback();
+        if (event.error && event.error.message) {
+          if (event.error.message.includes('RangeError')) {
+            updateDebug("❌ MindAR RangeError detected - switching to fallback");
+            mindarError = true;
+            customMindFileFailed = true;
+            switchToFallback();
+          } else if (event.error.message.includes('getObject3D')) {
+            updateDebug("❌ MindAR getObject3D error detected");
+            mindarError = true;
+            getObject3DError = true;
+          }
         }
       });
 
       // Handle unhandled promise rejections
       window.addEventListener('unhandledrejection', (event) => {
-        if (event.reason && event.reason.message && event.reason.message.includes('RangeError')) {
-          updateDebug("❌ MindAR RangeError in promise - switching to fallback");
-          mindarError = true;
-          switchToFallback();
+        if (event.reason && event.reason.message) {
+          if (event.reason.message.includes('RangeError')) {
+            updateDebug("❌ MindAR RangeError in promise - switching to fallback");
+            mindarError = true;
+            customMindFileFailed = true;
+            switchToFallback();
+          } else if (event.reason.message.includes('getObject3D')) {
+            updateDebug("❌ MindAR getObject3D error in promise");
+            mindarError = true;
+            getObject3DError = true;
+          }
         }
       });
     </script>

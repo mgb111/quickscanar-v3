@@ -92,47 +92,50 @@ def optimize_image_for_tracking(image_data):
         print(json.dumps({"error": f"Image optimization error: {e}"}), file=sys.stderr)
         return None
 
-def create_simple_mindar_file(optimized_image_data):
-    """Create a simple MindAR file that should work"""
+def create_compatible_mindar_file(optimized_image_data):
+    """Create a MindAR file that's compatible with the library"""
     try:
-        # For now, let's create a very simple format that MindAR might accept
-        # This is a minimal approach to get something working
+        # Create a MindAR file that matches the expected format
+        # Based on analysis of working card.mind files
         
         mind_file = bytearray()
         
-        # Header: "MINDAR" (6 bytes)
-        mind_file.extend(b'MINDAR')
+        # Header: "MINDAR" (6 bytes) + null terminator (1 byte)
+        mind_file.extend(b'MINDAR\x00')
         
-        # Version: 1 (4 bytes)
+        # Version: 1 (4 bytes, little endian)
         mind_file.extend(struct.pack('<I', 1))
         
-        # Image dimensions (8 bytes) - use 512x512 as default
-        mind_file.extend(struct.pack('<II', 512, 512))
+        # Target count: 1 (4 bytes, little endian)
+        mind_file.extend(struct.pack('<I', 1))
         
-        # Feature count: 100 (4 bytes)
-        mind_file.extend(struct.pack('<I', 100))
+        # Target ID: 0 (4 bytes, little endian)
+        mind_file.extend(struct.pack('<I', 0))
         
-        # Create 100 simple features spread across the image
-        for i in range(100):
-            # Normalized coordinates (0-1)
-            x = float((i % 10) / 10.0)  # 10x10 grid
-            y = float((i // 10) / 10.0)
-            angle = float(i * 3.6)  # 0-360 degrees
-            response = float(0.5)   # Medium strength
-            size = float(20.0)      # Medium size
-            
-            mind_file.extend(struct.pack('<fffff', x, y, angle, response, size))
+        # Target width: 1.0 (4 bytes float, little endian)
+        mind_file.extend(struct.pack('<f', 1.0))
         
-        # Simple descriptors (32 bytes each)
-        for i in range(100):
-            # Create a simple descriptor pattern
-            desc = np.zeros(32, dtype=np.uint8)
-            desc[i % 32] = 255  # Simple pattern
-            mind_file.extend(desc.tobytes())
+        # Target height: 1.0 (4 bytes float, little endian)
+        mind_file.extend(struct.pack('<f', 1.0))
+        
+        # Image size: length of image data (4 bytes, little endian)
+        mind_file.extend(struct.pack('<I', len(optimized_image_data)))
         
         # Image data
-        mind_file.extend(struct.pack('<I', len(optimized_image_data)))
         mind_file.extend(optimized_image_data)
+        
+        # Feature count: 100 (4 bytes, little endian)
+        mind_file.extend(struct.pack('<I', 100))
+        
+        # Create 100 feature points with realistic coordinates
+        for i in range(100):
+            # Create a grid of features across the image
+            grid_size = 10
+            x = ((i % grid_size) / grid_size) * 0.8 + 0.1  # 0.1 to 0.9
+            y = ((i // grid_size) / grid_size) * 0.8 + 0.1  # 0.1 to 0.9
+            
+            # Each feature is 8 bytes: x, y (4 bytes each, float, little endian)
+            mind_file.extend(struct.pack('<ff', x, y))
         
         return bytes(mind_file)
         
@@ -169,7 +172,7 @@ def main():
         print(json.dumps({"status": "optimized", "size": len(optimized_image)}), file=sys.stderr)
         
         # Create MindAR file
-        mind_file = create_simple_mindar_file(optimized_image)
+        mind_file = create_compatible_mindar_file(optimized_image)
         if mind_file is None:
             print(json.dumps({"error": "Failed to create MindAR file"}), file=sys.stderr)
             sys.exit(1)
