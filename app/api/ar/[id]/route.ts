@@ -21,9 +21,13 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
-    // Use the working card.mind file to ensure AR works
-    const mindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    // Use custom .mind file if available, otherwise fallback to card.mind
+    const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const markerImageUrl = experience.marker_image_url
+    const usingCustomMind = !!experience.mind_file_url
+    
+    // Check if marker image is the placeholder (no custom marker uploaded)
+    const isPlaceholderMarker = markerImageUrl && markerImageUrl.includes('card-example/card.png')
 
     // Simple, clean AR HTML - no loading screen removal
     const arHTML = `<!DOCTYPE html>
@@ -141,7 +145,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
+        ${!isPlaceholderMarker ? `<img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />` : ''}
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -185,11 +189,12 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
-          material="shader: flat; src: #videoTexture"
+          material="shader: flat; src: #videoTexture; transparent: true"
           visible="false"
         ></a-plane>
 
-        <!-- Debug plane to show marker detection (completely hidden when video plays) -->
+        <!-- Debug plane to show marker detection (only if real marker image exists) -->
+        ${!isPlaceholderMarker ? `
         <a-plane
           id="debugPlane"
           src="#marker"
@@ -200,6 +205,7 @@ export async function GET(
           material="transparent: true; opacity: 0.0"
           visible="false"
         ></a-plane>
+        ` : ''}
       </a-entity>
     </a-scene>
     
@@ -304,7 +310,7 @@ export async function GET(
         const debugPlane = document.querySelector("#debugPlane");
         const scene = document.querySelector("a-scene");
         
-        // Calculate video dimensions and set video plane size
+        // Calculate video dimensions and set video plane size to match original aspect ratio
         if (video && videoPlane) {
           video.addEventListener('loadedmetadata', () => {
             const videoWidth = video.videoWidth;
@@ -314,7 +320,7 @@ export async function GET(
               // Calculate aspect ratio
               const aspectRatio = videoWidth / videoHeight;
               
-              // Set video plane dimensions to match video aspect ratio
+              // Set video plane dimensions to match video's original aspect ratio
               // Use a base width of 1 and calculate height accordingly
               const planeWidth = 1;
               const planeHeight = 1 / aspectRatio;
@@ -322,21 +328,26 @@ export async function GET(
               videoPlane.setAttribute('width', planeWidth);
               videoPlane.setAttribute('height', planeHeight);
               
-              // Also update debug plane to match video dimensions
+              // Also update background and debug planes to match video dimensions
+              if (backgroundPlane) {
+                backgroundPlane.setAttribute('width', planeWidth);
+                backgroundPlane.setAttribute('height', planeHeight);
+              }
+              
               if (debugPlane) {
                 debugPlane.setAttribute('width', planeWidth);
                 debugPlane.setAttribute('height', planeHeight);
               }
               
               updateDebug(\`📐 Video dimensions: \${videoWidth}x\${videoHeight}\`);
-              updateDebug(\`📐 Video plane dimensions: \${planeWidth}x\${planeHeight.toFixed(3)}\`);
-              updateDebug(\`📐 Aspect ratio: \${aspectRatio.toFixed(3)}\`);
+              updateDebug(\`📐 Video plane dimensions: \${planeWidth}x\${planeHeight.toFixed(3)} (preserves original ratio)\`);
+              updateDebug(\`📐 Aspect ratio: \${aspectRatio.toFixed(3)} (original video ratio)\`);
             }
           });
         }
         
         // Show status indicator
-        showStatus("Point camera at your marker", "Look for your uploaded image");
+        showStatus("Point camera at your marker", isPlaceholderMarker ? "Look for your target" : "Look for your uploaded image");
         
         // Explicitly test camera access first
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -464,7 +475,7 @@ export async function GET(
             }
             
             // Show status again
-            showStatus("Target Lost", "Point camera at your marker again");
+            showStatus("Target Lost", isPlaceholderMarker ? "Point camera at your target again" : "Point camera at your marker again");
           });
         }
 
@@ -498,11 +509,22 @@ export async function GET(
           }
           
           // Check MindAR file URL
-          updateDebug("MindAR file: Using working card.mind file (guaranteed to work)");
+          updateDebug(\`MindAR file: \${usingCustomMind ? 'Custom .mind file' : 'Fallback card.mind file'}\`);
           updateDebug(\`Marker image: \${markerImageUrl}\`);
           
           // Check MindAR file status
-          updateDebug("✅ Using working card.mind file (guaranteed to work)");
+          if (usingCustomMind) {
+            updateDebug("✅ Using custom .mind file for your marker");
+          } else {
+            updateDebug("✅ Using fallback card.mind file (guaranteed to work)");
+          }
+          
+          // Check marker image status
+          if (isPlaceholderMarker) {
+            updateDebug("ℹ️ No custom marker image - using .mind file for tracking only");
+          } else {
+            updateDebug("✅ Custom marker image available for visual reference");
+          }
 
           // Final nuclear strike
           nukeLoadingScreens();

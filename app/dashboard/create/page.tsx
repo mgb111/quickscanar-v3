@@ -14,16 +14,15 @@ export default function CreateExperience() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [planeWidth, setPlaneWidth] = useState(1)
-  const [planeHeight, setPlaneHeight] = useState(0.5625)
-  const [videoRotation, setVideoRotation] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [compilationProgress, setCompilationProgress] = useState<string>('')
   
   const [markerFile, setMarkerFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [mindFile, setMindFile] = useState<File | null>(null)
   const [markerPreview, setMarkerPreview] = useState<string | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
+  const [useCustomMind, setUseCustomMind] = useState(false)
 
   const onMarkerDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -49,6 +48,14 @@ export default function CreateExperience() {
     }
   }, [])
 
+  const onMindDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (file) {
+      setMindFile(file)
+      setUseCustomMind(true)
+    }
+  }, [])
+
   const { getRootProps: getMarkerRootProps, getInputProps: getMarkerInputProps, isDragActive: isMarkerDragActive } = useDropzone({
     onDrop: onMarkerDrop,
     accept: {
@@ -65,29 +72,52 @@ export default function CreateExperience() {
     maxFiles: 1
   })
 
+  const { getRootProps: getMindRootProps, getInputProps: getMindInputProps, isDragActive: isMindDragActive } = useDropzone({
+    onDrop: onMindDrop,
+    accept: {
+      'application/octet-stream': ['.mind']
+    },
+    maxFiles: 1
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!markerFile || !videoFile) {
-      toast.error('Please upload both marker image and video')
+    // Check if we have either a marker image or a custom .mind file
+    if (!markerFile && !useCustomMind) {
+      toast.error('Please upload a marker image or enable custom .mind file upload')
+      return
+    }
+    
+    if (!videoFile) {
+      toast.error('Please upload a video file')
       return
     }
 
     setSubmitting(true)
 
     try {
-      // Upload marker image
-      const markerFileName = `${user?.id}/${Date.now()}-marker.${markerFile.name.split('.').pop()}`
-      const { data: markerData, error: markerError } = await supabase.storage
-        .from('markers')
-        .upload(markerFileName, markerFile)
+      let markerImageUrl: string
+      
+      if (markerFile) {
+        // Upload marker image
+        const markerFileName = `${user?.id}/${Date.now()}-marker.${markerFile.name.split('.').pop()}`
+        const { data: markerData, error: markerError } = await supabase.storage
+          .from('markers')
+          .upload(markerFileName, markerFile)
 
-      if (markerError) throw markerError
+        if (markerError) throw markerError
 
-      // Get marker image URL
-      const { data: markerUrlData } = supabase.storage
-        .from('markers')
-        .getPublicUrl(markerFileName)
+        // Get marker image URL
+        const { data: markerUrlData } = supabase.storage
+          .from('markers')
+          .getPublicUrl(markerFileName)
+        
+        markerImageUrl = markerUrlData.publicUrl
+      } else {
+        // Use a placeholder image when no marker is uploaded
+        markerImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
+      }
 
       // Upload video
       const videoFileName = `${user?.id}/${Date.now()}-video.mp4`
@@ -102,27 +132,48 @@ export default function CreateExperience() {
         .from('videos')
         .getPublicUrl(videoFileName)
 
-      // Generate .mind file using the real MindAR compiler
-      setCompilationProgress('Compiling MindAR file...')
-      const compileResponse = await fetch('/api/compile-mind', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrl: markerUrlData.publicUrl,
-          userId: user?.id
+      // Handle .mind file - either upload custom or generate from image
+      let mindFileUrl: string
+      
+      if (useCustomMind && mindFile) {
+        // Upload custom .mind file
+        setCompilationProgress('Uploading custom .mind file...')
+        const mindFileName = `${user?.id}/${Date.now()}-custom.mind`
+        const { data: mindData, error: mindError } = await supabase.storage
+          .from('mind-files')
+          .upload(mindFileName, mindFile)
+
+        if (mindError) throw mindError
+
+        const { data: mindUrlData } = supabase.storage
+          .from('mind-files')
+          .getPublicUrl(mindFileName)
+        
+        mindFileUrl = mindUrlData.publicUrl
+        setCompilationProgress('Custom .mind file uploaded!')
+      } else {
+        // Generate .mind file using the real MindAR compiler
+        setCompilationProgress('Compiling MindAR file...')
+        const compileResponse = await fetch('/api/compile-mind', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageUrl: markerImageUrl,
+            userId: user?.id
+          })
         })
-      })
 
-      if (!compileResponse.ok) {
-        const errorData = await compileResponse.json()
-        throw new Error(errorData.error || 'Failed to compile MindAR file')
+        if (!compileResponse.ok) {
+          const errorData = await compileResponse.json()
+          throw new Error(errorData.error || 'Failed to compile MindAR file')
+        }
+
+        const compileData = await compileResponse.json()
+        mindFileUrl = compileData.mindFileUrl
+        setCompilationProgress('MindAR compilation completed!')
       }
-
-      const compileData = await compileResponse.json()
-      const mindFileUrl = compileData.mindFileUrl
-      setCompilationProgress('MindAR compilation completed!')
 
       // Save to database
       setCompilationProgress('Saving experience to database...')
@@ -132,12 +183,12 @@ export default function CreateExperience() {
           user_id: user?.id,
           title,
           description: description || null,
-          marker_image_url: markerUrlData.publicUrl,
+          marker_image_url: markerImageUrl,
           mind_file_url: mindFileUrl,
           video_url: videoUrlData.publicUrl,
-          plane_width: planeWidth,
-          plane_height: planeHeight,
-          video_rotation: videoRotation
+          plane_width: 1,
+          plane_height: 0.5625,
+          video_rotation: 0
         })
 
       if (dbError) throw dbError
@@ -196,7 +247,7 @@ export default function CreateExperience() {
                 type="text"
                 id="title"
                 required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 bg-white"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -209,7 +260,7 @@ export default function CreateExperience() {
               <textarea
                 id="description"
                 rows={3}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 bg-white"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -220,22 +271,26 @@ export default function CreateExperience() {
               {/* Marker Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Marker Image
+                  Marker Image {useCustomMind && <span className="text-gray-500">(Optional)</span>}
                 </label>
                 <div
                   {...getMarkerRootProps()}
                   className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
                     isMarkerDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  }`}
+                  } ${useCustomMind ? 'opacity-60' : ''}`}
                 >
                   <input {...getMarkerInputProps()} />
                   <Image className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm text-gray-600">
                     {isMarkerDragActive
                       ? 'Drop the image here...'
-                      : 'Drag & drop an image, or click to select'}
+                      : useCustomMind 
+                        ? 'Drag & drop an image (optional), or click to select'
+                        : 'Drag & drop an image, or click to select'}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 10MB</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {useCustomMind ? 'JPG, PNG up to 10MB (optional when using custom .mind file)' : 'JPG, PNG up to 10MB'}
+                  </p>
                 </div>
                 {markerPreview && (
                   <div className="mt-2">
@@ -272,59 +327,63 @@ export default function CreateExperience() {
               </div>
             </div>
 
-            {/* Advanced Settings */}
+            {/* Custom .mind File Upload (Optional) */}
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h3>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="planeWidth" className="block text-sm font-medium text-gray-700">
-                    Plane Width
-                  </label>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">MindAR File (Optional)</h3>
+                <div className="flex items-center">
                   <input
-                    type="number"
-                    id="planeWidth"
-                    step="0.1"
-                    min="0.1"
-                    max="10"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    value={planeWidth}
-                    onChange={(e) => setPlaneWidth(parseFloat(e.target.value))}
+                    type="checkbox"
+                    id="useCustomMind"
+                    checked={useCustomMind}
+                    onChange={(e) => setUseCustomMind(e.target.checked)}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="planeHeight" className="block text-sm font-medium text-gray-700">
-                    Plane Height
+                  <label htmlFor="useCustomMind" className="ml-2 text-sm text-gray-700">
+                    Upload custom .mind file
                   </label>
-                  <input
-                    type="number"
-                    id="planeHeight"
-                    step="0.1"
-                    min="0.1"
-                    max="10"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    value={planeHeight}
-                    onChange={(e) => setPlaneHeight(parseFloat(e.target.value))}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="videoRotation" className="block text-sm font-medium text-gray-700">
-                    Video Rotation (degrees)
-                  </label>
-                  <input
-                    type="number"
-                    id="videoRotation"
-                    step="1"
-                    min="0"
-                    max="360"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    value={videoRotation}
-                    onChange={(e) => setVideoRotation(parseInt(e.target.value))}
-                  />
                 </div>
               </div>
+              
+              {useCustomMind ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom .mind File
+                  </label>
+                  <div
+                    {...getMindRootProps()}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
+                      isMindDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+                    }`}
+                  >
+                    <input {...getMindInputProps()} />
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      {isMindDragActive
+                        ? 'Drop the .mind file here...'
+                        : 'Drag & drop a .mind file, or click to select'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">MindAR .mind file up to 5MB</p>
+                  </div>
+                  {mindFile && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-700">
+                        ✅ Custom .mind file selected: {mindFile.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-700">
+                    💡 A .mind file will be automatically generated from your marker image for optimal AR tracking.
+                    You can upload a custom .mind file if you have one.
+                  </p>
+                </div>
+              )}
             </div>
+
+
 
             {/* Progress Indicator */}
             {compilationProgress && (
@@ -346,7 +405,7 @@ export default function CreateExperience() {
               </Link>
               <button
                 type="submit"
-                disabled={submitting || !markerFile || !videoFile}
+                disabled={submitting || (!markerFile && !useCustomMind) || !videoFile}
                 className="bg-primary-600 text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Creating...' : 'Create Experience'}

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test .mind File Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .file-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Test .mind File Upload</h1>
+        <p>This page tests the .mind file upload functionality for QuickScanAR.</p>
+        
+        <div class="status info">
+            <strong>Instructions:</strong>
+            <ul>
+                <li>Upload a .mind file to test the functionality</li>
+                <li>The file will be uploaded to Supabase storage</li>
+                <li>You can then use this file in your AR experience</li>
+            </ul>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <h3>📁 Drop .mind file here or click to select</h3>
+            <p>Supports .mind files up to 5MB</p>
+            <input type="file" id="fileInput" accept=".mind" style="display: none;">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <h4>Selected File:</h4>
+            <p><strong>Name:</strong> <span id="fileName"></span></p>
+            <p><strong>Size:</strong> <span id="fileSize"></span></p>
+            <p><strong>Type:</strong> <span id="fileType"></span></p>
+        </div>
+
+        <button class="btn" id="uploadBtn" disabled>Upload .mind File</button>
+
+        <div id="status"></div>
+
+        <div class="status info">
+            <h3>🔗 Test Links:</h3>
+            <ul>
+                <li><a href="/dashboard/create" target="_blank">Create AR Experience</a> - Use the new .mind upload feature</li>
+                <li><a href="/experience/ee852cc1-e042-444c-bc5b-78ea14d7c73b" target="_blank">Test AR Experience</a> - Current experience</li>
+                <li><a href="/dashboard" target="_blank">Dashboard</a> - View all experiences</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileType = document.getElementById('fileType');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const status = document.getElementById('status');
+
+        let selectedFile = null;
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file type
+            if (!file.name.endsWith('.mind')) {
+                showStatus('❌ Please select a .mind file', 'error');
+                return;
+            }
+
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('❌ File size must be less than 5MB', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Display file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileType.textContent = file.type || 'application/octet-stream';
+            fileInfo.style.display = 'block';
+            
+            uploadBtn.disabled = false;
+            showStatus('✅ File selected successfully', 'success');
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            showStatus('⏳ Uploading .mind file...', 'info');
+
+            try {
+                // Create FormData
+                const formData = new FormData();
+                formData.append('mindFile', selectedFile);
+
+                // Upload to test endpoint (you'll need to create this)
+                const response = await fetch('/api/test-mind-upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                showStatus(`✅ Upload successful! File URL: ${result.fileUrl}`, 'success');
+                
+                // Reset form
+                selectedFile = null;
+                fileInfo.style.display = 'none';
+                fileInput.value = '';
+                uploadBtn.textContent = 'Upload .mind File';
+                uploadBtn.disabled = true;
+
+            } catch (error) {
+                showStatus(`❌ Upload failed: ${error.message}`, 'error');
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload .mind File';
+            }
+        });
+
+        function showStatus(message, type) {
+            status.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html> 
