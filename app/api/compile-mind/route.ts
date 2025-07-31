@@ -186,8 +186,7 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await supabase
       .from('ar_experiences')
       .update({ 
-        mind_file_url: mindFileUrl,
-        compiled_at: new Date().toISOString()
+        mind_file_url: mindFileUrl
       })
       .eq('id', experienceId)
     
