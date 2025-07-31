@@ -160,7 +160,8 @@ export async function GET(
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Marker plane (invisible) -->
+        <!-- Marker plane (only if real marker image exists) -->
+        ${!isPlaceholderMarker ? `
         <a-plane 
           src="#marker"
           position="0 0 0"
@@ -170,6 +171,7 @@ export async function GET(
           material="transparent: true; opacity: 0.0"
           visible="false"
         ></a-plane>
+        ` : ''}
 
         <!-- Background plane (black) -->
         <a-plane
