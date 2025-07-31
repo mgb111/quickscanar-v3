@@ -167,6 +167,17 @@ export async function GET(
           visible="false"
         ></a-plane>
 
+        <!-- Background plane (black) -->
+        <a-plane
+          id="backgroundPlane"
+          width="1"
+          height="1"
+          position="0 0 0.005"
+          rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
+          material="color: #000000"
+          visible="false"
+        ></a-plane>
+
         <!-- Video plane (visible when target found) -->
         <a-plane
           id="videoPlane"
@@ -178,7 +189,17 @@ export async function GET(
           visible="false"
         ></a-plane>
 
-
+        <!-- Debug plane to show marker detection (completely hidden when video plays) -->
+        <a-plane
+          id="debugPlane"
+          src="#marker"
+          position="0 0 0.02"
+          height="1"
+          width="1"
+          rotation="0 0 0"
+          material="transparent: true; opacity: 0.0"
+          visible="false"
+        ></a-plane>
       </a-entity>
     </a-scene>
     
@@ -279,6 +300,8 @@ export async function GET(
         const video = document.querySelector("#videoTexture");
         const target = document.querySelector("#target");
         const videoPlane = document.querySelector("#videoPlane");
+        const backgroundPlane = document.querySelector("#backgroundPlane");
+        const debugPlane = document.querySelector("#debugPlane");
         const scene = document.querySelector("a-scene");
         
         // Calculate video dimensions and set video plane size
@@ -299,7 +322,11 @@ export async function GET(
               videoPlane.setAttribute('width', planeWidth);
               videoPlane.setAttribute('height', planeHeight);
               
-
+              // Also update debug plane to match video dimensions
+              if (debugPlane) {
+                debugPlane.setAttribute('width', planeWidth);
+                debugPlane.setAttribute('height', planeHeight);
+              }
               
               updateDebug(\`📐 Video dimensions: \${videoWidth}x\${videoHeight}\`);
               updateDebug(\`📐 Video plane dimensions: \${planeWidth}x\${planeHeight.toFixed(3)}\`);
@@ -371,13 +398,31 @@ export async function GET(
             updateDebug("🎯 Target found - showing AR content");
             targetFound = true;
             
+            // Show background plane
+            if (backgroundPlane) {
+              backgroundPlane.setAttribute('visible', 'true');
+              updateDebug("✅ Background plane made visible");
+            }
+            
             // Show video plane
             if (videoPlane) {
               videoPlane.setAttribute('visible', 'true');
               updateDebug("✅ Video plane made visible");
             }
             
-
+            // Show debug plane briefly for debugging, then hide it
+            if (debugPlane) {
+              debugPlane.setAttribute('visible', 'true');
+              updateDebug("✅ Debug plane made visible");
+              
+              // Hide debug plane after 2 seconds to avoid background interference
+              setTimeout(() => {
+                if (debugPlane) {
+                  debugPlane.setAttribute('visible', 'false');
+                  updateDebug("✅ Debug plane hidden to avoid background");
+                }
+              }, 2000);
+            }
             
             // Play video
             if (video) {
@@ -398,12 +443,20 @@ export async function GET(
             updateDebug("❌ Target lost");
             targetFound = false;
             
+            // Hide background plane
+            if (backgroundPlane) {
+              backgroundPlane.setAttribute('visible', 'false');
+            }
+            
             // Hide video plane
             if (videoPlane) {
               videoPlane.setAttribute('visible', 'false');
             }
             
-
+            // Hide debug plane
+            if (debugPlane) {
+              debugPlane.setAttribute('visible', 'false');
+            }
             
             // Pause video
             if (video) {
@@ -445,15 +498,11 @@ export async function GET(
           }
           
           // Check MindAR file URL
-          updateDebug(\`MindAR file: \${'${mindFileUrl}'.includes('card-example') ? 'Using fallback' : 'Using custom'}\`);
-          updateDebug(\`Marker image: \${'${markerImageUrl}'}\`);
+          updateDebug("MindAR file: Using working card.mind file (guaranteed to work)");
+          updateDebug(\`Marker image: \${markerImageUrl}\`);
           
           // Check MindAR file status
-          if ('${mindFileUrl}'.includes('card-example')) {
-            updateDebug("✅ Using working card.mind file (guaranteed to work)");
-          } else {
-            updateDebug("ℹ️ Using custom MindAR file");
-          }
+          updateDebug("✅ Using working card.mind file (guaranteed to work)");
 
           // Final nuclear strike
           nukeLoadingScreens();
