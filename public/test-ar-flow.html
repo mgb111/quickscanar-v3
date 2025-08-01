@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test AR Flow</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; }
+    .step { margin: 20px 0; padding: 10px; border: 1px solid #ddd; }
+    .success { color: green; }
+    .error { color: red; }
+    .log { font-family: monospace; margin: 10px 0; padding: 10px; background: #f5f5f5; }
+    .choice-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .choice-button {
+      padding: 10px 20px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .choice-button.active {
+      border-color: #4CAF50;
+      background: #4CAF50;
+      color: white;
+    }
+    .download-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #2196F3;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .download-button:hover {
+      background: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test AR Flow</h1>
+
+  <div class="step" id="markerChoice">
+    <h3>Choose Marker Type</h3>
+    <div class="choice-buttons">
+      <button id="chooseImage" class="choice-button active">Create AR Experience (from JPG/PNG)</button>
+      <button id="chooseMind" class="choice-button">Create AR Experience (from .mind file)</button>
+      <button id="convertOnly" class="choice-button">Convert JPG/PNG to .mind</button>
+    </div>
+  </div>
+
+  <div id="imageFlow">
+    <div class="step" id="step1">
+      <h3>Step 1: Upload Marker Image</h3>
+      <input type="file" id="markerInput" accept="image/jpeg,image/png">
+      <div id="markerPreview"></div>
+    </div>
+
+    <div class="step" id="step2">
+      <h3>Step 2: Upload Video</h3>
+      <input type="file" id="videoInput" accept="video/*">
+      <div id="videoPreview"></div>
+    </div>
+
+    <div class="step" id="step3">
+      <h3>Step 3: Generate .mind File</h3>
+      <button id="generateButton" disabled>Generate .mind File</button>
+      <div id="generateLog"></div>
+      <div id="downloadMind" style="display: none; margin-top: 10px;">
+        <p>✅ .mind file generated successfully!</p>
+        <a id="downloadMindLink" href="#" class="download-button">Download .mind File</a>
+      </div>
+    </div>
+
+    <div class="step" id="step4">
+      <h3>Step 4: Test AR Experience</h3>
+      <button id="testButton" disabled>Test AR</button>
+      <div id="testLog"></div>
+    </div>
+  </div>
+
+  <div id="mindFlow" style="display: none;">
+    <div class="step" id="stepMind1">
+      <h3>Step 1: Upload .mind File</h3>
+      <input type="file" id="mindInput" accept=".mind">
+      <div id="mindPreview"></div>
+    </div>
+
+    <div class="step" id="stepMind2">
+      <h3>Step 2: Upload Video</h3>
+      <input type="file" id="mindVideoInput" accept="video/*">
+      <div id="mindVideoPreview"></div>
+    </div>
+
+    <div class="step" id="stepMind3">
+      <h3>Step 3: Test AR Experience</h3>
+      <button id="mindTestButton" disabled>Test AR</button>
+      <div id="mindTestLog"></div>
+    </div>
+  </div>
+
+  <div id="convertFlow" style="display: none;">
+    <div class="step" id="stepConvert1">
+      <h3>Upload Image to Convert</h3>
+      <input type="file" id="convertInput" accept="image/jpeg,image/png">
+      <div id="convertPreview"></div>
+    </div>
+
+    <div class="step" id="stepConvert2">
+      <h3>Convert to .mind File</h3>
+      <button id="convertButton" disabled>Convert to .mind</button>
+      <div id="convertLog"></div>
+      <div id="convertDownload" style="display: none; margin-top: 10px;">
+        <p>✅ .mind file generated successfully!</p>
+        <a id="convertDownloadLink" href="#" class="download-button">Download .mind File</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let markerUrl = null;
+    let videoUrl = null;
+    let experienceId = null;
+    let mindFile = null;
+
+    // Handle flow switching
+    document.getElementById('chooseImage').addEventListener('click', () => {
+      document.getElementById('chooseImage').classList.add('active');
+      document.getElementById('chooseMind').classList.remove('active');
+      document.getElementById('convertOnly').classList.remove('active');
+      document.getElementById('imageFlow').style.display = 'block';
+      document.getElementById('mindFlow').style.display = 'none';
+      document.getElementById('convertFlow').style.display = 'none';
+    });
+
+    document.getElementById('chooseMind').addEventListener('click', () => {
+      document.getElementById('chooseMind').classList.add('active');
+      document.getElementById('chooseImage').classList.remove('active');
+      document.getElementById('convertOnly').classList.remove('active');
+      document.getElementById('mindFlow').style.display = 'block';
+      document.getElementById('imageFlow').style.display = 'none';
+      document.getElementById('convertFlow').style.display = 'none';
+    });
+
+    document.getElementById('convertOnly').addEventListener('click', () => {
+      document.getElementById('convertOnly').classList.add('active');
+      document.getElementById('chooseImage').classList.remove('active');
+      document.getElementById('chooseMind').classList.remove('active');
+      document.getElementById('convertFlow').style.display = 'block';
+      document.getElementById('imageFlow').style.display = 'none';
+      document.getElementById('mindFlow').style.display = 'none';
+    });
+
+    // Image Flow: Handle marker image upload
+    document.getElementById('markerInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Upload to Supabase
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/upload/marker', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        markerUrl = data.url;
+        
+        // Show preview
+        const preview = document.getElementById('markerPreview');
+        preview.innerHTML = `
+          <p class="success">✅ Marker uploaded successfully</p>
+          <img src="${markerUrl}" style="max-width: 200px">
+        `;
+
+        updateGenerateButton();
+      } catch (error) {
+        document.getElementById('markerPreview').innerHTML = `
+          <p class="error">❌ Upload failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Image Flow: Handle video upload
+    document.getElementById('videoInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Upload to Supabase
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/upload/video', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        videoUrl = data.url;
+        
+        // Show preview
+        const preview = document.getElementById('videoPreview');
+        preview.innerHTML = `
+          <p class="success">✅ Video uploaded successfully</p>
+          <video src="${videoUrl}" style="max-width: 200px" controls></video>
+        `;
+
+        updateGenerateButton();
+      } catch (error) {
+        document.getElementById('videoPreview').innerHTML = `
+          <p class="error">❌ Upload failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Image Flow: Enable generate button when both files are uploaded
+    function updateGenerateButton() {
+      const button = document.getElementById('generateButton');
+      button.disabled = !(markerUrl && videoUrl);
+    }
+
+    // Image Flow: Handle .mind file generation
+    document.getElementById('generateButton').addEventListener('click', async () => {
+      const log = document.getElementById('generateLog');
+      log.innerHTML = '<p>Generating .mind file...</p>';
+
+      try {
+        const response = await fetch('/api/compile-mind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: markerUrl,
+            experienceId: 'test-' + Date.now()
+          }),
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        experienceId = data.experienceId;
+        mindFile = data.mindFileUrl;
+
+        // Show success and download link
+        document.getElementById('downloadMind').style.display = 'block';
+        document.getElementById('downloadMindLink').href = mindFile;
+        document.getElementById('downloadMindLink').download = 'marker.mind';
+
+        log.innerHTML = `
+          <p class="success">✅ .mind file generated successfully</p>
+          <p class="log">${data.message}</p>
+          <p class="log">Method: ${data.method}</p>
+          <p class="log">Note: ${data.note}</p>
+        `;
+
+        // Enable test button
+        document.getElementById('testButton').disabled = false;
+      } catch (error) {
+        log.innerHTML = `
+          <p class="error">❌ Generation failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Image Flow: Handle AR test
+    document.getElementById('testButton').addEventListener('click', async () => {
+      const log = document.getElementById('testLog');
+      
+      try {
+        // Open AR experience in new window
+        const arWindow = window.open(`/experience/${experienceId}`, '_blank');
+        if (!arWindow) throw new Error('Popup blocked. Please allow popups and try again.');
+
+        log.innerHTML = `
+          <p class="success">✅ AR experience opened in new window</p>
+          <p class="log">Experience ID: ${experienceId}</p>
+          <a href="/experience/${experienceId}" target="_blank">Open AR Experience</a>
+        `;
+      } catch (error) {
+        log.innerHTML = `
+          <p class="error">❌ Test failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Mind Flow: Handle .mind file upload
+    document.getElementById('mindInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Upload to Supabase
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/upload/mind', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        mindFile = data.url;
+        
+        // Show preview
+        const preview = document.getElementById('mindPreview');
+        preview.innerHTML = `
+          <p class="success">✅ .mind file uploaded successfully</p>
+          <p class="log">File size: ${(file.size / 1024).toFixed(2)} KB</p>
+        `;
+
+        updateMindTestButton();
+      } catch (error) {
+        document.getElementById('mindPreview').innerHTML = `
+          <p class="error">❌ Upload failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Mind Flow: Handle video upload
+    document.getElementById('mindVideoInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Upload to Supabase
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/upload/video', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        videoUrl = data.url;
+        
+        // Show preview
+        const preview = document.getElementById('mindVideoPreview');
+        preview.innerHTML = `
+          <p class="success">✅ Video uploaded successfully</p>
+          <video src="${videoUrl}" style="max-width: 200px" controls></video>
+        `;
+
+        updateMindTestButton();
+      } catch (error) {
+        document.getElementById('mindVideoPreview').innerHTML = `
+          <p class="error">❌ Upload failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Mind Flow: Enable test button when both files are uploaded
+    function updateMindTestButton() {
+      const button = document.getElementById('mindTestButton');
+      button.disabled = !(mindFile && videoUrl);
+    }
+
+    // Mind Flow: Handle AR test
+    document.getElementById('mindTestButton').addEventListener('click', async () => {
+      const log = document.getElementById('mindTestLog');
+      
+      try {
+        // Create experience with uploaded .mind file
+        const response = await fetch('/api/create-experience', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mindFileUrl: mindFile,
+            videoUrl: videoUrl
+          })
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        experienceId = data.experienceId;
+
+        // Open AR experience in new window
+        const arWindow = window.open(`/experience/${experienceId}`, '_blank');
+        if (!arWindow) throw new Error('Popup blocked. Please allow popups and try again.');
+
+        log.innerHTML = `
+          <p class="success">✅ AR experience opened in new window</p>
+          <p class="log">Experience ID: ${experienceId}</p>
+          <a href="/experience/${experienceId}" target="_blank">Open AR Experience</a>
+        `;
+      } catch (error) {
+        log.innerHTML = `
+          <p class="error">❌ Test failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Convert Flow: Handle image upload
+    document.getElementById('convertInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Upload to Supabase
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/upload/marker', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        markerUrl = data.url;
+        
+        // Show preview
+        const preview = document.getElementById('convertPreview');
+        preview.innerHTML = `
+          <p class="success">✅ Image uploaded successfully</p>
+          <img src="${markerUrl}" style="max-width: 200px">
+        `;
+
+        // Enable convert button
+        document.getElementById('convertButton').disabled = false;
+      } catch (error) {
+        document.getElementById('convertPreview').innerHTML = `
+          <p class="error">❌ Upload failed: ${error.message}</p>
+        `;
+      }
+    });
+
+    // Convert Flow: Handle conversion
+    document.getElementById('convertButton').addEventListener('click', async () => {
+      const log = document.getElementById('convertLog');
+      log.innerHTML = '<p>Converting image to .mind file...</p>';
+
+      try {
+        const response = await fetch('/api/compile-mind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: markerUrl,
+            experienceId: 'convert-' + Date.now()
+          }),
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+
+        mindFile = data.mindFileUrl;
+
+        // Show success and download link
+        document.getElementById('convertDownload').style.display = 'block';
+        document.getElementById('convertDownloadLink').href = mindFile;
+        document.getElementById('convertDownloadLink').download = 'marker.mind';
+
+        log.innerHTML = `
+          <p class="success">✅ Image converted successfully</p>
+          <p class="log">${data.message}</p>
+          <p class="log">Method: ${data.method}</p>
+          <p class="log">Note: ${data.note}</p>
+        `;
+      } catch (error) {
+        log.innerHTML = `
+          <p class="error">❌ Conversion failed: ${error.message}</p>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

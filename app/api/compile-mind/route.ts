@@ -1,144 +1,252 @@
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // Using Node.js runtime for Playwright support
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { chromium } from 'playwright'
+import * as path from 'path'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Create a more accurate MindAR file that matches the working format
-function createAccurateMindARFile(imageBuffer: ArrayBuffer): Uint8Array {
-  // Since the working card.mind is a compressed/encoded format,
-  // let's use a different approach - create a simple but valid format
-  // that MindAR can actually read
-  
-  const imageData = new Uint8Array(imageBuffer)
-  
-  // Create a minimal but working MindAR file structure
-  // Based on reverse engineering of what MindAR actually expects
-  
-  // Header: "MINDAR\0" (8 bytes)
-  const header = new TextEncoder().encode('MINDAR\0')
-  
-  // Version: 4 bytes (little endian) - 1
-  const version = new Uint8Array([0x01, 0x00, 0x00, 0x00])
-  
-  // Target count: 4 bytes (little endian) - 1
-  const targetCount = new Uint8Array([0x01, 0x00, 0x00, 0x00])
-  
-  // Target ID: 4 bytes (little endian) - 0
-  const targetId = new Uint8Array([0x00, 0x00, 0x00, 0x00])
-  
-  // Target width: 4 bytes float (little endian) - 1.0
-  const targetWidth = new Uint8Array([0x00, 0x00, 0x80, 0x3F])
-  
-  // Target height: 4 bytes float (little endian) - 1.0
-  const targetHeight = new Uint8Array([0x00, 0x00, 0x80, 0x3F])
-  
-  // Image size: 4 bytes (little endian)
-  const imageSize = imageData.length
-  const imageSizeBytes = new Uint8Array(4)
-  imageSizeBytes[0] = imageSize & 0xFF
-  imageSizeBytes[1] = (imageSize >> 8) & 0xFF
-  imageSizeBytes[2] = (imageSize >> 16) & 0xFF
-  imageSizeBytes[3] = (imageSize >> 24) & 0xFF
-  
-  // Image data
-  const imageDataBytes = imageData
-  
-  // Feature count: 4 bytes (little endian) - 100 features
-  const featureCount = new Uint8Array([0x64, 0x00, 0x00, 0x00])
-  
-  // Feature data: 100 features * 8 bytes each = 800 bytes
-  // Use a more realistic feature pattern
-  const featureData = new Uint8Array(100 * 8)
-  
-  // Fill with realistic feature data
-  for (let i = 0; i < 100; i++) {
-    const offset = i * 8
-    
-    // Create more realistic feature coordinates
-    // Spread features across the image in a grid pattern
-    const gridSize = 10
-    const x = ((i % gridSize) / gridSize) * 0.8 + 0.1  // 0.1 to 0.9
-    const y = ((Math.floor(i / gridSize)) / gridSize) * 0.8 + 0.1  // 0.1 to 0.9
-    
-    // Convert to little-endian float32
-    const xBuffer = new ArrayBuffer(4)
-    const xView = new DataView(xBuffer)
-    xView.setFloat32(0, x, true)
-    
-    const yBuffer = new ArrayBuffer(4)
-    const yView = new DataView(yBuffer)
-    yView.setFloat32(0, y, true)
-    
-    featureData.set(new Uint8Array(xBuffer), offset)
-    featureData.set(new Uint8Array(yBuffer), offset + 4)
+async function downloadImage(url: string): Promise<Buffer> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.statusText}`)
   }
-  
-  // Calculate total size
-  const totalSize = header.length + version.length + targetCount.length + 
-                   targetId.length + targetWidth.length + targetHeight.length +
-                   imageSizeBytes.length + imageDataBytes.length + 
-                   featureCount.length + featureData.length
-  
-  // Create the complete MindAR file
-  const mindFile = new Uint8Array(totalSize)
-  
-  let offset = 0
-  mindFile.set(header, offset); offset += header.length
-  mindFile.set(version, offset); offset += version.length
-  mindFile.set(targetCount, offset); offset += targetCount.length
-  mindFile.set(targetId, offset); offset += targetId.length
-  mindFile.set(targetWidth, offset); offset += targetWidth.length
-  mindFile.set(targetHeight, offset); offset += targetHeight.length
-  mindFile.set(imageSizeBytes, offset); offset += imageSizeBytes.length
-  mindFile.set(imageDataBytes, offset); offset += imageDataBytes.length
-  mindFile.set(featureCount, offset); offset += featureCount.length
-  mindFile.set(featureData, offset)
-  
-  return mindFile
+  return Buffer.from(await response.arrayBuffer())
 }
 
-// Alternative approach: Use working card.mind as fallback
-async function createWorkingMindARFile(imageBuffer: ArrayBuffer): Promise<Uint8Array> {
+async function generateMindFile(imageBuffer: Buffer): Promise<Buffer> {
+  // Launch with specific viewport size and device scale factor
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  })
+  
+  const context = await browser.newContext({
+    acceptDownloads: true,
+    viewport: { width: 1280, height: 720 },
+    deviceScaleFactor: 1
+  })
+  
+  const page = await context.newPage()
+  let debugInfo = ''
+
   try {
-    // Fetch the working card.mind file
-    const response = await fetch('https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind')
-    const workingFile = new Uint8Array(await response.arrayBuffer())
+    // Enable detailed console logging
+    page.on('console', msg => {
+      debugInfo += `Browser console: ${msg.text()}\n`
+      console.log(`Browser console: ${msg.text()}`)
+    })
+
+    page.on('pageerror', err => {
+      debugInfo += `Page error: ${err.message}\n`
+      console.error(`Page error: ${err.message}`)
+    })
+
+    console.log("Opening MindAR example compiler...")
+    const response = await page.goto("https://hiukim.github.io/mind-ar-js-doc/tools/compile/", {
+      waitUntil: 'networkidle',
+      timeout: 60000
+    })
+
+    if (!response?.ok()) {
+      throw new Error(`Failed to load page: ${response?.status()} ${response?.statusText()}`)
+    }
+
+    // Wait for the page to be fully loaded
+    console.log("Waiting for page to load...")
+    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('networkidle')
     
-    // For now, just return the working file
-    // In a real implementation, we'd need to understand the format and replace the image data
-    return workingFile
-  } catch (error) {
-    console.error('Failed to fetch working card.mind:', error)
-    // Fallback to our generated format
-    return createAccurateMindARFile(imageBuffer)
+    // Log page title for debugging
+    const title = await page.title()
+    console.log("Page loaded. Title:", title)
+    
+    // Take screenshot after page load
+    await page.screenshot({ path: '/tmp/page-loaded.png' })
+    console.log("Page screenshot saved")
+
+    // Debug: Take screenshot of the page
+    await page.screenshot({ path: '/tmp/debug-page.png' })
+    console.log("Page loaded, screenshot saved")
+
+    // Upload the image
+    console.log("Uploading image...")
+
+    // Wait for image to be processed
+    console.log("Waiting for image processing...")
+    await page.waitForTimeout(2000) // Give time for image processing
+
+    // Wait for any file input to be present (even if hidden)
+    console.log("Looking for file input...")
+    const fileInput = await page.waitForSelector('input[type="file"]', { 
+      state: 'attached',  // Don't require visibility
+      timeout: 30000 
+    })
+
+    if (!fileInput) {
+      const html = await page.content()
+      debugInfo += `Page HTML: ${html}\n`
+      throw new Error("File input not found. Debug info: " + debugInfo)
+    }
+
+    // Upload the image directly to the file input
+    console.log("Uploading image to file input...")
+    await fileInput.setInputFiles({
+      name: 'marker.jpg',
+      mimeType: 'image/jpeg',
+      buffer: imageBuffer
+    })
+
+    // Wait for the image to be processed
+    console.log("Waiting for image processing...")
+    await page.waitForTimeout(2000)
+
+    // Look for the compile button
+    console.log("Looking for compile button...")
+    const compileButton = await page.waitForSelector('button:has-text("Compile")', {
+      state: 'visible',
+      timeout: 30000
+    })
+
+    if (!compileButton) {
+      throw new Error("Compile button not found")
+    }
+
+    // Take screenshot before clicking compile
+    await page.screenshot({ path: '/tmp/pre-compile.png' })
+
+    // Set up download listener before clicking
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 })
+
+    // Click the Compile button
+    console.log("Clicking Compile button...")
+    await compileButton.click()
+
+    // Wait for download to start
+    console.log("Waiting for download...")
+    
+    // Wait for either download or error conditions
+    console.log("Waiting for download...")
+    const result = await Promise.race([
+      downloadPromise,
+      page.waitForEvent('dialog').then(dialog => {
+        dialog.dismiss()
+        throw new Error("Unexpected dialog: " + dialog.message())
+      }),
+      // Watch for error messages
+      page.waitForSelector('.error-message, .alert-error, .error', {
+        timeout: 30000
+      }).then(async element => {
+        if (element) {
+          const errorText = await element.textContent()
+          throw new Error("Error message found on page: " + errorText)
+        }
+        return null
+      }),
+      // Also watch for success message
+      page.waitForSelector('.success-message, .alert-success, .success', {
+        timeout: 30000
+      }).then(async element => {
+        if (element) {
+          console.log("Success message found:", await element.textContent())
+        }
+        return null
+      })
+    ])
+
+    // Handle the download if we got one
+    if (result && 'path' in result) {
+      const download = result
+      const downloadPath = await download.path()
+      if (!downloadPath) {
+        throw new Error("Failed to get download path")
+      }
+
+      // Take screenshot after download starts
+      await page.screenshot({ path: '/tmp/post-download.png' })
+
+      // Read the downloaded .mind file
+      console.log("Reading downloaded file...")
+      const mindFile = await download.createReadStream()
+      const chunks: Buffer[] = []
+      for await (const chunk of mindFile) {
+        chunks.push(Buffer.from(chunk))
+      }
+      
+      const fileBuffer = Buffer.concat(chunks)
+      console.log("File read successfully, size:", fileBuffer.length)
+      
+      // Validate file size
+      if (fileBuffer.length < 1000) { // .mind files are typically larger
+        throw new Error(`Generated .mind file is too small (${fileBuffer.length} bytes). This may indicate a compilation error.`)
+      }
+
+      return fileBuffer
+    } else {
+      // If we got here without a download, something went wrong
+      const html = await page.content()
+      debugInfo += `\nFinal page HTML: ${html}`
+      throw new Error("Compilation completed but no download was triggered. Debug info: " + debugInfo)
+    }
+    
+
+  } catch (error: any) {
+    // On error, capture the page state
+    try {
+      console.error("Error during mind file generation:", error)
+      const html = await page.content()
+      debugInfo += `\nFinal page HTML: ${html}`
+      debugInfo += `\nError: ${error?.message || String(error)}`
+      
+      // Take error screenshot
+      await page.screenshot({ path: '/tmp/error-page.png' })
+      console.log("Error screenshot saved")
+      
+      throw new Error(`Mind file generation failed: ${error?.message || String(error)}\nDebug info: ${debugInfo}`)
+    } catch (screenshotError) {
+      console.error("Failed to capture error state:", screenshotError)
+      throw error
+    }
+  } finally {
+    await browser.close()
   }
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
+  // Add CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+
   try {
     const { imageUrl, experienceId } = await request.json()
     if (!imageUrl || !experienceId) {
-      return NextResponse.json({ error: 'Missing imageUrl or experienceId' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing imageUrl or experienceId' }, { status: 400, headers })
     }
     
-    console.log('Compiling MindAR file for:', imageUrl)
+    console.log('Downloading image for MindAR compilation:', imageUrl)
+    const imageBuffer = await downloadImage(imageUrl)
     
-    // For now, use the working card.mind file since the format is complex
-    // This ensures AR works while we figure out the exact format
-    const workingMindFileUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    
-    // Fetch the working file
-    const response = await fetch(workingMindFileUrl)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch working MindAR file: ${response.statusText}`)
-    }
-    
-    const mindFile = new Uint8Array(await response.arrayBuffer())
-    console.log('Working MindAR file fetched, size:', mindFile.length)
+    console.log('Generating MindAR file...')
+    const mindFile = await generateMindFile(imageBuffer)
+    console.log('MindAR file generated, size:', mindFile.length)
     
     // Upload to Supabase
     const fileName = `mind-${Date.now()}.mind`
@@ -148,12 +256,12 @@ export async function POST(request: NextRequest) {
         contentType: 'application/octet-stream',
         upsert: false
       })
-    
+
     if (uploadError) {
       console.error('Upload error:', uploadError)
       throw new Error(`Failed to upload MindAR file: ${uploadError.message}`)
     }
-    
+
     const { data: urlData } = supabase.storage
       .from('mind-files')
       .getPublicUrl(fileName)
@@ -173,20 +281,21 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('Experience updated with MindAR file URL')
-    
+
     return NextResponse.json({
       success: true,
       mindFileUrl,
+      experienceId,
       message: 'MindAR file compiled and uploaded successfully',
-      method: 'working-card-mind-template',
-      note: 'Using working card.mind template - AR will work but may not track your exact image perfectly'
-    })
+      method: 'playwright-web-compiler',
+      note: 'Generated using official MindAR web compiler'
+    }, { headers })
     
   } catch (error) {
     console.error('MindAR compilation error:', error)
     return NextResponse.json(
       { error: `MindAR compilation failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 } 
