@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindAR Compiler Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            backdrop-filter: blur(15px);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 3em;
+            font-weight: 800;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .compiler-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .compiler-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .compiler-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .compiler-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .compiler-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .compiler-description {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .compiler-features {
+            list-style: none;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .compiler-features li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .compiler-features li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .launch-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .launch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            backdrop-filter: blur(15px);
+        }
+
+        .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .info-item p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .compiler-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .container {
+                padding: 20px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 MindAR Compiler Hub</h1>
+            <p>Choose your preferred MindAR Image Targets Compiler for creating augmented reality experiences</p>
+        </div>
+
+        <div class="info-section">
+            <h2>📋 What is MindAR?</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <h3>Image Tracking</h3>
+                    <p>MindAR enables AR experiences that track real-world images and overlay digital content on them.</p>
+                </div>
+                <div class="info-item">
+                    <h3>Web-Based</h3>
+                    <p>No app installation required - works directly in web browsers on mobile and desktop devices.</p>
+                </div>
+                <div class="info-item">
+                    <h3>Easy to Use</h3>
+                    <p>Simply upload an image, compile it to a .mind file, and use it in your AR experiences.</p>
+                </div>
+                <div class="info-item">
+                    <h3>Cross-Platform</h3>
+                    <p>Works on iOS, Android, and desktop browsers with WebXR support.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="compiler-grid">
+            <div class="compiler-card">
+                <div class="compiler-icon">🚀</div>
+                <div class="compiler-title">Simple Compiler</div>
+                <div class="compiler-description">
+                    A streamlined compiler with modern UI and drag-and-drop functionality. Perfect for quick image compilation with visual feedback.
+                </div>
+                <ul class="compiler-features">
+                    <li>Drag & drop file upload</li>
+                    <li>Image preview before compilation</li>
+                    <li>Progress tracking with animations</li>
+                    <li>Modern, responsive design</li>
+                    <li>Mock compilation for testing</li>
+                </ul>
+                <a href="mindar-compiler.html" class="launch-button">Launch Simple Compiler</a>
+            </div>
+
+            <div class="compiler-card">
+                <div class="compiler-icon">⚡</div>
+                <div class="compiler-title">Advanced Compiler</div>
+                <div class="compiler-description">
+                    Full integration with the official MindAR compiler. Access all advanced features and real compilation capabilities.
+                </div>
+                <ul class="compiler-features">
+                    <li>Official MindAR compiler integration</li>
+                    <li>Real compilation capabilities</li>
+                    <li>Advanced options and settings</li>
+                    <li>Iframe embedding</li>
+                    <li>Tab-based interface</li>
+                </ul>
+                <a href="mindar-compiler-advanced.html" class="launch-button">Launch Advanced Compiler</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                Powered by <a href="https://hiukim.github.io/mind-ar-js-doc/" target="_blank">MindAR</a> | 
+                <a href="https://github.com/hiukim/mind-ar-js" target="_blank">GitHub</a> |
+                <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile/" target="_blank">Official Compiler</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html> 
