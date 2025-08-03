@@ -1,14 +1,14 @@
-import { Compiler } from '@maherboughdiri/mind-ar-compiler';
+import compiler from '@maherboughdiri/mind-ar-compiler';
 
 export async function convertImageToMind(imageFile: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = async () => {
       try {
-        const compiler = new Compiler();
+        const mindCompiler = new compiler.Compiler();
         const images = [img];
         
-        const dataList = await compiler.compileImageTargets(images, (progress: number) => {
+        const dataList = await mindCompiler.compileImageTargets(images, (progress: number) => {
           // Update progress callback
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('mindCompilerProgress', { 
@@ -17,7 +17,7 @@ export async function convertImageToMind(imageFile: File): Promise<ArrayBuffer> 
           }
         });
         
-        const buffer = compiler.exportData();
+        const buffer = mindCompiler.exportData();
         resolve(buffer);
       } catch (error) {
         reject(error);
