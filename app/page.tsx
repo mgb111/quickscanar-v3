@@ -41,6 +41,12 @@ export default function Home() {
               <span className="ml-2 text-xl font-bold text-gray-900">QuickScanAR</span>
             </div>
             <div className="flex items-center space-x-4">
+              <Link
+                href="/convert"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Convert Files
+              </Link>
               {user ? (
                 <>
                   <Link
