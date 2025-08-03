@@ -1,5 +1,6 @@
 import { CompilerBase } from './compiler-base.js'
-import CompilerWorker from "./compiler.worker.js?worker&inline";
+import { extractTrackingFeatures } from './tracker/extract-utils.js';
+import { buildTrackingImageList } from './image-list.js';
 
 export class Compiler extends CompilerBase {
   createProcessCanvas(img) {
@@ -11,15 +12,27 @@ export class Compiler extends CompilerBase {
 
   compileTrack({progressCallback, targetImages, basePercent}) {
     return new Promise((resolve, reject) => {
-      const worker = new CompilerWorker();
-      worker.onmessage = (e) => {
-        if (e.data.type === 'progress') {
-          progressCallback(basePercent + e.data.percent * basePercent/100);
-        } else if (e.data.type === 'compileDone') {
-          resolve(e.data.list);
+      try {
+        const percentPerImage = 100.0 / targetImages.length;
+        let percent = 0.0;
+        const list = [];
+
+        for (let i = 0; i < targetImages.length; i++) {
+          const targetImage = targetImages[i];
+          const imageList = buildTrackingImageList(targetImage);
+          const percentPerAction = percentPerImage / imageList.length;
+
+          const trackingData = extractTrackingFeatures(imageList, (index) => {
+            percent += percentPerAction;
+            progressCallback(basePercent + percent * basePercent/100);
+          });
+          list.push(trackingData);
         }
-      };
-      worker.postMessage({ type: 'compile', targetImages });
+
+        resolve(list);
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 } 
