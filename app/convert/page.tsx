@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
-import { convertImageToMind, downloadMindFile } from './compiler';
 
 export default function ConvertPage() {
   const [progress, setProgress] = useState(0);
@@ -34,6 +33,7 @@ export default function ConvertPage() {
       setProgress(0);
       
       try {
+        const { convertImageToMind, downloadMindFile } = await import('./compiler');
         const mindBuffer = await convertImageToMind(file);
         downloadMindFile(mindBuffer, file.name.replace(/\.[^/.]+$/, '.mind'));
         toast.success('Conversion completed successfully!');

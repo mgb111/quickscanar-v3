@@ -1,6 +1,11 @@
-import compiler from '@maherboughdiri/mind-ar-compiler';
-
 export async function convertImageToMind(imageFile: File): Promise<ArrayBuffer> {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    throw new Error('This function can only be called on the client side');
+  }
+
+  // Only import the compiler on the client side
+  const { default: compiler } = await import('@maherboughdiri/mind-ar-compiler');
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = async () => {
