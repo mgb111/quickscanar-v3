@@ -13,9 +13,9 @@ declare module '@maherboughdiri/mind-ar-compiler' {
     exportData(): ArrayBuffer;
   }
 
-  const compiler: {
+  const defaultExport: {
     Compiler: typeof MindARCompiler;
   };
 
-  export default compiler;
+  export default defaultExport;
 }
