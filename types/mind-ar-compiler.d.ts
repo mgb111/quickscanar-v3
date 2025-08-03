@@ -1,4 +1,4 @@
-declare module '@maherboughdiri/mind-ar-compiler' {
+declare module '@maherboughdiri/mind-ar-compiler/assets/compiler.js' {
   interface CompilerOptions {
     maxTrackingFeatures?: number;
   }
@@ -7,15 +7,9 @@ declare module '@maherboughdiri/mind-ar-compiler' {
     (progress: number): void;
   }
 
-  class MindARCompiler {
+  export class Compiler {
     constructor(options?: CompilerOptions);
     compileImageTargets(images: HTMLImageElement[], progressCallback?: ProgressCallback): Promise<any[]>;
     exportData(): ArrayBuffer;
   }
-
-  const defaultExport: {
-    Compiler: typeof MindARCompiler;
-  };
-
-  export default defaultExport;
 }

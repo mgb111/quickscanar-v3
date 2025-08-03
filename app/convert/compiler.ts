@@ -5,12 +5,12 @@ export async function convertImageToMind(imageFile: File): Promise<ArrayBuffer> 
   }
 
   // Only import the compiler on the client side
-  const compilerModule = await import('@maherboughdiri/mind-ar-compiler');
+  const { Compiler } = await import('@maherboughdiri/mind-ar-compiler/assets/compiler.js');
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = async () => {
       try {
-        const mindCompiler = new compilerModule.default.Compiler();
+        const mindCompiler = new Compiler();
         const images = [img];
         
         const dataList = await mindCompiler.compileImageTargets(images, (progress: number) => {
