@@ -87,11 +87,12 @@ export default function CompilerPage() {
           {/* Iframe Overlays */}
           <div className="absolute top-0 left-0 right-0 h-24 bg-white z-10 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 right-0 h-20 bg-white z-10 pointer-events-none"></div>
+          <div className="absolute top-0 left-0 bottom-0 w-64 bg-white z-10 pointer-events-none"></div>
           
           {/* MindAR Compiler Iframe */}
           <iframe 
             src="https://hiukim.github.io/mind-ar-js-doc/tools/compile/"
-            className="w-full h-[600px] border-0 -mt-24 pt-24 -mb-20 pb-20"
+            className="w-full h-[800px] border-0 -mt-24 pt-24 -mb-20 pb-20 -ml-64 pl-64"
             onLoad={() => setIframeLoaded(true)}
             title="AR Image Compiler"
           />
