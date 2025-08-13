@@ -1,8 +1,4 @@
 {
-  "functions": {
-    "api/compile-mind/route.js": { "maxDuration": 300 },
-    "api/compile-status/route.js": { "maxDuration": 30 }
-  },
   "build": {
     "env": {
       "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
