@@ -219,23 +219,39 @@ export default function CreateExperience() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+      {/* Header */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Link href="/dashboard" className="flex items-center text-gray-700 hover:text-gray-900">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Dashboard
+              <Link
+                href="/dashboard"
+                className="mr-4 text-gray-400 hover:text-gray-600"
+              >
+                <ArrowLeft className="h-6 w-6" />
               </Link>
-            </div>
-            <div className="flex items-center">
               <Camera className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">QuickScanAR</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">Create AR Experience</span>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
+
+      {/* Conversion Step Reminder */}
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-4 mt-4">
+        <div className="flex">
+          <Upload className="h-5 w-5 text-blue-400" />
+          <div className="ml-3">
+            <p className="text-sm text-blue-700">
+              <strong>Step 2:</strong> You're now creating an AR experience. 
+              If you haven't converted your marker images to .mind format yet, 
+              <Link href="/convert" className="text-blue-800 underline hover:text-blue-900 ml-1">
+                convert them first
+              </Link> for optimal AR tracking performance.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg">
