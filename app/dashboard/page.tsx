@@ -41,6 +41,11 @@ export default function Dashboard() {
   }, [user])
 
   const fetchExperiences = async () => {
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+    
     try {
       const { data, error } = await supabase
         .from('ar_experiences')
@@ -59,6 +64,11 @@ export default function Dashboard() {
 
   const deleteExperience = async (id: string) => {
     if (!confirm('Are you sure you want to delete this experience?')) return
+
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
 
     try {
       const { error } = await supabase

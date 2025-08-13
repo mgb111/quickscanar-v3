@@ -42,6 +42,11 @@ export default function ExperienceViewer() {
   }, [params.id])
 
   const fetchExperience = async () => {
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+    
     try {
       const { data, error } = await supabase
         .from('ar_experiences')

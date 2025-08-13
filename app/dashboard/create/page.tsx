@@ -94,6 +94,11 @@ export default function CreateExperience() {
       return
     }
 
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+
     setSubmitting(true)
 
     try {

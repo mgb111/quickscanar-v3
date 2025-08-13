@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key'
-
-// Only create client if we have valid environment variables
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Add a check for valid environment variables
 export const isSupabaseConfigured = () => {
@@ -13,6 +10,24 @@ export const isSupabaseConfigured = () => {
          process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'placeholder_key'
 }
+
+// Singleton pattern to avoid multiple client instances
+let supabaseInstance: SupabaseClient | null = null
+
+export const getSupabaseClient = (): SupabaseClient | null => {
+  if (!isSupabaseConfigured()) {
+    return null
+  }
+  
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+  }
+  
+  return supabaseInstance
+}
+
+// Create a single client instance for direct use
+export const supabase = isSupabaseConfigured() ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 export type Database = {
   public: {

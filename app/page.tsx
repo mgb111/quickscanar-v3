@@ -3,10 +3,10 @@
 import { useAuth } from '@/components/AuthProvider'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import Link from 'next/link'
-import { Camera, Video, Upload, ArrowRight, AlertTriangle } from 'lucide-react'
+import { Camera, Video, Upload, ArrowRight, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 
 export default function Home() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabaseError } = useAuth()
 
   if (loading) {
     return (
@@ -18,14 +18,43 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Configuration Warning */}
+      {/* Supabase Status */}
       {!isSupabaseConfigured() && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
           <div className="flex">
             <AlertTriangle className="h-5 w-5 text-yellow-400" />
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Configuration Required:</strong> Please set up your Supabase environment variables in <code>.env.local</code> to use this application.
+                <strong>Demo Mode:</strong> Supabase is not configured. Running in demo mode without authentication.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSupabaseConfigured() && supabaseError && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <XCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                <strong>Connection Error:</strong> {supabaseError}
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                Please check your Supabase configuration or try again later.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSupabaseConfigured() && !supabaseError && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4">
+          <div className="flex">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <div className="ml-3">
+              <p className="text-sm text-green-700">
+                <strong>Connected:</strong> Supabase is working properly.
               </p>
             </div>
           </div>
@@ -47,36 +76,42 @@ export default function Home() {
               >
                 Convert Files
               </Link>
-              {user ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/auth/signout"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign Out
-                  </Link>
-                </>
+              {isSupabaseConfigured() && !supabaseError ? (
+                user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/auth/signout"
+                      className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Sign Out
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/signin"
+                      className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )
               ) : (
-                <>
-                  <Link
-                    href="/auth/signin"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-                  >
-                    Sign Up
-                  </Link>
-                </>
+                <div className="text-sm text-gray-500">
+                  Demo Mode
+                </div>
               )}
             </div>
           </div>
@@ -94,7 +129,7 @@ export default function Home() {
             Upload your marker images and videos to create interactive augmented reality experiences that work on any device.
           </p>
           <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-            {user ? (
+            {isSupabaseConfigured() && !supabaseError && user ? (
               <Link
                 href="/dashboard"
                 className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10"
@@ -102,12 +137,20 @@ export default function Home() {
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-            ) : (
+            ) : isSupabaseConfigured() && !supabaseError ? (
               <Link
                 href="/auth/signup"
                 className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10"
               >
                 Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            ) : (
+              <Link
+                href="/convert"
+                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10"
+              >
+                Try Demo
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             )}
