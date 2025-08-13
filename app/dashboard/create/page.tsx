@@ -245,7 +245,7 @@ export default function CreateExperience() {
             <p className="text-sm text-blue-700">
               <strong>Step 2:</strong> You're now creating an AR experience. 
               If you haven't converted your marker images to .mind format yet, 
-              <Link href="/convert" className="text-blue-800 underline hover:text-blue-900 ml-1">
+              <Link href="/compiler" className="text-blue-800 underline hover:text-blue-900 ml-1">
                 convert them first
               </Link> for optimal AR tracking performance.
             </p>
