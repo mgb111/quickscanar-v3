@@ -67,7 +67,7 @@ export default function CreateExperience() {
       console.log('User ID:', user.id)
       console.log('Video file:', videoFile?.name)
       console.log('Mind file:', mindFile?.name)
-      
+
       // Upload video
       const videoFileName = `${user?.id}/${Date.now()}-video.mp4`
       const { data: videoData, error: videoError } = await supabase.storage
@@ -165,126 +165,152 @@ export default function CreateExperience() {
           
           console.log('=== END FILE VALIDATION ===')
           
-          // Try direct Supabase upload first (avoids CORS issues)
-          const { data: mindData, error: mindError } = await supabase.storage
-            .from('mind-files')
-            .upload(mindFileName, mindFile, {
-              cacheControl: '3600',
-              upsert: false
+          // Try server-side upload first to avoid CORS/WAF issues
+          try {
+            const apiForm = new FormData()
+            apiForm.append('file', mindFile)
+            apiForm.append('path', mindFileName)
+            const resp = await fetch('/api/upload/mind', {
+              method: 'POST',
+              body: apiForm,
             })
-
-          console.log('Upload response received:')
-          console.log('Data:', mindData)
-          console.log('Error:', mindError)
-
-          if (mindError) {
-            console.error('Mind file upload error:', mindError)
-            console.error('Error message:', mindError.message)
-            console.error('Error details:', mindError)
-            
-            // Check for specific error types
-            if (mindError.message.includes('file size')) {
-              throw new Error(`File size error: ${mindError.message}`)
+            if (!resp.ok) {
+              const err = await resp.json().catch(() => ({} as any))
+              throw new Error(err?.error || `Server upload failed: HTTP ${resp.status}`)
             }
-            
-            // If it's a CORS error, try alternative approach
-            if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
-              console.log('CORS error detected, trying alternative upload method...')
-              
-              // Try alternative: Convert file to base64 and upload as text
-              const base64String = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as string)
-                reader.onerror = reject
-                reader.readAsDataURL(mindFile)
-              })
-              
-              const textFileName = `${user?.id}/${Date.now()}-custom.txt`
-              const { data: altData, error: altError } = await supabase.storage
+            const json = await resp.json()
+            mindFileUrl = json.url
+            console.log('Server upload successful:', json)
+            setCompilationProgress('Custom .mind file uploaded (server)!')
+          } catch (serverUploadErr: any) {
+            console.warn('Server upload failed, falling back to direct storage upload:', serverUploadErr?.message)
+
+            // Fallback: direct Supabase upload
+            let mindData: any = null
+            let mindError: any = null
+            try {
+              const result = await supabase.storage
                 .from('mind-files')
-                .upload(textFileName, new Blob([base64String], { type: 'text/plain' }))
-              
-              if (altError) throw altError
-              
-              console.log('Alternative upload successful:', altData)
-              const { data: altUrlData } = supabase.storage
-                .from('mind-files')
-                .getPublicUrl(textFileName)
-              
-              mindFileUrl = altUrlData.publicUrl
-              setCompilationProgress('Custom .mind file uploaded (alternative method)!')
-            } else if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
-              console.log('Network error detected, trying retry with exponential backoff...')
-              
-              // Try multiple retries with exponential backoff
-              let retryCount = 0
-              const maxRetries = 3
-              let lastError = mindError
-              
-              while (retryCount < maxRetries) {
-                retryCount++
-                const delay = Math.pow(2, retryCount) * 1000 // 2s, 4s, 8s
-                
-                console.log(`Retry attempt ${retryCount}/${maxRetries} in ${delay/1000}s...`)
-                await new Promise(resolve => setTimeout(resolve, delay))
-                
-                try {
-                  console.log(`Retrying upload...`)
-                  const { data: retryData, error: retryError } = await supabase.storage
-                    .from('mind-files')
-                    .upload(mindFileName, mindFile, {
-                      cacheControl: '3600',
-                      upsert: false
-                    })
-                  
-                  if (!retryError) {
-                    console.log('Retry successful:', retryData)
-                    const { data: retryUrlData } = supabase.storage
-                      .from('mind-files')
-                      .getPublicUrl(mindFileName)
-                    
-                    mindFileUrl = retryUrlData.publicUrl
-                    setCompilationProgress('Custom .mind file uploaded (retry successful)!')
-                    break
-                  } else {
-                    lastError = retryError
-                    console.log(`Retry ${retryCount} failed:`, retryError.message)
-                  }
-                } catch (retryException: any) {
-                  lastError = retryException
-                  console.log(`Retry ${retryCount} exception:`, retryException.message)
-                }
+                .upload(mindFileName, mindFile, {
+                  cacheControl: '3600',
+                  upsert: false,
+                  contentType: 'application/octet-stream'
+                })
+              mindData = result.data
+              mindError = result.error
+            } catch (thrown: any) {
+              mindData = null
+              mindError = thrown
+            }
+
+            console.log('Upload response received:')
+            console.log('Data:', mindData)
+            console.log('Error:', mindError)
+
+            if (mindError) {
+              console.error('Mind file upload error:', mindError)
+              console.error('Error message:', mindError.message)
+              console.error('Error details:', mindError)
+
+              if (mindError.message.includes('file size')) {
+                throw new Error(`File size error: ${mindError.message}`)
               }
-              
-              if (retryCount >= maxRetries) {
-                throw new Error(`Upload failed after ${maxRetries} retries. Last error: ${lastError.message}`)
+
+              if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
+                console.log('CORS error detected, trying alternative upload method...')
+
+                const base64String = await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader()
+                  reader.onload = () => resolve(reader.result as string)
+                  reader.onerror = reject
+                  reader.readAsDataURL(mindFile)
+                })
+
+                const textFileName = `${user?.id}/${Date.now()}-custom.txt`
+                const { data: altData, error: altError } = await supabase.storage
+                  .from('mind-files')
+                  .upload(textFileName, new Blob([base64String], { type: 'text/plain' }))
+
+                if (altError) throw altError
+
+                console.log('Alternative upload successful:', altData)
+                const { data: altUrlData } = supabase.storage
+                  .from('mind-files')
+                  .getPublicUrl(textFileName)
+
+                mindFileUrl = altUrlData.publicUrl
+                setCompilationProgress('Custom .mind file uploaded (alternative method)!')
+              } else if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
+                console.log('Network error detected, trying retry with exponential backoff...')
+
+                let retryCount = 0
+                const maxRetries = 3
+                let lastError = mindError
+
+                while (retryCount < maxRetries) {
+                  retryCount++
+                  const delay = Math.pow(2, retryCount) * 1000
+
+                  console.log(`Retry attempt ${retryCount}/${maxRetries} in ${delay/1000}s...`)
+                  await new Promise(resolve => setTimeout(resolve, delay))
+
+                  try {
+                    console.log(`Retrying upload...`)
+                    const { data: retryData, error: retryError } = await supabase.storage
+                      .from('mind-files')
+                      .upload(mindFileName, mindFile, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: 'application/octet-stream'
+                      })
+
+                    if (!retryError) {
+                      console.log('Retry successful:', retryData)
+                      const { data: retryUrlData } = supabase.storage
+                        .from('mind-files')
+                        .getPublicUrl(mindFileName)
+
+                      mindFileUrl = retryUrlData.publicUrl
+                      setCompilationProgress('Custom .mind file uploaded (retry successful)!')
+                      break
+                    } else {
+                      lastError = retryError
+                      console.log(`Retry ${retryCount} failed:`, retryError.message)
+                    }
+                  } catch (retryException: any) {
+                    lastError = retryException
+                    console.log(`Retry ${retryCount} exception:`, retryException.message)
+                  }
+                }
+
+                if (retryCount >= maxRetries) {
+                  throw new Error(`Upload failed after ${maxRetries} retries. Last error: ${lastError.message}`)
+                }
+              } else {
+                throw mindError
               }
             } else {
-              throw mindError
-            }
-          } else {
-            console.log('Mind file upload successful:', mindData)
+              console.log('Mind file upload successful:', mindData)
 
-            const { data: mindUrlData } = supabase.storage
-              .from('mind-files')
-              .getPublicUrl(mindFileName)
-            
-            mindFileUrl = mindUrlData.publicUrl
-            setCompilationProgress('Custom .mind file uploaded!')
+        const { data: mindUrlData } = supabase.storage
+          .from('mind-files')
+          .getPublicUrl(mindFileName)
+        
+        mindFileUrl = mindUrlData.publicUrl
+        setCompilationProgress('Custom .mind file uploaded!')
+            }
+          } catch (uploadError: any) {
+            console.error('Mind file upload failed:', uploadError)
+            throw new Error(`Mind file upload failed: ${uploadError.message}`)
           }
-        } catch (uploadError: any) {
-          console.error('Mind file upload failed:', uploadError)
-          throw new Error(`Mind file upload failed: ${uploadError.message}`)
-        }
       } else {
-        // This section is not needed since we're using custom .mind files
         // The .mind file should already contain the image data
         throw new Error('Custom .mind file is required. Please upload a .mind file.')
       }
-
-      // Ensure we have a valid mind file URL
-      if (!mindFileUrl) {
-        throw new Error('Failed to get mind file URL. Please try again.')
+ 
+        // Ensure we have a valid mind file URL
+        if (!mindFileUrl) {
+          throw new Error('Failed to get mind file URL. Please try again.')
       }
 
       // Save to database
@@ -387,7 +413,7 @@ export default function CreateExperience() {
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </div>
-      </div>
+          </div>
 
       {/* Form */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
