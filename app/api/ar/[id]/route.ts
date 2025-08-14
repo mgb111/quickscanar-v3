@@ -20,6 +20,15 @@ export async function GET(
       return new NextResponse('Experience not found', { status: 404 })
     }
 
+    // Debug: Log the experience data
+    console.log('AR Experience Data:', {
+      id: experience.id,
+      title: experience.title,
+      marker_image_url: experience.marker_image_url,
+      mind_file_url: experience.mind_file_url,
+      video_url: experience.video_url
+    })
+
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const usingCustomMind = !!experience.mind_file_url
 
@@ -30,7 +39,7 @@ export async function GET(
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>${experience.title} - AR Experience</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
       * {
@@ -100,17 +109,17 @@ export async function GET(
     </style>
   </head>
   <body>
-    <!-- Debug panel disabled -->
-    <!--
-    <div class="debug-panel" id="debug-panel">
-      <strong>AR Status:</strong><br>
-      <div id="debug-content"></div>
-    </div>
-    -->
-
     <div class="status-indicator" id="status-indicator">
       <h3 id="status-title">Point camera at your marker</h3>
       <p id="status-message">Look for your uploaded image</p>
+    </div>
+
+    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:1003;">
+      <div style="text-align:center;color:white;max-width:320px;padding:20px;">
+        <h2 style="font-size:20px;font-weight:bold;margin-bottom:10px;">Ready to start AR</h2>
+        <p style="font-size:14px;opacity:0.9;margin-bottom:16px;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
+        <button id="startBtn" style="background:#cc3300;color:white;border:none;border-radius:8px;padding:12px 18px;font-weight:600;cursor:pointer;">Start AR</button>
+      </div>
     </div>
 
     <a-scene
@@ -122,9 +131,9 @@ export async function GET(
       device-orientation-permission-ui="enabled: false"
       embedded
       loading-screen="enabled: false"
+      style="opacity:0; transition: opacity .3s ease;"
     >
       <a-assets>
-        <img id="marker" src="${experience.marker_image_url}" crossorigin="anonymous" />
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -139,15 +148,6 @@ export async function GET(
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-plane 
-          src="#marker"
-          position="0 0 0"
-          height="${experience.plane_height || 0.552}"
-          width="${experience.plane_width || 1}"
-          material="transparent: true; opacity: 0.0"
-          visible="false"
-        ></a-plane>
-
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -167,23 +167,19 @@ export async function GET(
           material="shader: flat; src: #videoTexture; transparent: true"
           visible="false"
         ></a-plane>
-
-        <a-plane
-          id="debugPlane"
-          src="#marker"
-          position="0 0 0.02"
-          height="1"
-          width="1"
-          material="transparent: true; opacity: 0.0"
-          visible="false"
-        ></a-plane>
       </a-entity>
     </a-scene>
 
     <script>
-      function updateDebug(message) {
-        // Debugging disabled
-        // console.log(message);
+      async function preflightMind(url) {
+        try {
+          const res = await fetch(url, { method: 'GET', mode: 'cors' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return true;
+        } catch (e) {
+          console.error('Mind file preflight failed:', e);
+          return false;
+        }
       }
 
       function showStatus(title, message) {
@@ -203,11 +199,6 @@ export async function GET(
         if (statusIndicator) {
           statusIndicator.style.display = 'none';
         }
-      }
-
-      function detectMobile() {
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
       }
 
       function nukeLoadingScreens() {
@@ -233,75 +224,104 @@ export async function GET(
         });
       }
 
-      function switchToFallback() {
-        const scene = document.getElementById('arScene');
-        if (!scene) return;
-        const fallbackMindFile = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
-        scene.setAttribute('mindar-image', \`imageTargetSrc: \${fallbackMindFile};\`);
-      }
-
       nukeLoadingScreens();
 
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
-        const isMobile = detectMobile();
 
-        const video = document.querySelector("#videoTexture");
-        const target = document.querySelector("#target");
-        const videoPlane = document.querySelector("#videoPlane");
-        const backgroundPlane = document.querySelector("#backgroundPlane");
-        const debugPlane = document.querySelector("#debugPlane");
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
+        const scene = document.getElementById('arScene');
+        const video = document.querySelector('#videoTexture');
+        const target = document.querySelector('#target');
+        const videoPlane = document.querySelector('#videoPlane');
+        const backgroundPlane = document.querySelector('#backgroundPlane');
 
-        if (video && videoPlane) {
+        console.log('AR Elements found:', {
+          scene: !!scene,
+          video: !!video,
+          target: !!target,
+          videoPlane: !!videoPlane,
+          backgroundPlane: !!backgroundPlane
+        });
+
+        // Preflight check for .mind URL
+        const ok = await preflightMind('${mindFileUrl}');
+        if (!ok && scene) {
+          const fallbackMind = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
+          const attr = 'imageTargetSrc: ' + fallbackMind + ';';
+          scene.setAttribute('mindar-image', attr);
+          showStatus('Using fallback target', 'Your .mind file could not be loaded. Using a sample target to verify camera and tracking.');
+        }
+
+        if (video && videoPlane && backgroundPlane) {
           video.addEventListener('loadedmetadata', () => {
-            const ratio = video.videoWidth / video.videoHeight;
+            console.log('Video metadata loaded');
+            const ratio = video.videoWidth / video.videoHeight || (16/9);
             const planeHeight = 1 / ratio;
             videoPlane.setAttribute('width', 1);
             videoPlane.setAttribute('height', planeHeight);
             backgroundPlane.setAttribute('width', 1);
             backgroundPlane.setAttribute('height', planeHeight);
-            debugPlane.setAttribute('width', 1);
-            debugPlane.setAttribute('height', planeHeight);
           });
         }
 
-        showStatus("Point camera at your marker", "Look for your uploaded image");
+        // A-Frame/MindAR lifecycle
+        if (scene) {
+          scene.addEventListener('arReady', () => {
+            console.log('MindAR arReady');
+            scene.style.opacity = '1';
+          });
+          scene.addEventListener('arError', (e) => {
+            console.error('MindAR arError', e);
+            showStatus('AR Initialization Error', 'Please allow camera access and try again.');
+          });
+        }
 
-        target?.addEventListener("targetFound", () => {
-          backgroundPlane?.setAttribute('visible', 'true');
-          videoPlane?.setAttribute('visible', 'true');
-          debugPlane?.setAttribute('visible', 'true');
+        if (target) {
+          console.log('Target element found, adding event listeners');
+          target.addEventListener('targetFound', () => {
+            console.log('Target found!');
+            if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
+            if (videoPlane) videoPlane.setAttribute('visible', 'true');
+            if (video) video.play().catch(() => {});
+            showStatus('Target Found!', 'AR content should be visible');
+            setTimeout(hideStatus, 1500);
+          });
 
-          setTimeout(() => {
-            debugPlane?.setAttribute('visible', 'false');
-          }, 2000);
+          target.addEventListener('targetLost', () => {
+            console.log('Target lost!');
+            if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
+            if (videoPlane) videoPlane.setAttribute('visible', 'false');
+            if (video) video.pause();
+            showStatus('Target Lost', 'Point camera at your marker again');
+          });
+        } else {
+          console.error('Target element not found!');
+        }
 
-          video?.play();
-          showStatus("Target Found!", "AR content should be visible");
-          setTimeout(hideStatus, 3000);
-        });
-
-        target?.addEventListener("targetLost", () => {
-          backgroundPlane?.setAttribute('visible', 'false');
-          videoPlane?.setAttribute('visible', 'false');
-          debugPlane?.setAttribute('visible', 'false');
-          video?.pause();
-          showStatus("Target Lost", "Point camera at your marker again");
-        });
+        // Tap to start to satisfy autoplay/camera permissions
+        if (startBtn && overlay) {
+          startBtn.addEventListener('click', async () => {
+            try {
+              if (video) await video.play().catch(() => {});
+            } catch {}
+            overlay.style.display = 'none';
+            showStatus('Initializing...', 'Starting camera and tracker');
+            setTimeout(hideStatus, 1000);
+          }, { once: true });
+        }
 
         setInterval(nukeLoadingScreens, 1000);
       });
 
       window.addEventListener('error', (event) => {
-        if (event.error?.message?.includes('RangeError')) {
-          switchToFallback();
-        }
+        console.error('AR Error:', event.error);
       });
 
       window.addEventListener('unhandledrejection', (event) => {
-        if (event.reason?.message?.includes('RangeError')) {
-          switchToFallback();
-        }
+        console.error('AR Promise Rejection:', event.reason);
       });
     </script>
   </body>

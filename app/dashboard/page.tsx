@@ -13,7 +13,7 @@ type ARExperience = {
   id: string
   title: string
   description: string | null
-  marker_image_url: string
+  marker_image_url: string | null
   mind_file_url: string
   video_url: string
   preview_image_url: string | null
