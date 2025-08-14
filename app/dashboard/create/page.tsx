@@ -265,7 +265,7 @@ export default function CreateExperience() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-white">{user?.email}</span>
               <button
-                onClick={() => router.push('/auth/signout')}
+                onClick={useCallback(() => router.push('/auth/signout'), [router])}
                 className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
@@ -405,12 +405,12 @@ export default function CreateExperience() {
                   id="videoFile"
                   name="videoFile"
                   accept="video/*"
-                  onChange={(e) => {
+                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setVideoFile(file);
                     }
-                  }}
+                  }, [])}
                   required
                   className="hidden"
                 />
