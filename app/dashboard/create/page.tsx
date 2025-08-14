@@ -292,25 +292,26 @@ export default function CreateExperience() {
             } else {
               console.log('Mind file upload successful:', mindData)
 
-        const { data: mindUrlData } = supabase.storage
-          .from('mind-files')
-          .getPublicUrl(mindFileName)
-        
-        mindFileUrl = mindUrlData.publicUrl
-        setCompilationProgress('Custom .mind file uploaded!')
+              const { data: mindUrlData } = supabase.storage
+                .from('mind-files')
+                .getPublicUrl(mindFileName)
+              
+              mindFileUrl = mindUrlData.publicUrl
+              setCompilationProgress('Custom .mind file uploaded!')
             }
-          } catch (uploadError: any) {
-            console.error('Mind file upload failed:', uploadError)
-            throw new Error(`Mind file upload failed: ${uploadError.message}`)
           }
+        } catch (uploadError: any) {
+          console.error('Mind file upload failed:', uploadError)
+          throw new Error(`Mind file upload failed: ${uploadError.message}`)
+        }
       } else {
         // The .mind file should already contain the image data
         throw new Error('Custom .mind file is required. Please upload a .mind file.')
       }
  
-        // Ensure we have a valid mind file URL
-        if (!mindFileUrl) {
-          throw new Error('Failed to get mind file URL. Please try again.')
+      // Ensure we have a valid mind file URL
+      if (!mindFileUrl) {
+        throw new Error('Failed to get mind file URL. Please try again.')
       }
 
       // Save to database
