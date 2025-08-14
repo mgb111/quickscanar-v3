@@ -77,6 +77,22 @@ export default function CompilerPage() {
           </ol>
         </div>
 
+        {/* Important Notice */}
+        <div className="bg-dark-blue border border-dark-blue rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="text-center text-white">
+            <h3 className="text-xl font-semibold mb-2 flex items-center justify-center">
+              <Upload className="h-5 w-5 mr-2" />
+              Important Notice
+            </h3>
+            <p className="text-lg opacity-90">
+              <strong>Scroll down</strong> in the converter below to find the upload and compile buttons!
+            </p>
+            <p className="text-sm opacity-80 mt-2">
+              The interface may be partially hidden by our overlays - scroll down to access all features.
+            </p>
+          </div>
+        </div>
+
         {/* Compiler Interface */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden relative">
           {/* Loading State */}

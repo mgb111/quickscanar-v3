@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Camera, ArrowLeft, Share2, Smartphone } from 'lucide-react'
+import { Camera, ArrowLeft, Share2, Smartphone, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import QRCode from 'qrcode.react'
 import toast from 'react-hot-toast'
@@ -80,6 +80,36 @@ export default function ExperienceViewer() {
     }
   }
 
+  const deleteExperience = async () => {
+    if (!experience) {
+      toast.error('No experience to delete')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete this experience? This action cannot be undone.')) {
+      return
+    }
+
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ar_experiences')
+        .delete()
+        .eq('id', experience.id)
+
+      if (error) throw error
+      
+      toast.success('Experience deleted successfully')
+      router.push('/dashboard')
+    } catch (error: any) {
+      toast.error('Failed to delete experience')
+    }
+  }
+
   if (loading || !isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -136,6 +166,13 @@ export default function ExperienceViewer() {
               >
                 Copy Link
               </button>
+              <button
+                onClick={deleteExperience}
+                className="text-red-400 hover:text-red-300 px-3 py-2 rounded-md text-sm font-medium"
+                title="Delete experience"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -160,20 +197,6 @@ export default function ExperienceViewer() {
           <div className="mt-6 text-sm text-gray-500">
             <p>Click the button above to open the AR experience in a new window</p>
             <p className="mt-2">Make sure to allow camera permissions when prompted</p>
-          </div>
-        </div>
-
-        {/* Marker Reference */}
-        <div className="absolute top-20 right-4 bg-white bg-opacity-90 text-black px-4 py-2 rounded-lg shadow-lg">
-          <div className="flex items-center space-x-2">
-            <img 
-              src={experience.marker_image_url} 
-              alt="Marker reference" 
-              className="w-12 h-12 object-cover rounded"
-            />
-            <div>
-              <p className="text-xs text-gray-600">Point camera at this image</p>
-            </div>
           </div>
         </div>
 

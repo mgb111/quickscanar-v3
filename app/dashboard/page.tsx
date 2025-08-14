@@ -239,6 +239,13 @@ export default function Dashboard() {
                     >
                       Share
                     </button>
+                    <button
+                      onClick={() => deleteExperience(experience.id)}
+                      className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                      title="Delete experience"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}

@@ -295,6 +295,7 @@ export default function CreateExperience() {
           user_id: user?.id,
           title,
           description: description || null,
+          marker_image_url: null, // Marker image is now contained in the .mind file
           mind_file_url: mindFileUrl,
           video_url: videoUrlData.publicUrl,
           plane_width: 1,
