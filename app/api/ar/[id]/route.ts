@@ -21,7 +21,6 @@ export async function GET(
     }
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const markerImageUrl = experience.marker_image_url
     const usingCustomMind = !!experience.mind_file_url
 
     const arHTML = `<!DOCTYPE html>
@@ -125,7 +124,7 @@ export async function GET(
       loading-screen="enabled: false"
     >
       <a-assets>
-        <img id="marker" src="${markerImageUrl}" crossorigin="anonymous" />
+        <img id="marker" src="${experience.marker_image_url}" crossorigin="anonymous" />
         <video
           id="videoTexture"
           src="${experience.video_url}"

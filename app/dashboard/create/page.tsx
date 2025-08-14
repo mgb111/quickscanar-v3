@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useDropzone } from 'react-dropzone'
-import { Camera, Upload, ArrowLeft, Video, Image, Plus } from 'lucide-react'
+import { Upload, ArrowLeft, Video, Plus, Camera, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -17,68 +16,9 @@ export default function CreateExperience() {
   const [submitting, setSubmitting] = useState(false)
   const [compilationProgress, setCompilationProgress] = useState<string>('')
   
-  const [markerFile, setMarkerFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
-  const [markerPreview, setMarkerPreview] = useState<string | null>(null)
-  const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [useCustomMind, setUseCustomMind] = useState(false)
-
-  const onMarkerDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (file) {
-      setMarkerFile(file)
-      const reader = new FileReader()
-      reader.onload = () => {
-        setMarkerPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }, [])
-
-  const onVideoDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (file) {
-      setVideoFile(file)
-      const reader = new FileReader()
-      reader.onload = () => {
-        setVideoPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }, [])
-
-  const onMindDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (file) {
-      setMindFile(file)
-      setUseCustomMind(true)
-    }
-  }, [])
-
-  const { getRootProps: getMarkerRootProps, getInputProps: getMarkerInputProps, isDragActive: isMarkerDragActive } = useDropzone({
-    onDrop: onMarkerDrop,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png']
-    },
-    maxFiles: 1
-  })
-
-  const { getRootProps: getVideoRootProps, getInputProps: getVideoInputProps, isDragActive: isVideoDragActive } = useDropzone({
-    onDrop: onVideoDrop,
-    accept: {
-      'video/mp4': ['.mp4']
-    },
-    maxFiles: 1
-  })
-
-  const { getRootProps: getMindRootProps, getInputProps: getMindInputProps, isDragActive: isMindDragActive } = useDropzone({
-    onDrop: onMindDrop,
-    accept: {
-      'application/octet-stream': ['.mind']
-    },
-    maxFiles: 1
-  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,17 +26,16 @@ export default function CreateExperience() {
     console.log('=== FORM SUBMISSION STARTED ===')
     console.log('Form event:', e)
     console.log('Current state:')
-    console.log('- markerFile:', markerFile)
     console.log('- videoFile:', videoFile)
     console.log('- mindFile:', mindFile)
     console.log('- useCustomMind:', useCustomMind)
     console.log('- title:', title)
     console.log('- description:', description)
     
-    // Check if we have either a marker image OR a custom .mind file
-    if (!markerFile && !useCustomMind) {
-      console.log('❌ No marker file and no custom mind file')
-      toast.error('Please upload a marker image or enable custom .mind file upload')
+    // Check if we have either a custom .mind file
+    if (!mindFile) {
+      console.log('❌ No custom mind file')
+      toast.error('Please upload a custom .mind file')
       return
     }
     
@@ -126,33 +65,9 @@ export default function CreateExperience() {
     try {
       console.log('Starting AR experience creation...')
       console.log('User ID:', user.id)
-      console.log('Marker file:', markerFile?.name)
       console.log('Video file:', videoFile?.name)
       console.log('Mind file:', mindFile?.name)
       
-      // Handle marker image upload (optional if custom .mind file is provided)
-      let markerImageUrl: string
-      
-      if (markerFile) {
-        // Upload marker image
-        const markerFileName = `${user?.id}/${Date.now()}-marker.${markerFile.name.split('.').pop()}`
-        const { data: markerData, error: markerError } = await supabase.storage
-          .from('markers')
-          .upload(markerFileName, markerFile)
-
-        if (markerError) throw markerError
-
-        // Get marker image URL
-        const { data: markerUrlData } = supabase.storage
-          .from('markers')
-          .getPublicUrl(markerFileName)
-        
-        markerImageUrl = markerUrlData.publicUrl
-      } else {
-        // Use a placeholder image if no marker file but custom .mind file is provided
-        markerImageUrl = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png'
-      }
-
       // Upload video
       const videoFileName = `${user?.id}/${Date.now()}-video.mp4`
       const { data: videoData, error: videoError } = await supabase.storage
@@ -167,7 +82,7 @@ export default function CreateExperience() {
         .getPublicUrl(videoFileName)
 
       // Handle .mind file - either upload custom or generate from image
-      let mindFileUrl: string
+      let mindFileUrl: string = ''
       
       if (useCustomMind && mindFile) {
         // Upload custom .mind file
@@ -230,19 +145,18 @@ export default function CreateExperience() {
               }
               reader.onerror = reject
             })
+            
             reader.readAsArrayBuffer(firstBytes)
             const header = await headerPromise
             console.log('File header (first 16 bytes):', header)
             
-            // Check if file starts with common binary patterns or is completely random
-            const isAllZero = header.split(' ').every(byte => byte === '00')
-            const isAllSame = header.split(' ').every(byte => byte === header.split(' ')[0])
-            
-            if (isAllZero) {
-              console.warn('⚠️ File appears to be all zeros - might be corrupted')
+            // Check for common corruption patterns
+            if (header === '00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00') {
+              throw new Error('File appears to be corrupted (all zeros)')
             }
-            if (isAllSame) {
-              console.warn('⚠️ File appears to have repeated bytes - might be corrupted')
+            
+            if (header.includes('ff ff ff ff ff ff ff ff')) {
+              console.warn('File contains repeated bytes - may be corrupted')
             }
             
           } catch (headerError) {
@@ -251,14 +165,8 @@ export default function CreateExperience() {
           
           console.log('=== END FILE VALIDATION ===')
           
-          console.log('About to call supabase.storage.from("mind-files").upload...')
-          console.log('File object:', mindFile)
-          console.log('File constructor:', mindFile.constructor.name)
-          console.log('File instanceof Blob:', mindFile instanceof Blob)
-          console.log('File instanceof File:', mindFile instanceof File)
-          
           // Try direct Supabase upload first (avoids CORS issues)
-          let { data: mindData, error: mindError } = await supabase.storage
+          const { data: mindData, error: mindError } = await supabase.storage
             .from('mind-files')
             .upload(mindFileName, mindFile, {
               cacheControl: '3600',
@@ -279,16 +187,33 @@ export default function CreateExperience() {
               throw new Error(`File size error: ${mindError.message}`)
             }
             
-            if (mindError.message.includes('quota') || mindError.message.includes('limit')) {
-              throw new Error(`Storage quota exceeded: ${mindError.message}`)
-            }
-            
-            if (mindError.message.includes('forbidden') || mindError.message.includes('403')) {
-              throw new Error(`Access forbidden (403): File may be too large, contain invalid content, or storage quota exceeded`)
-            }
-            
-            // If it's a network error, try retry
-            if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
+            // If it's a CORS error, try alternative approach
+            if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
+              console.log('CORS error detected, trying alternative upload method...')
+              
+              // Try alternative: Convert file to base64 and upload as text
+              const base64String = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(mindFile)
+              })
+              
+              const textFileName = `${user?.id}/${Date.now()}-custom.txt`
+              const { data: altData, error: altError } = await supabase.storage
+                .from('mind-files')
+                .upload(textFileName, new Blob([base64String], { type: 'text/plain' }))
+              
+              if (altError) throw altError
+              
+              console.log('Alternative upload successful:', altData)
+              const { data: altUrlData } = supabase.storage
+                .from('mind-files')
+                .getPublicUrl(textFileName)
+              
+              mindFileUrl = altUrlData.publicUrl
+              setCompilationProgress('Custom .mind file uploaded (alternative method)!')
+            } else if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
               console.log('Network error detected, trying retry with exponential backoff...')
               
               // Try multiple retries with exponential backoff
@@ -304,7 +229,7 @@ export default function CreateExperience() {
                 await new Promise(resolve => setTimeout(resolve, delay))
                 
                 try {
-                  console.log(`Retrying mind file upload (attempt ${retryCount})...`)
+                  console.log(`Retrying upload...`)
                   const { data: retryData, error: retryError } = await supabase.storage
                     .from('mind-files')
                     .upload(mindFileName, mindFile, {
@@ -312,129 +237,54 @@ export default function CreateExperience() {
                       upsert: false
                     })
                   
-                  if (retryError) {
-                    console.error(`Retry ${retryCount} failed:`, retryError)
+                  if (!retryError) {
+                    console.log('Retry successful:', retryData)
+                    const { data: retryUrlData } = supabase.storage
+                      .from('mind-files')
+                      .getPublicUrl(mindFileName)
+                    
+                    mindFileUrl = retryUrlData.publicUrl
+                    setCompilationProgress('Custom .mind file uploaded (retry successful)!')
+                    break
+                  } else {
                     lastError = retryError
-                    continue // Try next retry
+                    console.log(`Retry ${retryCount} failed:`, retryError.message)
                   }
-                  
-                  console.log(`Retry ${retryCount} successful:`, retryData)
-                  mindData = retryData
-                  mindError = null
-                  break // Success, exit retry loop
-                  
-                } catch (retryError: any) {
-                  console.error(`Retry ${retryCount} failed with exception:`, retryError)
-                  lastError = retryError
-                  continue // Try next retry
+                } catch (retryException: any) {
+                  lastError = retryException
+                  console.log(`Retry ${retryCount} exception:`, retryException.message)
                 }
               }
               
-              // If all retries failed
-              if (mindError) {
-                console.error(`All ${maxRetries} retry attempts failed`)
-                throw new Error(`Network error: Upload failed after ${maxRetries} retries. Please check your connection and try again later.`)
+              if (retryCount >= maxRetries) {
+                throw new Error(`Upload failed after ${maxRetries} retries. Last error: ${lastError.message}`)
               }
+            } else {
+              throw mindError
             }
-            
-            // If it's a CORS error, try alternative approach
-            if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
-              console.log('CORS error detected, trying alternative upload method...')
-              
-              // Try alternative: Convert file to base64 and store as text
-              try {
-                const reader = new FileReader()
-                const base64Promise = new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string)
-                  reader.onerror = reject
-                })
-                reader.readAsDataURL(mindFile)
-                const base64Data = await base64Promise
-                
-                // Store as a text file with .mind extension
-                const textBlob = new Blob([base64Data], { type: 'text/plain' })
-                const textFileName = `${user?.id}/${Date.now()}-custom-base64.mind`
-                
-                const { data: altData, error: altError } = await supabase.storage
-                  .from('mind-files')
-                  .upload(textFileName, textBlob, {
-                    cacheControl: '3600',
-                    upsert: false
-                  })
-                
-                if (altError) {
-                  console.error('Alternative upload also failed:', altError)
-                  throw new Error(`CORS error: Please check Supabase storage CORS settings. Both upload methods failed.`)
-                }
-                
-                console.log('Alternative upload successful:', altData)
-                const { data: altUrlData } = supabase.storage
-                  .from('mind-files')
-                  .getPublicUrl(textFileName)
-                
-                mindFileUrl = altUrlData.publicUrl
-                setCompilationProgress('Custom .mind file uploaded via alternative method!')
-                return // Skip the rest of the error handling
-                
-              } catch (altError: any) {
-                console.error('Alternative upload method failed:', altError)
-                throw new Error(`CORS error: Please check Supabase storage CORS settings. Both upload methods failed.`)
-              }
-            }
-            
-            throw mindError
-          }
+          } else {
+            console.log('Mind file upload successful:', mindData)
 
-          console.log('Mind file upload successful:', mindData)
-          
-          const { data: mindUrlData } = supabase.storage
-            .from('mind-files')
-            .getPublicUrl(mindFileName)
-          
-          mindFileUrl = mindUrlData.publicUrl
-          setCompilationProgress('Custom .mind file uploaded!')
+            const { data: mindUrlData } = supabase.storage
+              .from('mind-files')
+              .getPublicUrl(mindFileName)
+            
+            mindFileUrl = mindUrlData.publicUrl
+            setCompilationProgress('Custom .mind file uploaded!')
+          }
         } catch (uploadError: any) {
           console.error('Mind file upload failed:', uploadError)
           throw new Error(`Mind file upload failed: ${uploadError.message}`)
         }
       } else {
-        // Generate .mind file using the real MindAR compiler
-        setCompilationProgress('Compiling MindAR file...')
-        
-        // Ensure markerFile exists before proceeding
-        if (!markerFile) {
-          throw new Error('Marker file is required for compilation')
-        }
-        
-        console.log('Calling compile-mind API with file:', markerFile.name)
-        
-        // Create FormData with the actual image file
-        const formData = new FormData()
-        formData.append('image', markerFile)
-        
-        try {
-          const compileResponse = await fetch('/api/compile-mind', {
-            method: 'POST',
-            body: formData
-          })
+        // This section is not needed since we're using custom .mind files
+        // The .mind file should already contain the image data
+        throw new Error('Custom .mind file is required. Please upload a .mind file.')
+      }
 
-          console.log('Compile API response status:', compileResponse.status)
-          console.log('Compile API response headers:', Object.fromEntries(compileResponse.headers.entries()))
-
-          if (!compileResponse.ok) {
-            const errorData = await compileResponse.json()
-            console.error('Compile API error response:', errorData)
-            throw new Error(errorData.error || `Failed to compile MindAR file: ${compileResponse.status}`)
-          }
-
-          const compileData = await compileResponse.json()
-          console.log('Compile API success response:', compileData)
-          mindFileUrl = compileData.downloadUrl // Use downloadUrl from the API response
-          setCompilationProgress('MindAR compilation completed!')
-        } catch (apiError: any) {
-          console.error('Compile API call failed:', apiError)
-          throw new Error(`API call failed: ${apiError.message}`)
-        }
+      // Ensure we have a valid mind file URL
+      if (!mindFileUrl) {
+        throw new Error('Failed to get mind file URL. Please try again.')
       }
 
       // Save to database
@@ -445,7 +295,6 @@ export default function CreateExperience() {
           user_id: user?.id,
           title,
           description: description || null,
-          marker_image_url: markerImageUrl,
           mind_file_url: mindFileUrl,
           video_url: videoUrlData.publicUrl,
           plane_width: 1,
@@ -475,48 +324,13 @@ export default function CreateExperience() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Step 2 Reminder */}
-      <div className="bg-white border border-gray-200 rounded-lg mx-4 mt-4 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Upload className="h-5 w-5 mr-2 text-dark-blue" />
-            <span className="text-sm text-gray-600">
-              <strong>Step 2:</strong> Make sure you've converted your images to AR format first
-            </span>
-          </div>
-          <Link
-            href="/compiler"
-            className="text-dark-blue hover:text-blue-900 text-sm font-medium"
-          >
-            Convert Images →
-          </Link>
-        </div>
-      </div>
-
-      {/* Debug Info - Only show in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg mx-4 mt-4 p-4 shadow-sm">
-          <div className="text-sm text-yellow-800">
-            <strong>Debug Info:</strong>
-            <div>Supabase Configured: {supabase ? '✅ Yes' : '❌ No'}</div>
-            <div>User Authenticated: {user ? '✅ Yes' : '❌ No'}</div>
-            <div>User ID: {user?.id || 'None'}</div>
-            <div>Environment: {process.env.NODE_ENV}</div>
-            <div>Supabase URL Set: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Yes' : '❌ No'}</div>
-            <div>Supabase Key Set: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Yes' : '❌ No'}</div>
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="bg-dark-blue shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link href="/dashboard" className="flex items-center text-white hover:text-gray-300">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Dashboard
-              </Link>
+              <Camera className="h-8 w-8 text-white" />
+              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-white">{user?.email}</span>
@@ -532,20 +346,55 @@ export default function CreateExperience() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center text-black mb-8">
+          <div className="flex justify-center mb-4">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center text-dark-blue hover:text-blue-900 text-sm font-medium"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
-            Create New AR Experience
+            Create AR Experience
           </h1>
           <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
             Build an augmented reality experience with your videos and converted .mind files
           </p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Step 2: Convert Images */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+              <Upload className="h-5 w-5 mr-2 text-dark-blue" />
+              Step 2: Create New AR Experience
+            </h3>
+            <p className="text-gray-600">
+              Make sure you've converted your images to AR format first, then build your AR experience
+            </p>
+          </div>
+          <Link
+            href="/compiler"
+            className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+          >
+            Convert Images
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
+          <Video className="h-5 w-5 mr-2 text-dark-blue" />
+          AR Experience Details
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* Experience Name */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-black mb-2">
@@ -580,10 +429,10 @@ export default function CreateExperience() {
             </div>
 
             {/* Mind File Upload */}
-            <div>
+              <div>
               <label htmlFor="mindFile" className="block text-sm font-medium text-black mb-2">
-                Mind File (.mind)
-              </label>
+                Mind File (.mind) <span className="text-red-500">*</span>
+                </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
                 <input
                   type="file"
@@ -605,7 +454,7 @@ export default function CreateExperience() {
                   <p className="text-sm text-gray-600 mb-2">
                     <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-xs text-gray-500">.mind files only</p>
+                  <p className="text-xs text-gray-500">Upload your .mind file</p>
                 </label>
               </div>
               {mindFile && (
@@ -621,7 +470,7 @@ export default function CreateExperience() {
                 Video File
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
-                <input
+                  <input
                   type="file"
                   id="videoFile"
                   name="videoFile"
@@ -641,10 +490,10 @@ export default function CreateExperience() {
                     <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
                   </p>
                   <p className="text-xs text-gray-500">MP4, WebM, or other video formats</p>
-                </label>
+                  </label>
               </div>
               {videoFile && (
-                <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-gray-600">
                   Selected: {videoFile.name}
                 </p>
               )}
@@ -654,7 +503,7 @@ export default function CreateExperience() {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={submitting || (!markerFile && !useCustomMind) || !videoFile}
+                disabled={submitting || !mindFile || !videoFile}
                 className="w-full bg-dark-blue text-white py-3 px-6 rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {submitting ? (

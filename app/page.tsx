@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/AuthProvider'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import Link from 'next/link'
-import { Camera, Video, Upload, ArrowRight, AlertTriangle, CheckCircle, XCircle, Play, Star, Users, TrendingUp, Target, Zap } from 'lucide-react'
+import { Camera, Video, Upload, ArrowRight, Play, Star, Users, TrendingUp, Target, Zap } from 'lucide-react'
 
 export default function Home() {
   const { user, loading, supabaseError } = useAuth()
@@ -18,49 +18,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Supabase Status */}
-      {!isSupabaseConfigured() && (
-        <div className="bg-white border-l-4 border-dark-blue p-4 shadow-sm">
-          <div className="flex">
-            <AlertTriangle className="h-5 w-5 text-dark-blue" />
-            <div className="ml-3">
-              <p className="text-sm text-black">
-                <strong>Demo Mode:</strong> Supabase is not configured. Running in demo mode without authentication.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isSupabaseConfigured() && supabaseError && (
-        <div className="bg-white border-l-4 border-dark-blue p-4 shadow-sm">
-          <div className="flex">
-            <XCircle className="h-5 w-5 text-dark-blue" />
-            <div className="ml-3">
-              <p className="text-sm text-black">
-                <strong>Connection Error:</strong> {supabaseError}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Please check your Supabase configuration or try again later.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isSupabaseConfigured() && !supabaseError && (
-        <div className="bg-white border-l-4 border-dark-blue p-4 shadow-sm">
-          <div className="flex">
-            <CheckCircle className="h-5 w-5 text-dark-blue" />
-            <div className="ml-3">
-              <p className="text-sm text-black">
-                <strong>Connected:</strong> Supabase is working properly.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="bg-dark-blue shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

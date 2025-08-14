@@ -10,34 +10,39 @@ export default function CompilerPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <div className="bg-dark-blue border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+      <nav className="bg-dark-blue shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link
-                href="/dashboard"
-                className="mr-4 text-white/80 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="h-6 w-6" />
-              </Link>
               <Camera className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white">AR Image Compiler</span>
+              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
-            <Link
-              href="/dashboard/create"
-              className="bg-white text-dark-blue px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center"
-            >
-              Skip to Create Experience
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/dashboard/create"
+                className="bg-white text-dark-blue px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center"
+              >
+                Skip to Create Experience
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="text-center text-black mb-8">
+          <div className="flex justify-center mb-4">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center text-dark-blue hover:text-blue-900 text-sm font-medium"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
             AR Image Compiler
           </h1>
@@ -48,7 +53,7 @@ export default function CompilerPage() {
 
         {/* Instructions */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 flex items-center text-black">
+          <h3 className="text-xl font-semibold mb-4 flex items-center text-black">
             <Upload className="h-5 w-5 mr-2 text-dark-blue" />
             How to Use:
           </h3>
@@ -73,7 +78,7 @@ export default function CompilerPage() {
         </div>
 
         {/* Compiler Interface */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden relative border border-gray-200">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden relative">
           {/* Loading State */}
           {!iframeLoaded && (
             <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-20">
