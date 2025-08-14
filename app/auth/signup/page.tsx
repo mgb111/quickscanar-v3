@@ -14,7 +14,8 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { signUp } = useAuth()
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const { signUp, signInWithGoogle } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,6 +36,17 @@ export default function SignUp() {
       toast.error(error.message || 'Failed to create account')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true)
+    try {
+      await signInWithGoogle()
+      // Google OAuth will redirect, so no need to navigate here
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in with Google')
+      setGoogleLoading(false)
     }
   }
 

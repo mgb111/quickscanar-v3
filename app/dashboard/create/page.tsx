@@ -291,21 +291,43 @@ export default function CreateExperience() {
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
             Create AR Experience
           </h1>
-          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
-            Build an augmented reality experience with your videos and converted .mind files
+          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed mb-6">
+            Build an augmented reality experience that plays videos when you point your camera at specific images
           </p>
+          
+          {/* Simple Step-by-Step Guide */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-4xl mx-auto text-left">
+            <h2 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+              <Plus className="h-5 w-5 mr-2" />
+              How AR Works (Simple Guide)
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-white p-4 rounded-lg border border-blue-100">
+                <div className="font-semibold text-blue-800 mb-2">1. Upload Your Image</div>
+                <p className="text-blue-700">First, convert a photo to AR format using our compiler. This creates a "mind file" that your phone can recognize.</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg border border-blue-100">
+                <div className="font-semibold text-blue-800 mb-2">2. Add Your Video</div>
+                <p className="text-blue-700">Upload a video that will play when someone points their camera at your image. This could be a tutorial, demo, or any video content.</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg border border-blue-100">
+                <div className="font-semibold text-blue-800 mb-2">3. Point & Play</div>
+                <p className="text-blue-700">Users point their phone camera at your image, and your video automatically plays on top of it in real-time!</p>
+              </div>
+            </div>
+          </div>
         </div>
 
       {/* Step 2: Convert Images */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
               <Upload className="h-5 w-5 mr-2 text-dark-blue" />
               Step 2: Create New AR Experience
             </h3>
             <p className="text-gray-600">
-              Make sure you've converted your images to AR format first, then build your AR experience
+              Now let's build your AR experience by combining your converted image with a video
             </p>
           </div>
           <Link
@@ -316,7 +338,26 @@ export default function CreateExperience() {
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </div>
-          </div>
+        
+        {/* Quick Checklist */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 className="font-medium text-gray-800 mb-3">Before you start, make sure you have:</h4>
+          <ul className="text-sm text-gray-600 space-y-1">
+            <li className="flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              A .mind file (created from your image using the compiler above)
+            </li>
+            <li className="flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              A video file (MP4, WebM, or other common formats)
+            </li>
+            <li className="flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              A name and description for your experience
+            </li>
+          </ul>
+        </div>
+      </div>
 
       {/* Form */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -324,6 +365,9 @@ export default function CreateExperience() {
           <Video className="h-5 w-5 mr-2 text-dark-blue" />
           AR Experience Details
         </h3>
+        <p className="text-gray-600 mb-6">
+          Fill out the details below to create your AR experience. This is what users will see when they discover your creation.
+        </p>
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Experience Name */}
             <div>
@@ -359,10 +403,13 @@ export default function CreateExperience() {
             </div>
 
             {/* Mind File Upload */}
-              <div>
+            <div>
               <label htmlFor="mindFile" className="block text-sm font-medium text-black mb-2">
                 Mind File (.mind) <span className="text-red-500">*</span>
-                </label>
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                This is the AR-ready version of your image. If you don't have one, use the "Convert Images" button above first.
+              </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
                 <input
                   type="file"
@@ -388,19 +435,27 @@ export default function CreateExperience() {
                 </label>
               </div>
               {mindFile && (
-                <p className="mt-2 text-sm text-gray-600">
-                  Selected: {mindFile.name}
-                </p>
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✓ Ready: {mindFile.name}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    This file will be used to recognize your image and trigger the AR experience
+                  </p>
+                </div>
               )}
             </div>
 
             {/* Video File Upload */}
             <div>
               <label htmlFor="videoFile" className="block text-sm font-medium text-black mb-2">
-                Video File
+                Video File <span className="text-red-500">*</span>
               </label>
+              <p className="text-xs text-gray-500 mb-3">
+                This video will play when someone points their camera at your image. Choose something engaging!
+              </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
-                  <input
+                <input
                   type="file"
                   id="videoFile"
                   name="videoFile"
@@ -420,12 +475,17 @@ export default function CreateExperience() {
                     <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
                   </p>
                   <p className="text-xs text-gray-500">MP4, WebM, or other video formats</p>
-                  </label>
+                </label>
               </div>
               {videoFile && (
-                    <p className="mt-2 text-sm text-gray-600">
-                  Selected: {videoFile.name}
-                </p>
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✓ Ready: {videoFile.name}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    This video will overlay on your image when the AR experience is triggered
+                  </p>
+                </div>
               )}
             </div>
 
@@ -450,6 +510,43 @@ export default function CreateExperience() {
               </button>
             </div>
           </form>
+        </div>
+        
+        {/* How to Use Your AR Experience */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mt-8 shadow-sm">
+          <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+            <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+            How to Use Your AR Experience
+          </h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-800 mb-3">For You (Creator):</h4>
+              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                <li>After creating, you'll get a unique link to your experience</li>
+                <li>Share this link with others or embed it on your website</li>
+                <li>You can edit or delete your experience anytime from your dashboard</li>
+              </ol>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-800 mb-3">For Users:</h4>
+              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                <li>Open the link on their phone (works best on mobile)</li>
+                <li>Allow camera access when prompted</li>
+                <li>Point their camera at the image you used to create the .mind file</li>
+                <li>Your video will automatically play overlaid on the image!</li>
+              </ol>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-800 mb-2">💡 Pro Tips:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Use high-quality, clear images for better recognition</li>
+              <li>• Keep videos under 2 minutes for best performance</li>
+              <li>• Test your experience on different devices</li>
+              <li>• Good lighting helps the camera recognize your image</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
