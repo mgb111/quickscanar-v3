@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -19,8 +19,13 @@ export default function CreateExperience() {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
   const [useCustomMind, setUseCustomMind] = useState(false)
+  
+  // Optimize progress updates to reduce re-renders
+  const updateProgress = useCallback((message: string) => {
+    setCompilationProgress(message)
+  }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Check if we have either a custom .mind file
@@ -62,12 +67,12 @@ export default function CreateExperience() {
         .from('videos')
         .getPublicUrl(videoFileName)
 
-      // Handle .mind file - either upload custom or generate from image
-      let mindFileUrl: string = ''
-      
-      if (useCustomMind && mindFile) {
-        // Upload custom .mind file
-        setCompilationProgress('Uploading custom .mind file...')
+              // Handle .mind file - either upload custom or generate from image
+        let mindFileUrl: string = ''
+        
+        if (useCustomMind && mindFile) {
+          // Upload custom .mind file
+          updateProgress('Uploading custom .mind file...')
         const mindFileName = `${user?.id}/${Date.now()}-custom.mind`
         
         try {
@@ -97,7 +102,7 @@ export default function CreateExperience() {
             }
             const json = await resp.json()
             mindFileUrl = json.url
-            setCompilationProgress('Custom .mind file uploaded!')
+            updateProgress('Custom .mind file uploaded!')
           } catch (serverUploadErr: any) {
 
             // Fallback: direct Supabase upload
@@ -125,8 +130,7 @@ export default function CreateExperience() {
               }
 
               if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
-                console.log('CORS error detected, trying alternative upload method...')
-
+                // Try alternative upload method for CORS issues
                 const base64String = await new Promise<string>((resolve, reject) => {
                   const reader = new FileReader()
                   reader.onload = () => resolve(reader.result as string)
@@ -141,16 +145,14 @@ export default function CreateExperience() {
 
                 if (altError) throw altError
 
-                console.log('Alternative upload successful:', altData)
                 const { data: altUrlData } = supabase.storage
                   .from('mind-files')
                   .getPublicUrl(textFileName)
 
                 mindFileUrl = altUrlData.publicUrl
-                setCompilationProgress('Custom .mind file uploaded (alternative method)!')
+                updateProgress('Custom .mind file uploaded!')
               } else if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
-                console.log('Network error detected, trying retry with exponential backoff...')
-
+                // Retry with exponential backoff for network issues
                 let retryCount = 0
                 const maxRetries = 3
                 let lastError = mindError
@@ -159,11 +161,9 @@ export default function CreateExperience() {
                   retryCount++
                   const delay = Math.pow(2, retryCount) * 1000
 
-                  console.log(`Retry attempt ${retryCount}/${maxRetries} in ${delay/1000}s...`)
                   await new Promise(resolve => setTimeout(resolve, delay))
 
                   try {
-                    console.log(`Retrying upload...`)
                     const { data: retryData, error: retryError } = await supabase.storage
                       .from('mind-files')
                       .upload(mindFileName, mindFile, {
@@ -173,21 +173,18 @@ export default function CreateExperience() {
                       })
 
                     if (!retryError) {
-                      console.log('Retry successful:', retryData)
                       const { data: retryUrlData } = supabase.storage
                         .from('mind-files')
                         .getPublicUrl(mindFileName)
 
                       mindFileUrl = retryUrlData.publicUrl
-                      setCompilationProgress('Custom .mind file uploaded (retry successful)!')
+                      updateProgress('Custom .mind file uploaded!')
                       break
                     } else {
                       lastError = retryError
-                      console.log(`Retry ${retryCount} failed:`, retryError.message)
                     }
                   } catch (retryException: any) {
                     lastError = retryException
-                    console.log(`Retry ${retryCount} exception:`, retryException.message)
                   }
                 }
 
@@ -198,18 +195,15 @@ export default function CreateExperience() {
                 throw mindError
               }
             } else {
-              console.log('Mind file upload successful:', mindData)
-
               const { data: mindUrlData } = supabase.storage
                 .from('mind-files')
                 .getPublicUrl(mindFileName)
               
               mindFileUrl = mindUrlData.publicUrl
-              setCompilationProgress('Custom .mind file uploaded!')
+              updateProgress('Custom .mind file uploaded!')
             }
           }
         } catch (uploadError: any) {
-          console.error('Mind file upload failed:', uploadError)
           throw new Error(`Mind file upload failed: ${uploadError.message}`)
         }
       } else {
@@ -223,7 +217,7 @@ export default function CreateExperience() {
       }
 
       // Save to database
-      setCompilationProgress('Saving experience to database...')
+      updateProgress('Saving experience to database...')
       const { error: dbError } = await supabase
         .from('ar_experiences')
         .insert({
@@ -244,11 +238,11 @@ export default function CreateExperience() {
       router.push('/dashboard')
     } catch (error: any) {
       toast.error(error.message || 'Failed to create experience')
-    } finally {
-      setSubmitting(false)
-      setCompilationProgress('')
-    }
-  }
+          } finally {
+        setSubmitting(false)
+        setCompilationProgress('')
+      }
+    }, [mindFile, videoFile, title, description, user?.id, router, updateProgress])
 
   if (loading) {
     return (
@@ -341,7 +335,7 @@ export default function CreateExperience() {
                 id="title"
                 name="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value), [])}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Enter a name for your AR experience"
@@ -357,7 +351,7 @@ export default function CreateExperience() {
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value), [])}
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Describe your AR experience"
@@ -375,13 +369,13 @@ export default function CreateExperience() {
                   id="mindFile"
                   name="mindFile"
                   accept=".mind"
-                  onChange={(e) => {
+                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setMindFile(file);
                       setUseCustomMind(true);
                     }
-                  }}
+                  }, [])}
                   required
                   className="hidden"
                 />
