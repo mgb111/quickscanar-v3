@@ -179,6 +179,17 @@ export default function CreateExperience() {
           console.log('File size:', mindFile.size)
           console.log('File type:', mindFile.type)
           
+          // Validate file size (Supabase has limits)
+          const maxSize = 50 * 1024 * 1024 // 50MB limit
+          if (mindFile.size > maxSize) {
+            throw new Error(`File too large: ${(mindFile.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed: 50MB`)
+          }
+          
+          // Validate file type
+          if (mindFile.type !== 'application/octet-stream' && mindFile.type !== '') {
+            console.warn('File type warning:', mindFile.type, '- expected application/octet-stream')
+          }
+          
           // Try direct Supabase upload first (avoids CORS issues)
           const { data: mindData, error: mindError } = await supabase.storage
             .from('mind-files')
@@ -190,11 +201,64 @@ export default function CreateExperience() {
           if (mindError) {
             console.error('Mind file upload error:', mindError)
             console.error('Error message:', mindError.message)
+            console.error('Error details:', mindError)
+            
+            // Check for specific error types
+            if (mindError.message.includes('file size')) {
+              throw new Error(`File size error: ${mindError.message}`)
+            }
+            
+            if (mindError.message.includes('quota') || mindError.message.includes('limit')) {
+              throw new Error(`Storage quota exceeded: ${mindError.message}`)
+            }
+            
+            if (mindError.message.includes('forbidden') || mindError.message.includes('403')) {
+              throw new Error(`Access forbidden (403): File may be too large, contain invalid content, or storage quota exceeded`)
+            }
             
             // If it's a CORS error, try alternative approach
             if (mindError.message.includes('CORS') || mindError.message.includes('cross-origin')) {
               console.log('CORS error detected, trying alternative upload method...')
-              throw new Error('CORS error: Please check Supabase storage CORS settings or try again later')
+              
+              // Try alternative: Convert file to base64 and store as text
+              try {
+                const reader = new FileReader()
+                const base64Promise = new Promise<string>((resolve, reject) => {
+                  reader.onload = () => resolve(reader.result as string)
+                  reader.onerror = reject
+                })
+                reader.readAsDataURL(mindFile)
+                const base64Data = await base64Promise
+                
+                // Store as a text file with .mind extension
+                const textBlob = new Blob([base64Data], { type: 'text/plain' })
+                const textFileName = `${user?.id}/${Date.now()}-custom-base64.mind`
+                
+                const { data: altData, error: altError } = await supabase.storage
+                  .from('mind-files')
+                  .upload(textFileName, textBlob, {
+                    cacheControl: '3600',
+                    upsert: false
+                  })
+                
+                if (altError) {
+                  console.error('Alternative upload also failed:', altError)
+                  throw new Error(`CORS error: Please check Supabase storage CORS settings. Both upload methods failed.`)
+                }
+                
+                console.log('Alternative upload successful:', altData)
+                const { data: altUrlData } = supabase.storage
+                  .from('mind-files')
+                  .getPublicUrl(textFileName)
+                
+                mindFileUrl = altUrlData.publicUrl
+                setCompilationProgress('Custom .mind file uploaded via alternative method!')
+                return // Skip the rest of the error handling
+                
+              } catch (altError: any) {
+                console.error('Alternative upload method failed:', altError)
+                throw new Error(`CORS error: Please check Supabase storage CORS settings. Both upload methods failed.`)
+              }
             }
             
             throw mindError
