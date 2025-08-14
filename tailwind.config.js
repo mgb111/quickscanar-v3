@@ -14,6 +14,8 @@ module.exports = {
           600: '#2563eb',
           700: '#1d4ed8',
         },
+        'dark-blue': '#cc3300',
+        'cream': '#faf9f6',
       },
     },
   },

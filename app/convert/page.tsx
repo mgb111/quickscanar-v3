@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Camera, Upload, Video, Image, Download, AlertTriangle, Loader2 } from 'lucide-react'
+import { Camera, Upload, Video, Image, Download, AlertTriangle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 export default function ConvertPage() {
   const [markerFile, setMarkerFile] = useState<File | null>(null)
@@ -167,231 +168,155 @@ export default function ConvertPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-cream">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-dark-blue shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center">
-            <Camera className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">QuickScanAR - Vercel MindAR Compiler</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Link href="/" className="mr-4 text-white/80 hover:text-white">
+                <ArrowLeft className="h-6 w-6" />
+              </Link>
+              <Camera className="h-8 w-8 text-white" />
+              <span className="ml-2 text-xl font-bold text-white">AR Image Compiler</span>
+            </div>
+            <Link
+              href="/dashboard/create"
+              className="bg-white text-dark-blue px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+            >
+              Skip to Create Experience
+            </Link>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Convert your images to real MindAR compatible files using Vercel-optimized serverless compilation
-          </p>
         </div>
       </div>
 
-      {/* Vercel Compiler Notice */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-4 mt-4">
-        <div className="flex">
-          <AlertTriangle className="h-5 w-5 text-blue-400" />
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Vercel Serverless MindAR Compiler:</strong> This uses Vercel's serverless functions with optimized Chromium for reliable, scalable compilation.
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Brand Covering Image Section */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 mb-8 shadow-sm">
+          <div className="text-center">
+            {/* Logo/Icon */}
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-dark-blue rounded-full mb-6">
+              <Camera className="h-10 w-10 text-white" />
+            </div>
+            
+            {/* Main Heading */}
+            <h2 className="text-4xl font-bold text-black mb-4 tracking-tight">
+              AR Image Compiler
+            </h2>
+            
+            {/* Subtitle */}
+            <p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
+              Transform your images into AR-ready targets with our advanced MindAR compilation engine
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Brand Covering Image Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 mx-4 mt-6 rounded-2xl shadow-2xl">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-black/10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
-        
-        {/* Content */}
-        <div className="relative px-8 py-12 text-center">
-          {/* Logo/Icon */}
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-6">
-            <Camera className="h-10 w-10 text-white" />
-          </div>
-          
-          {/* Main Heading */}
-          <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">
-            AR Image Compiler
-          </h2>
-          
-          {/* Subtitle */}
-          <p className="text-xl text-white/90 mb-6 max-w-2xl mx-auto leading-relaxed">
-            Transform your images into AR-ready targets with our advanced MindAR compilation engine
-          </p>
-          
-          {/* Feature Highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Image className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-white font-semibold mb-2">Smart Processing</h3>
-              <p className="text-white/80 text-sm">Advanced image analysis for optimal AR tracking</p>
-            </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Download className="h-6 w-6 text-white" />
+            {/* Feature Highlights */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Upload className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-black mb-2">Easy Upload</h3>
+                <p className="text-gray-600">Simply drag and drop your images to get started</p>
               </div>
-              <h3 className="text-white font-semibold mb-2">Instant Download</h3>
-              <p className="text-white/80 text-sm">Get your .mind file ready for AR development</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Camera className="h-6 w-6 text-white" />
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Camera className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-black mb-2">AR Optimized</h3>
+                <p className="text-gray-600">Advanced algorithms ensure optimal AR tracking performance</p>
               </div>
-              <h3 className="text-white font-semibold mb-2">AR Ready</h3>
-              <p className="text-white/80 text-sm">Compatible with MindAR and major AR frameworks</p>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Download className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-black mb-2">Instant Download</h3>
+                <p className="text-gray-600">Get your .mind files ready for AR development</p>
+              </div>
             </div>
           </div>
         </div>
-        
-        {/* Bottom Wave Effect */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-12">
-            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="white"></path>
-            <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.71,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,65.6-49.24V0Z" opacity=".5" fill="white"></path>
-            <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="white"></path>
-          </svg>
-        </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Convert Images to MindAR Format</h1>
-          </div>
+        {/* File Upload Section */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+          <h3 className="text-2xl font-bold text-black mb-6 text-center">
+            Convert Your Images
+          </h3>
+          
+          <div className="max-w-2xl mx-auto">
+                         <div
+               {...getMarkerRootProps()}
+               className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-colors ${
+                 isMarkerDragActive ? 'border-dark-blue bg-blue-50' : 'border-gray-300 hover:border-dark-blue'
+               }`}
+             >
+               <input {...getMarkerInputProps()} />
+               <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+               <p className="text-lg text-gray-600 mb-2">
+                 {isMarkerDragActive
+                   ? 'Drop the image here...'
+                   : 'Drag & drop your image here, or click to select'}
+               </p>
+               <p className="text-sm text-gray-500">
+                 Supports JPG, PNG, and other image formats
+               </p>
+             </div>
 
-          <div className="p-6 space-y-6">
-            {/* File Uploads */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {/* Marker Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Marker Image *
-                </label>
-                <div
-                  {...getMarkerRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-                    isMarkerDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  }`}
-                >
-                  <input {...getMarkerInputProps()} />
-                  <Image className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-600">
-                    {isMarkerDragActive
-                      ? 'Drop the image here...'
-                      : 'Drag & drop an image, or click to select'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 10MB</p>
-                </div>
-                {markerPreview && (
-                  <div className="mt-2">
-                    <img src={markerPreview} alt="Marker preview" className="h-20 w-20 object-cover rounded" />
-                  </div>
-                )}
-              </div>
-
-              {/* Video Upload (Optional for this conversion) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Video File (Optional)
-                </label>
-                <div
-                  {...getVideoRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-                    isVideoDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  } opacity-75`}
-                >
-                  <input {...getVideoInputProps()} />
-                  <Video className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-600">
-                    {isVideoDragActive
-                      ? 'Drop the video here...'
-                      : 'Drag & drop a video, or click to select'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">MP4 up to 50MB (optional)</p>
-                </div>
-                {videoPreview && (
-                  <div className="mt-2">
-                    <video src={videoPreview} className="h-20 w-20 object-cover rounded" controls />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Convert Button */}
-            <div className="flex justify-center">
-              <button
-                onClick={handleConvert}
-                disabled={converting || !markerFile}
-                className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {converting ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Compiling...
-                  </>
-                ) : (
-                  'Compile with MindAR'
-                )}
-              </button>
-            </div>
-
-            {/* Progress Indicator */}
-            {conversionProgress && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-800">{conversionProgress}</span>
-                    <span className="text-sm font-medium text-blue-800">{progress}%</span>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Download Section */}
-            {downloadUrl && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium text-green-800">MindAR Compilation Complete!</h3>
-                    <p className="text-sm text-green-600 mt-1">
-                      Your optimized MindAR file is ready for download.
-                    </p>
-                  </div>
+             {markerFile && (
+               <div className="mt-6">
+                 <h4 className="text-lg font-semibold text-black mb-4">Selected File:</h4>
+                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center">
+                       <Image className="h-5 w-5 text-dark-blue mr-3" />
+                       <span className="text-black">{markerFile.name}</span>
+                     </div>
+                     <span className="text-sm text-gray-500">
+                       {(markerFile.size / 1024 / 1024).toFixed(2)} MB
+                     </span>
+                   </div>
+                 </div>
+                
+                <div className="mt-6 text-center">
                   <button
-                    onClick={handleDownload}
-                    className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 flex items-center"
+                    onClick={handleConvert}
+                    disabled={converting || !markerFile}
+                    className="bg-dark-blue text-white px-8 py-3 rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center mx-auto"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download .mind
+                    {converting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Compiling...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-5 w-5 mr-2" />
+                        Compile to AR Format
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* How It Works */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">How Vercel MindAR Compilation Works</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <p>1. <strong>Upload:</strong> Upload your marker image (JPG/PNG)</p>
-                <p>2. <strong>Serverless Processing:</strong> Image is sent to Vercel's serverless functions</p>
-                <p>3. <strong>MindAR Compilation:</strong> Uses optimized Chromium to compile with official MindAR</p>
-                <p>4. <strong>Real-time Progress:</strong> Track compilation progress with live updates</p>
-                <p>5. <strong>Vercel Blob Storage:</strong> Your .mind file is automatically stored and served via CDN</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  <strong>Advantage:</strong> Serverless, scalable, and reliable - no client-side iframe issues!
-                </p>
-              </div>
-            </div>
+        {/* Next Step */}
+        <div className="text-center mt-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 inline-block shadow-sm">
+            <h3 className="text-black font-semibold mb-2">Ready to create your AR experience?</h3>
+            <p className="text-gray-600 text-sm mb-4">
+              After converting your images, proceed to create your AR experience with videos and .mind files.
+            </p>
+            <Link
+              href="/dashboard/create"
+              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors inline-flex items-center"
+            >
+              Create AR Experience
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </div>
         </div>
       </div>

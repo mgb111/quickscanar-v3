@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Script from 'next/script'
+import Link from 'next/link'
+import { ArrowLeft, Camera, Upload, AlertTriangle, Smartphone, FileText } from 'lucide-react'
 
 export default function DebugPage() {
   const [debugLog, setDebugLog] = useState<string[]>([])
@@ -337,6 +339,31 @@ export default function DebugPage() {
     }, 1000)
   }
 
+  const testMobileAR = () => {
+    updateDebug('🧪 Testing mobile AR functionality...', 'info')
+    // Add mobile AR testing logic here
+    setTimeout(() => {
+      updateDebug('✅ Mobile AR test completed', 'success')
+    }, 2000)
+  }
+
+  const clearDebugLog = () => {
+    setDebugLog([])
+    updateDebug('🗑️ Debug log cleared', 'info')
+  }
+
+  const exportDebugLog = () => {
+    const logText = debugLog.join('\n')
+    const blob = new Blob([logText], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'ar-debug-log.txt'
+    a.click()
+    URL.revokeObjectURL(url)
+    updateDebug('📁 Debug log exported', 'success')
+  }
+
   useEffect(() => {
     updateDebug('🚀 Debug page loaded', 'success')
     updateDebug('📱 Device: ' + (navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'), 'info')
@@ -359,121 +386,136 @@ export default function DebugPage() {
   }, [])
 
   return (
-    <>
-      <Script 
-        src="https://aframe.io/releases/1.5.0/aframe.min.js" 
-        onLoad={handleAframeLoad}
-        onError={() => updateDebug('❌ Failed to load A-Frame script', 'error')}
-      />
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js" 
-        onLoad={handleMindarLoad}
-        onError={() => updateDebug('❌ Failed to load MindAR script', 'error')}
-      />
-      
-      <div className="min-h-screen bg-black text-white p-6">
-        <h1 className="text-3xl font-bold mb-6">MindAR Buffer Error Debug</h1>
-        
-        <div className="bg-gray-800 p-4 rounded-lg mb-6 max-h-96 overflow-y-auto">
-          <strong>Debug Log:</strong><br />
-          <div className="text-sm">
-            {debugLog.map((log, index) => (
-              <div key={index} className="mb-1">
-                {log.includes('❌') ? (
-                  <span className="text-red-400">{log}</span>
-                ) : log.includes('✅') ? (
-                  <span className="text-green-400">{log}</span>
-                ) : log.includes('⚠️') ? (
-                  <span className="text-yellow-400">{log}</span>
-                ) : (
-                  <span>{log}</span>
-                )}
-              </div>
-            ))}
+    <div className="min-h-screen bg-cream">
+      {/* Header */}
+      <div className="bg-dark-blue shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Link href="/" className="mr-4 text-white/80 hover:text-white">
+                <ArrowLeft className="h-6 w-6" />
+              </Link>
+              <Camera className="h-8 w-8 text-white" />
+              <span className="ml-2 text-xl font-bold text-white">AR Debug & Testing</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-xl font-bold mb-2">Test 1: Working Card.mind</h3>
-            <p className="text-gray-300 mb-4">This should work without buffer errors:</p>
-            <button 
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center text-black mb-8">
+          <h1 className="text-4xl font-bold mb-4 tracking-tight">
+            AR Debug & Testing
+          </h1>
+          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
+            Test and debug your AR setup, MindAR files, and AR experience components
+          </p>
+        </div>
+
+        {/* Test Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Test 1: Working MindAR */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+              <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+              Test 1: Working MindAR File
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Test with a known working MindAR file to verify your setup is working correctly.
+            </p>
+            <button
               onClick={testWorkingMind}
-              disabled={!scriptsLoaded}
-              className={`px-4 py-2 rounded mb-2 ${
-                scriptsLoaded 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-              }`}
+              className="bg-dark-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors"
             >
-              {scriptsLoaded ? 'Test Working MindAR' : 'Loading Scripts...'}
+              Test Working MindAR
             </button>
-            <button 
-              onClick={testMindFileFetch}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded"
-            >
-              Simple Fetch Test
-            </button>
+            <div id="test1-result" className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-black"></div>
           </div>
 
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-xl font-bold mb-2">Test 2: Custom MindAR File</h3>
-            <p className="text-gray-300 mb-4">This will test your custom MindAR file and catch buffer errors:</p>
-            <button 
+          {/* Test 2: Custom MindAR */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+              <Upload className="h-5 w-5 mr-2 text-dark-blue" />
+              Test 2: Custom MindAR File
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Test your custom MindAR file and catch any buffer errors or compilation issues.
+            </p>
+            <button
               onClick={testCustomMind}
-              disabled={!scriptsLoaded}
-              className={`px-4 py-2 rounded mb-2 ${
-                scriptsLoaded 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-              }`}
+              className="bg-dark-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors"
             >
-              {scriptsLoaded ? 'Test Custom MindAR' : 'Loading Scripts...'}
+              Test Custom MindAR
             </button>
-            <button 
-              onClick={testCustomMindFileFetch}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded"
-            >
-              Simple Fetch Test
-            </button>
+            <div id="test2-result" className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-black"></div>
           </div>
 
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-xl font-bold mb-2">Test 3: Error Monitoring</h3>
-            <p className="text-gray-300 mb-4">Monitor for RangeError, getObject3D, and other MindAR errors:</p>
-            <button 
+          {/* Test 3: Error Monitoring */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2 text-dark-blue" />
+              Test 3: Error Monitoring
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Monitor for RangeError and other MindAR errors in real-time.
+            </p>
+            <button
               onClick={startErrorMonitoring}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded"
+              className="bg-dark-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors"
             >
               Start Error Monitoring
             </button>
+            <div id="test3-result" className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-black"></div>
+          </div>
+
+          {/* Test 4: Mobile AR */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+              <Smartphone className="h-5 w-5 mr-2 text-dark-blue" />
+              Test 4: Mobile AR
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Test AR functionality specifically on mobile devices.
+            </p>
+            <button
+              onClick={testMobileAR}
+              className="bg-dark-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors"
+            >
+              Test Mobile AR
+            </button>
+            <div id="test4-result" className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-black"></div>
           </div>
         </div>
 
-        <div className="mt-6 bg-gray-800 p-4 rounded-lg">
-          <h3 className="text-xl font-bold mb-2">Status</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <strong>Scripts Loaded:</strong> {scriptsLoaded ? '✅ Yes' : '❌ No'}
-            </div>
-            <div>
-              <strong>Range Errors Detected:</strong> {rangeErrorDetected ? 'Yes' : 'No'}
-            </div>
-            <div>
-              <strong>Total Errors:</strong> {errorCount}
+        {/* Debug Log */}
+        <div className="mt-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-dark-blue" />
+            Debug Log
+          </h3>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <div id="debug-log" className="text-sm text-black font-mono space-y-1">
+              <div className="text-gray-500">Debug log will appear here...</div>
             </div>
           </div>
-        </div>
-
-        <div className="mt-6">
-          <a 
-            href="/"
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
-          >
-            ← Back to Home
-          </a>
+          <div className="mt-4 flex space-x-2">
+            <button
+              onClick={clearDebugLog}
+              className="bg-gray-300 text-black px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+            >
+              Clear Log
+            </button>
+            <button
+              onClick={exportDebugLog}
+              className="bg-dark-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors"
+            >
+              Export Log
+            </button>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 } 

@@ -109,10 +109,12 @@ export default function ExperienceViewer() {
     )
   }
 
+  const shareUrl = `${window.location.origin}/experience/${experience.id}`;
+
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-cream">
       {/* Navigation */}
-      <nav className="absolute top-0 left-0 right-0 z-10 bg-black bg-opacity-50">
+      <nav className="absolute top-0 left-0 right-0 z-10 bg-dark-blue bg-opacity-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -141,28 +143,28 @@ export default function ExperienceViewer() {
 
       {/* AR Experience Launch */}
       <div className="relative w-full h-screen flex items-center justify-center">
-        <div className="text-center text-white">
+        <div className="text-center text-black">
           <Camera className="mx-auto h-16 w-16 mb-4" />
           <h1 className="text-2xl font-bold mb-2">{experience.title}</h1>
           {experience.description && (
-            <p className="text-gray-300 mb-6">{experience.description}</p>
+            <p className="text-gray-600 mb-6">{experience.description}</p>
           )}
           
           <button
             onClick={openARExperience}
-            className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 transition-colors"
+            className="bg-dark-blue text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-900 transition-colors"
           >
             Launch AR Experience
           </button>
           
-          <div className="mt-6 text-sm text-gray-400">
+          <div className="mt-6 text-sm text-gray-500">
             <p>Click the button above to open the AR experience in a new window</p>
             <p className="mt-2">Make sure to allow camera permissions when prompted</p>
           </div>
         </div>
 
         {/* Marker Reference */}
-        <div className="absolute top-20 right-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+        <div className="absolute top-20 right-4 bg-white bg-opacity-90 text-black px-4 py-2 rounded-lg shadow-lg">
           <div className="flex items-center space-x-2">
             <img 
               src={experience.marker_image_url} 
@@ -170,13 +172,13 @@ export default function ExperienceViewer() {
               className="w-12 h-12 object-cover rounded"
             />
             <div>
-              <p className="text-xs text-gray-300">Point camera at this image</p>
+              <p className="text-xs text-gray-600">Point camera at this image</p>
             </div>
           </div>
         </div>
 
         {/* Instructions */}
-        <div className="absolute bottom-8 left-4 right-4 bg-black bg-opacity-75 text-white px-6 py-4 rounded-lg">
+        <div className="absolute bottom-8 left-4 right-4 bg-white bg-opacity-90 text-black px-6 py-4 rounded-lg shadow-lg">
           <div className="text-center">
             <h3 className="font-bold mb-2">How to Use AR</h3>
             <ol className="text-sm space-y-1">
@@ -192,7 +194,7 @@ export default function ExperienceViewer() {
         {showQR && (
           <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
             <div className="bg-white p-6 rounded-lg">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Scan QR Code</h3>
+              <h3 className="text-lg font-bold text-black mb-4">Scan QR Code</h3>
               <div className="flex justify-center mb-4">
                 <QRCode value={window.location.href} size={200} />
               </div>
@@ -201,7 +203,7 @@ export default function ExperienceViewer() {
               </p>
               <button
                 onClick={() => setShowQR(false)}
-                className="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700"
+                className="w-full bg-dark-blue text-white py-2 px-4 rounded-md hover:bg-blue-900"
               >
                 Close
               </button>

@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDropzone } from 'react-dropzone'
-import { Camera, Upload, ArrowLeft, Video, Image } from 'lucide-react'
+import { Camera, Upload, ArrowLeft, Video, Image, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -218,226 +218,185 @@ export default function CreateExperience() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-cream">
+      {/* Step 2 Reminder */}
+      <div className="bg-white border border-gray-200 rounded-lg mx-4 mt-4 p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Upload className="h-5 w-5 mr-2 text-dark-blue" />
+            <span className="text-sm text-gray-600">
+              <strong>Step 2:</strong> Make sure you've converted your images to AR format first
+            </span>
+          </div>
+          <Link
+            href="/compiler"
+            className="text-dark-blue hover:text-blue-900 text-sm font-medium"
+          >
+            Convert Images →
+          </Link>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="bg-dark-blue shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link
-                href="/dashboard"
-                className="mr-4 text-gray-400 hover:text-gray-600"
-              >
-                <ArrowLeft className="h-6 w-6" />
+              <Link href="/dashboard" className="flex items-center text-white hover:text-gray-300">
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Dashboard
               </Link>
-              <Camera className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Create AR Experience</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-white">{user?.email}</span>
+              <button
+                onClick={() => router.push('/auth/signout')}
+                className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Conversion Step Reminder */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-4 mt-4">
-        <div className="flex">
-          <Upload className="h-5 w-5 text-blue-400" />
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Step 2:</strong> You're now creating an AR experience. 
-              If you haven't converted your marker images to .mind format yet, 
-              <Link href="/compiler" className="text-blue-800 underline hover:text-blue-900 ml-1">
-                convert them first
-              </Link> for optimal AR tracking performance.
-            </p>
-          </div>
-        </div>
-      </div>
-
+      {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Create New AR Experience</h1>
-          </div>
+        {/* Header */}
+        <div className="text-center text-black mb-8">
+          <h1 className="text-4xl font-bold mb-4 tracking-tight">
+            Create New AR Experience
+          </h1>
+          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
+            Build an augmented reality experience with your videos and converted .mind files
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Basic Information */}
+        {/* Form */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Experience Name */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Experience Title
+              <label htmlFor="title" className="block text-sm font-medium text-black mb-2">
+                Experience Name
               </label>
               <input
                 type="text"
                 id="title"
-                required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 bg-white"
+                name="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
+                placeholder="Enter a name for your AR experience"
               />
             </div>
 
+            {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description (Optional)
+              <label htmlFor="description" className="block text-sm font-medium text-black mb-2">
+                Description
               </label>
               <textarea
                 id="description"
-                rows={3}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 bg-white"
+                name="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
+                placeholder="Describe your AR experience"
               />
             </div>
 
-            {/* File Uploads */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {/* Marker Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Marker Image {useCustomMind && <span className="text-gray-500">(Optional)</span>}
+            {/* Mind File Upload */}
+            <div>
+              <label htmlFor="mindFile" className="block text-sm font-medium text-black mb-2">
+                Mind File (.mind)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
+                <input
+                  type="file"
+                  id="mindFile"
+                  name="mindFile"
+                  accept=".mind"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setMindFile(file);
+                      setUseCustomMind(true);
+                    }
+                  }}
+                  required
+                  className="hidden"
+                />
+                <label htmlFor="mindFile" className="cursor-pointer">
+                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">.mind files only</p>
                 </label>
-                <div
-                  {...getMarkerRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-                    isMarkerDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  } ${useCustomMind ? 'opacity-75' : ''}`}
-                >
-                  <input {...getMarkerInputProps()} />
-                  <Image className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-600">
-                    {isMarkerDragActive
-                      ? 'Drop the image here...'
-                      : useCustomMind 
-                        ? 'Drag & drop an image (optional), or click to select'
-                        : 'Drag & drop an image, or click to select'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {useCustomMind ? 'JPG, PNG up to 10MB (optional when using custom .mind file)' : 'JPG, PNG up to 10MB'}
-                  </p>
-                </div>
-                {markerPreview && (
-                  <div className="mt-2">
-                    <img src={markerPreview} alt="Marker preview" className="h-20 w-20 object-cover rounded" />
-                  </div>
-                )}
-                {useCustomMind && !markerFile && (
-                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                    <p className="text-sm text-blue-700">
-                      ℹ️ Marker image is optional when using a custom .mind file
-                    </p>
-                  </div>
-                )}
               </div>
-
-              {/* Video Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Video File
-                </label>
-                <div
-                  {...getVideoRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-                    isVideoDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                  }`}
-                >
-                  <input {...getVideoInputProps()} />
-                  <Video className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-600">
-                    {isVideoDragActive
-                      ? 'Drop the video here...'
-                      : 'Drag & drop a video, or click to select'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">MP4 up to 50MB</p>
-                </div>
-                {videoPreview && (
-                  <div className="mt-2">
-                    <video src={videoPreview} className="h-20 w-20 object-cover rounded" controls />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Custom .mind File Upload (Optional) */}
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">MindAR File (Optional)</h3>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="useCustomMind"
-                    checked={useCustomMind}
-                    onChange={(e) => setUseCustomMind(e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="useCustomMind" className="ml-2 text-sm text-gray-700">
-                    Upload custom .mind file
-                  </label>
-                </div>
-              </div>
-              
-              {useCustomMind ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Custom .mind File
-                  </label>
-                  <div
-                    {...getMindRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-                      isMindDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
-                    }`}
-                  >
-                    <input {...getMindInputProps()} />
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
-                      {isMindDragActive
-                        ? 'Drop the .mind file here...'
-                        : 'Drag & drop a .mind file, or click to select'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">MindAR .mind file up to 5MB</p>
-                  </div>
-                  {mindFile && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-700">
-                        ✅ Custom .mind file selected: {mindFile.name}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-700">
-                    💡 A .mind file will be automatically generated from your marker image for optimal AR tracking.
-                    You can upload a custom .mind file if you have one.
-                  </p>
-                </div>
+              {mindFile && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected: {mindFile.name}
+                </p>
               )}
             </div>
 
-
-
-            {/* Progress Indicator */}
-            {compilationProgress && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                  <span className="text-sm text-blue-800">{compilationProgress}</span>
-                </div>
+            {/* Video File Upload */}
+            <div>
+              <label htmlFor="videoFile" className="block text-sm font-medium text-black mb-2">
+                Video File
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
+                <input
+                  type="file"
+                  id="videoFile"
+                  name="videoFile"
+                  accept="video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setVideoFile(file);
+                    }
+                  }}
+                  required
+                  className="hidden"
+                />
+                <label htmlFor="videoFile" className="cursor-pointer">
+                  <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">MP4, WebM, or other video formats</p>
+                </label>
               </div>
-            )}
+              {videoFile && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected: {videoFile.name}
+                </p>
+              )}
+            </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end space-x-3">
-              <Link
-                href="/dashboard"
-                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </Link>
+            <div className="pt-4">
               <button
                 type="submit"
                 disabled={submitting || (!markerFile && !useCustomMind) || !videoFile}
-                className="bg-primary-600 text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-dark-blue text-white py-3 px-6 rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
-                {submitting ? 'Creating...' : 'Create Experience'}
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Creating Experience...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create AR Experience
+                  </>
+                )}
               </button>
             </div>
           </form>

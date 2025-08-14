@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload } from 'lucide-react'
+import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode.react'
@@ -103,20 +103,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-cream">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-dark-blue shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Camera className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">QuickScanAR</span>
+              <Camera className="h-8 w-8 text-white" />
+              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">{user?.email}</span>
+              <span className="text-sm text-white">{user?.email}</span>
               <button
                 onClick={() => router.push('/auth/signout')}
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
               </button>
@@ -125,150 +125,126 @@ export default function Dashboard() {
         </div>
       </nav>
 
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My AR Experiences</h1>
-          <Link
-            href="/dashboard/create"
-            className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 flex items-center"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Experience
-          </Link>
+        {/* Header */}
+        <div className="text-center text-black mb-8">
+          <h1 className="text-4xl font-bold mb-4 tracking-tight">
+            AR Experience Dashboard
+          </h1>
+          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
+            Create and manage your augmented reality experiences
+          </p>
         </div>
 
-        {/* Conversion Step - Added before Create Experience */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Upload className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-medium text-blue-900 mb-2">
+        {/* Step 1: Convert Images */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+                <Upload className="h-5 w-5 mr-2 text-dark-blue" />
                 Step 1: Convert Your Images to AR Format
               </h3>
-              <p className="text-blue-700 mb-4">
-                Before creating an AR experience, you need to convert your marker images to MindAR format (.mind files). 
-                This ensures optimal AR tracking performance.
+              <p className="text-gray-600">
+                First, convert your images to AR-ready targets using our MindAR compiler
               </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link
-                  href="/compiler"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Convert Images to .mind
-                </Link>
-                <Link
-                  href="/dashboard/create"
-                  className="inline-flex items-center px-4 py-2 border border-blue-300 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-50 transition-colors"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Skip to Create Experience
-                </Link>
-              </div>
             </div>
+            <Link
+              href="/compiler"
+              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+            >
+              Convert Images
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </div>
         </div>
 
-        {experiences.length === 0 ? (
-          <div className="text-center py-12">
-            <Camera className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No experiences yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by converting your images to AR format first.</p>
-            <div className="mt-6 space-y-3">
-              <Link
-                href="/compiler"
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Convert Images to .mind
-              </Link>
-              <div className="text-xs text-gray-400">or</div>
-              <Link
-                href="/dashboard/create"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Experience Directly
-              </Link>
+        {/* Create New Experience */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+                <Video className="h-5 w-5 mr-2 text-dark-blue" />
+                Step 2: Create New AR Experience
+              </h3>
+              <p className="text-gray-600">
+                Build your AR experience with videos and converted .mind files
+              </p>
             </div>
+            <Link
+              href="/dashboard/create"
+              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+            >
+              Create Experience
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {experiences.map((experience) => (
-              <div key={experience.id} className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <img
-                        className="h-12 w-12 rounded-lg object-cover"
-                        src={experience.marker_image_url}
-                        alt={experience.title}
-                      />
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{experience.title}</h3>
-                      <p className="text-sm text-gray-500">
-                        {new Date(experience.created_at).toLocaleDateString()}
+        </div>
+
+        {/* Existing Experiences */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
+            <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+            Your AR Experiences
+          </h3>
+          
+          {experiences.length === 0 ? (
+            <div className="text-center py-12">
+              <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No experiences yet</h4>
+              <p className="text-gray-600 mb-6">
+                Start by converting your images to AR format, then create your first experience.
+              </p>
+              <div className="space-x-4">
+                <Link
+                  href="/compiler"
+                  className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors inline-flex items-center"
+                >
+                  Convert Images First
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {experiences.map((experience) => (
+                <div
+                  key={experience.id}
+                  className="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-black mb-2">
+                        {experience.title || 'Untitled Experience'}
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {experience.description || 'No description'}
                       </p>
+                      <div className="text-xs text-gray-500">
+                        Created: {new Date(experience.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
                   
-                  {experience.description && (
-                    <p className="mt-2 text-sm text-gray-600">{experience.description}</p>
-                  )}
-
-                  <div className="mt-4 flex space-x-2">
+                  <div className="flex space-x-2">
                     <Link
                       href={`/experience/${experience.id}`}
-                      className="flex-1 bg-primary-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-700 flex items-center justify-center"
+                      className="flex-1 bg-dark-blue text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-800 transition-colors"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
                       View
                     </Link>
                     <button
-                      onClick={() => setShowQR(showQR === experience.id ? null : experience.id)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      <QrCode className="h-4 w-4" />
-                    </button>
-                    <button
                       onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      className="bg-white text-dark-blue border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                     >
-                      <Copy className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteExperience(experience.id)}
-                      className="px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      Share
                     </button>
                   </div>
-
-                  {/* Compilation Status */}
-                  <div className="mt-2 flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${experience.mind_file_url.includes('compiled') ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                    <span className="text-xs text-gray-500">
-                      {experience.mind_file_url.includes('compiled') ? 'MindAR Compiled' : 'Processing'}
-                    </span>
-                  </div>
-
-                  {showQR === experience.id && (
-                    <div className="mt-4 flex justify-center">
-                      <div className="bg-white p-4 rounded-lg border">
-                        <QRCode value={`${window.location.origin}/experience/${experience.id}`} size={128} />
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
