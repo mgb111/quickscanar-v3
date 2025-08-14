@@ -23,50 +23,31 @@ export default function CreateExperience() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    console.log('=== FORM SUBMISSION STARTED ===')
-    console.log('Form event:', e)
-    console.log('Current state:')
-    console.log('- videoFile:', videoFile)
-    console.log('- mindFile:', mindFile)
-    console.log('- useCustomMind:', useCustomMind)
-    console.log('- title:', title)
-    console.log('- description:', description)
-    
     // Check if we have either a custom .mind file
     if (!mindFile) {
-      console.log('❌ No custom mind file')
       toast.error('Please upload a custom .mind file')
       return
     }
     
     if (!videoFile) {
-      console.log('❌ No video file')
       toast.error('Please upload a video file')
       return
     }
 
-    console.log('✅ Basic validation passed, proceeding with upload...')
-
     if (!supabase) {
       toast.error('Supabase client not available. Please check your environment configuration.')
-      console.error('Supabase client is null - environment variables may not be set')
       return
     }
 
     // Check if user is authenticated
     if (!user?.id) {
       toast.error('User not authenticated. Please sign in again.')
-      console.error('User ID is missing:', user)
       return
     }
 
     setSubmitting(true)
 
     try {
-      console.log('Starting AR experience creation...')
-      console.log('User ID:', user.id)
-      console.log('Video file:', videoFile?.name)
-      console.log('Mind file:', mindFile?.name)
 
       // Upload video
       const videoFileName = `${user?.id}/${Date.now()}-video.mp4`
@@ -90,80 +71,16 @@ export default function CreateExperience() {
         const mindFileName = `${user?.id}/${Date.now()}-custom.mind`
         
         try {
-          // Test Supabase connection first
-          console.log('Testing Supabase connection...')
-          const { data: testData, error: testError } = await supabase
-            .from('ar_experiences')
-            .select('count')
-            .limit(1)
-          
-          if (testError) {
-            console.error('Supabase connection test failed:', testError)
-            throw new Error(`Supabase connection failed: ${testError.message}`)
-          }
-          
-          console.log('Supabase connection test successful')
-          console.log('Attempting to upload mind file to bucket: mind-files')
-          console.log('File name:', mindFileName)
-          console.log('File size:', mindFile.size)
-          console.log('File type:', mindFile.type)
-          
           // Validate file size (Supabase has limits)
           const maxSize = 50 * 1024 * 1024 // 50MB limit
           if (mindFile.size > maxSize) {
             throw new Error(`File too large: ${(mindFile.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed: 50MB`)
           }
           
-          // Validate file type
-          if (mindFile.type !== 'application/octet-stream' && mindFile.type !== '') {
-            console.warn('File type warning:', mindFile.type, '- expected application/octet-stream')
-          }
-          
-          // Deep file validation
-          console.log('=== FILE VALIDATION ===')
-          console.log('File name:', mindFile.name)
-          console.log('File size:', mindFile.size, 'bytes')
-          console.log('File type:', mindFile.type)
-          console.log('File lastModified:', mindFile.lastModified)
-          console.log('File webkitRelativePath:', mindFile.webkitRelativePath)
-          
-          // Check if file is empty or corrupted
+          // Check if file is empty
           if (mindFile.size === 0) {
             throw new Error('File is empty (0 bytes)')
           }
-          
-          // Check file header (first few bytes) to see if it's a valid .mind file
-          try {
-            const firstBytes = mindFile.slice(0, 16)
-            const reader = new FileReader()
-            const headerPromise = new Promise<string>((resolve, reject) => {
-              reader.onload = () => {
-                const arrayBuffer = reader.result as ArrayBuffer
-                const uint8Array = new Uint8Array(arrayBuffer)
-                const hexString = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' ')
-                resolve(hexString)
-              }
-              reader.onerror = reject
-            })
-            
-            reader.readAsArrayBuffer(firstBytes)
-            const header = await headerPromise
-            console.log('File header (first 16 bytes):', header)
-            
-            // Check for common corruption patterns
-            if (header === '00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00') {
-              throw new Error('File appears to be corrupted (all zeros)')
-            }
-            
-            if (header.includes('ff ff ff ff ff ff ff ff')) {
-              console.warn('File contains repeated bytes - may be corrupted')
-            }
-            
-          } catch (headerError) {
-            console.warn('Could not read file header:', headerError)
-          }
-          
-          console.log('=== END FILE VALIDATION ===')
           
           // Try server-side upload first to avoid CORS/WAF issues
           try {
@@ -180,10 +97,8 @@ export default function CreateExperience() {
             }
             const json = await resp.json()
             mindFileUrl = json.url
-            console.log('Server upload successful:', json)
-            setCompilationProgress('Custom .mind file uploaded (server)!')
+            setCompilationProgress('Custom .mind file uploaded!')
           } catch (serverUploadErr: any) {
-            console.warn('Server upload failed, falling back to direct storage upload:', serverUploadErr?.message)
 
             // Fallback: direct Supabase upload
             let mindData: any = null
@@ -203,14 +118,7 @@ export default function CreateExperience() {
               mindError = thrown
             }
 
-            console.log('Upload response received:')
-            console.log('Data:', mindData)
-            console.log('Error:', mindError)
-
             if (mindError) {
-              console.error('Mind file upload error:', mindError)
-              console.error('Error message:', mindError.message)
-              console.error('Error details:', mindError)
 
               if (mindError.message.includes('file size')) {
                 throw new Error(`File size error: ${mindError.message}`)
