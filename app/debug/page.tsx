@@ -4,8 +4,12 @@ import { useEffect, useState } from 'react'
 import Script from 'next/script'
 import Link from 'next/link'
 import { ArrowLeft, Camera, Upload, AlertTriangle, Smartphone, FileText } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
+import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 export default function DebugPage() {
+  const { user, loading } = useAuth()
   const [debugLog, setDebugLog] = useState<string[]>([])
   const [errorCount, setErrorCount] = useState(0)
   const [rangeErrorDetected, setRangeErrorDetected] = useState(false)
@@ -16,6 +20,30 @@ export default function DebugPage() {
     const newLog = `[${timestamp}] ${message}`
     setDebugLog(prev => [...prev, newLog])
     console.log(message)
+  }
+
+  const testSupabaseConnection = async () => {
+    if (!supabase) {
+      updateDebug('❌ Supabase client not available', 'error')
+      toast.error('Supabase client not available')
+      return
+    }
+
+    try {
+      updateDebug('🔍 Testing Supabase connection...', 'info')
+      const { data, error } = await supabase.from('ar_experiences').select('count').limit(1)
+      
+      if (error) {
+        updateDebug(`❌ Supabase error: ${error.message}`, 'error')
+        toast.error(`Supabase error: ${error.message}`)
+      } else {
+        updateDebug('✅ Supabase connection successful', 'success')
+        toast.success('Supabase connection successful')
+      }
+    } catch (err: any) {
+      updateDebug(`❌ Supabase test failed: ${err.message}`, 'error')
+      toast.error(`Supabase test failed: ${err.message}`)
+    }
   }
 
   const testWorkingMind = () => {
@@ -412,6 +440,64 @@ export default function DebugPage() {
           <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
             Test and debug your AR setup, MindAR files, and AR experience components
           </p>
+        </div>
+
+        {/* Environment Variables Debug */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+          <h3 className="text-lg font-semibold text-black mb-4">Environment Variables</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>NODE_ENV:</span>
+              <span className="font-mono">{process.env.NODE_ENV || 'undefined'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>NEXT_PUBLIC_SUPABASE_URL:</span>
+              <span className="font-mono">
+                {process.env.NEXT_PUBLIC_SUPABASE_URL ? 
+                  `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 20)}...` : 
+                  'undefined'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>NEXT_PUBLIC_SUPABASE_ANON_KEY:</span>
+              <span className="font-mono">
+                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 
+                  `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 
+                  'undefined'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Supabase Connection Test */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+          <h3 className="text-lg font-semibold text-black mb-4">Supabase Connection Test</h3>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <span>Supabase Client:</span>
+              <span className={supabase ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                {supabase ? '✅ Connected' : '❌ Not Connected'}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>User Authentication:</span>
+              <span className={user ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                {user ? '✅ Authenticated' : '❌ Not Authenticated'}
+              </span>
+            </div>
+            {user && (
+              <div className="text-sm text-gray-600">
+                <div>User ID: {user.id}</div>
+                <div>Email: {user.email}</div>
+              </div>
+            )}
+            <button
+              onClick={testSupabaseConnection}
+              className="bg-dark-blue hover:bg-red-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Test Supabase Connection
+            </button>
+          </div>
         </div>
 
         {/* Test Sections */}

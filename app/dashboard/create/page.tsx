@@ -95,13 +95,27 @@ export default function CreateExperience() {
     }
 
     if (!supabase) {
-      toast.error('Supabase client not available')
+      toast.error('Supabase client not available. Please check your environment configuration.')
+      console.error('Supabase client is null - environment variables may not be set')
+      return
+    }
+
+    // Check if user is authenticated
+    if (!user?.id) {
+      toast.error('User not authenticated. Please sign in again.')
+      console.error('User ID is missing:', user)
       return
     }
 
     setSubmitting(true)
 
     try {
+      console.log('Starting AR experience creation...')
+      console.log('User ID:', user.id)
+      console.log('Marker file:', markerFile?.name)
+      console.log('Video file:', videoFile?.name)
+      console.log('Mind file:', mindFile?.name)
+      
       // Handle marker image upload (optional if custom .mind file is provided)
       let markerImageUrl: string
       
@@ -145,40 +159,97 @@ export default function CreateExperience() {
         // Upload custom .mind file
         setCompilationProgress('Uploading custom .mind file...')
         const mindFileName = `${user?.id}/${Date.now()}-custom.mind`
-        const { data: mindData, error: mindError } = await supabase.storage
-          .from('mind-files')
-          .upload(mindFileName, mindFile)
-
-        if (mindError) throw mindError
-
-        const { data: mindUrlData } = supabase.storage
-          .from('mind-files')
-          .getPublicUrl(mindFileName)
         
-        mindFileUrl = mindUrlData.publicUrl
-        setCompilationProgress('Custom .mind file uploaded!')
+        try {
+          // Test Supabase connection first
+          console.log('Testing Supabase connection...')
+          const { data: testData, error: testError } = await supabase
+            .from('ar_experiences')
+            .select('count')
+            .limit(1)
+          
+          if (testError) {
+            console.error('Supabase connection test failed:', testError)
+            throw new Error(`Supabase connection failed: ${testError.message}`)
+          }
+          
+          console.log('Supabase connection test successful')
+          console.log('Attempting to upload mind file to bucket: mind-files')
+          console.log('File name:', mindFileName)
+          console.log('File size:', mindFile.size)
+          console.log('File type:', mindFile.type)
+          
+          // Try direct Supabase upload first (avoids CORS issues)
+          const { data: mindData, error: mindError } = await supabase.storage
+            .from('mind-files')
+            .upload(mindFileName, mindFile, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (mindError) {
+            console.error('Mind file upload error:', mindError)
+            console.error('Error message:', mindError.message)
+            
+            // If it's a CORS error, try alternative approach
+            if (mindError.message.includes('CORS') || mindError.message.includes('cross-origin')) {
+              console.log('CORS error detected, trying alternative upload method...')
+              throw new Error('CORS error: Please check Supabase storage CORS settings or try again later')
+            }
+            
+            throw mindError
+          }
+
+          console.log('Mind file upload successful:', mindData)
+          
+          const { data: mindUrlData } = supabase.storage
+            .from('mind-files')
+            .getPublicUrl(mindFileName)
+          
+          mindFileUrl = mindUrlData.publicUrl
+          setCompilationProgress('Custom .mind file uploaded!')
+        } catch (uploadError: any) {
+          console.error('Mind file upload failed:', uploadError)
+          throw new Error(`Mind file upload failed: ${uploadError.message}`)
+        }
       } else {
         // Generate .mind file using the real MindAR compiler
         setCompilationProgress('Compiling MindAR file...')
-        const compileResponse = await fetch('/api/compile-mind', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            imageUrl: markerImageUrl,
-            userId: user?.id
-          })
-        })
-
-        if (!compileResponse.ok) {
-          const errorData = await compileResponse.json()
-          throw new Error(errorData.error || 'Failed to compile MindAR file')
+        
+        // Ensure markerFile exists before proceeding
+        if (!markerFile) {
+          throw new Error('Marker file is required for compilation')
         }
+        
+        console.log('Calling compile-mind API with file:', markerFile.name)
+        
+        // Create FormData with the actual image file
+        const formData = new FormData()
+        formData.append('image', markerFile)
+        
+        try {
+          const compileResponse = await fetch('/api/compile-mind', {
+            method: 'POST',
+            body: formData
+          })
 
-        const compileData = await compileResponse.json()
-        mindFileUrl = compileData.mindFileUrl
-        setCompilationProgress('MindAR compilation completed!')
+          console.log('Compile API response status:', compileResponse.status)
+          console.log('Compile API response headers:', Object.fromEntries(compileResponse.headers.entries()))
+
+          if (!compileResponse.ok) {
+            const errorData = await compileResponse.json()
+            console.error('Compile API error response:', errorData)
+            throw new Error(errorData.error || `Failed to compile MindAR file: ${compileResponse.status}`)
+          }
+
+          const compileData = await compileResponse.json()
+          console.log('Compile API success response:', compileData)
+          mindFileUrl = compileData.downloadUrl // Use downloadUrl from the API response
+          setCompilationProgress('MindAR compilation completed!')
+        } catch (apiError: any) {
+          console.error('Compile API call failed:', apiError)
+          throw new Error(`API call failed: ${apiError.message}`)
+        }
       }
 
       // Save to database
@@ -236,6 +307,21 @@ export default function CreateExperience() {
           </Link>
         </div>
       </div>
+
+      {/* Debug Info - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg mx-4 mt-4 p-4 shadow-sm">
+          <div className="text-sm text-yellow-800">
+            <strong>Debug Info:</strong>
+            <div>Supabase Configured: {supabase ? '✅ Yes' : '❌ No'}</div>
+            <div>User Authenticated: {user ? '✅ Yes' : '❌ No'}</div>
+            <div>User ID: {user?.id || 'None'}</div>
+            <div>Environment: {process.env.NODE_ENV}</div>
+            <div>Supabase URL Set: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Yes' : '❌ No'}</div>
+            <div>Supabase Key Set: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Yes' : '❌ No'}</div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="bg-dark-blue shadow-sm">
