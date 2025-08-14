@@ -122,25 +122,7 @@ export async function GET(
       </div>
     </div>
 
-    <div id="debug-toggle" style="position:fixed;top:10px;right:10px;z-index:1100;">
-      <button id="toggleDebugBtn" style="background:#111;color:#fff;border:1px solid #444;border-radius:6px;padding:8px 10px;font-size:12px;cursor:pointer;opacity:0.85;">Debug</button>
-    </div>
-    <div id="debug-panel" style="display:none;position:fixed;top:50px;right:10px;width:320px;max-height:60vh;overflow:auto;background:rgba(0,0,0,0.85);color:#fff;border:1px solid #444;border-radius:8px;padding:10px;z-index:1100;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <strong>AR Debug</strong>
-        <div>
-          <button id="exportLogBtn" style="background:#333;color:#fff;border:1px solid #555;border-radius:4px;padding:4px 8px;font-size:11px;margin-right:6px;cursor:pointer;">Export</button>
-          <button id="clearLogBtn" style="background:#333;color:#fff;border:1px solid #555;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;">Clear</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
-        <button id="testVideoBtn" style="background:#cc3300;color:#fff;border:none;border-radius:4px;padding:6px 8px;font-size:12px;cursor:pointer;">Test Video</button>
-        <button id="resetArBtn" style="background:#444;color:#fff;border:1px solid #666;border-radius:4px;padding:6px 8px;font-size:12px;cursor:pointer;">Reset AR</button>
-        <button id="checkEnvBtn" style="background:#444;color:#fff;border:1px solid #666;border-radius:4px;padding:6px 8px;font-size:12px;cursor:pointer;">Check Env</button>
-        <button id="checkResourcesBtn" style="background:#444;color:#fff;border:1px solid #666;border-radius:4px;padding:6px 8px;font-size:12px;cursor:pointer;">Check Resources</button>
-      </div>
-      <div id="debug-content" style="font-family:monospace;font-size:12px;white-space:pre-wrap;line-height:1.25;"></div>
-    </div>
+
 
     <a-scene
       id="arScene"
@@ -244,45 +226,7 @@ export async function GET(
         });
       }
 
-      function logDebug(...args) {
-        try {
-          console.log('[AR]', ...args);
-          const panel = document.getElementById('debug-content');
-          if (panel) {
-            const line = document.createElement('div');
-            line.textContent = args.map(a => {
-              try { return typeof a === 'object' ? JSON.stringify(a) : String(a); } catch { return String(a); }
-            }).join(' ');
-            panel.appendChild(line);
-            panel.scrollTop = panel.scrollHeight;
-          }
-        } catch {}
-      }
 
-      async function checkEnvironment() {
-        const result = {
-          webgl: !!(window.WebGLRenderingContext),
-          mediaDevices: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-          userAgent: navigator.userAgent,
-        };
-        logDebug('Env:', result);
-        return result;
-      }
-
-      async function checkResources() {
-        const endpoints = [
-          { name: 'mind', url: '${mindFileUrl}' },
-          { name: 'video', url: '${experience.video_url}' },
-        ];
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep.url, { method: 'HEAD', mode: 'cors' });
-            logDebug('Resource', ep.name, 'status:', res.status);
-          } catch (e) {
-            logDebug('Resource', ep.name, 'error:', e && e.message);
-          }
-        }
-      }
 
       nukeLoadingScreens();
 
@@ -374,60 +318,6 @@ export async function GET(
         }
 
         setInterval(nukeLoadingScreens, 1000);
-
-        const toggleBtn = document.getElementById('toggleDebugBtn');
-        const debugPanel = document.getElementById('debug-panel');
-        const clearLogBtn = document.getElementById('clearLogBtn');
-        const exportLogBtn = document.getElementById('exportLogBtn');
-        const testVideoBtn = document.getElementById('testVideoBtn');
-        const resetArBtn = document.getElementById('resetArBtn');
-        const checkEnvBtn = document.getElementById('checkEnvBtn');
-        const checkResourcesBtn = document.getElementById('checkResourcesBtn');
-
-        toggleBtn?.addEventListener('click', () => {
-          if (!debugPanel) return;
-          debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
-        });
-
-        clearLogBtn?.addEventListener('click', () => {
-          const panel = document.getElementById('debug-content');
-          if (panel) panel.textContent = '';
-        });
-
-        exportLogBtn?.addEventListener('click', () => {
-          const panel = document.getElementById('debug-content');
-          if (!panel) return;
-          const blob = new Blob([panel.textContent || ''], { type: 'text/plain;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'ar-debug-log.txt';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        });
-
-        checkEnvBtn?.addEventListener('click', checkEnvironment);
-        checkResourcesBtn?.addEventListener('click', checkResources);
-
-        testVideoBtn?.addEventListener('click', async () => {
-          const v = document.getElementById('videoTexture');
-          if (v && 'play' in v) {
-            try { await v.play(); logDebug('Test video: play ok'); } catch (e) { logDebug('Test video: play error', e && e.message); }
-          }
-        });
-
-        resetArBtn?.addEventListener('click', () => {
-          const scene = document.getElementById('arScene');
-          if (scene) {
-            logDebug('Resetting AR scene');
-            scene.style.opacity = '0';
-            setTimeout(() => { scene.style.opacity = '1'; }, 50);
-          }
-        });
-
-        logDebug('DOM loaded, initializing AR script');
       });
 
       window.addEventListener('error', (event) => {
