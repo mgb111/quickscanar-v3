@@ -83,16 +83,30 @@ export default function CreateExperience() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('=== FORM SUBMISSION STARTED ===')
+    console.log('Form event:', e)
+    console.log('Current state:')
+    console.log('- markerFile:', markerFile)
+    console.log('- videoFile:', videoFile)
+    console.log('- mindFile:', mindFile)
+    console.log('- useCustomMind:', useCustomMind)
+    console.log('- title:', title)
+    console.log('- description:', description)
+    
     // Check if we have either a marker image OR a custom .mind file
     if (!markerFile && !useCustomMind) {
+      console.log('❌ No marker file and no custom mind file')
       toast.error('Please upload a marker image or enable custom .mind file upload')
       return
     }
     
     if (!videoFile) {
+      console.log('❌ No video file')
       toast.error('Please upload a video file')
       return
     }
+
+    console.log('✅ Basic validation passed, proceeding with upload...')
 
     if (!supabase) {
       toast.error('Supabase client not available. Please check your environment configuration.')
@@ -190,13 +204,70 @@ export default function CreateExperience() {
             console.warn('File type warning:', mindFile.type, '- expected application/octet-stream')
           }
           
+          // Deep file validation
+          console.log('=== FILE VALIDATION ===')
+          console.log('File name:', mindFile.name)
+          console.log('File size:', mindFile.size, 'bytes')
+          console.log('File type:', mindFile.type)
+          console.log('File lastModified:', mindFile.lastModified)
+          console.log('File webkitRelativePath:', mindFile.webkitRelativePath)
+          
+          // Check if file is empty or corrupted
+          if (mindFile.size === 0) {
+            throw new Error('File is empty (0 bytes)')
+          }
+          
+          // Check file header (first few bytes) to see if it's a valid .mind file
+          try {
+            const firstBytes = mindFile.slice(0, 16)
+            const reader = new FileReader()
+            const headerPromise = new Promise<string>((resolve, reject) => {
+              reader.onload = () => {
+                const arrayBuffer = reader.result as ArrayBuffer
+                const uint8Array = new Uint8Array(arrayBuffer)
+                const hexString = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' ')
+                resolve(hexString)
+              }
+              reader.onerror = reject
+            })
+            reader.readAsArrayBuffer(firstBytes)
+            const header = await headerPromise
+            console.log('File header (first 16 bytes):', header)
+            
+            // Check if file starts with common binary patterns or is completely random
+            const isAllZero = header.split(' ').every(byte => byte === '00')
+            const isAllSame = header.split(' ').every(byte => byte === header.split(' ')[0])
+            
+            if (isAllZero) {
+              console.warn('⚠️ File appears to be all zeros - might be corrupted')
+            }
+            if (isAllSame) {
+              console.warn('⚠️ File appears to have repeated bytes - might be corrupted')
+            }
+            
+          } catch (headerError) {
+            console.warn('Could not read file header:', headerError)
+          }
+          
+          console.log('=== END FILE VALIDATION ===')
+          
+          console.log('About to call supabase.storage.from("mind-files").upload...')
+          console.log('File object:', mindFile)
+          console.log('File constructor:', mindFile.constructor.name)
+          console.log('File instanceof Blob:', mindFile instanceof Blob)
+          console.log('File instanceof File:', mindFile instanceof File)
+          
           // Try direct Supabase upload first (avoids CORS issues)
-          const { data: mindData, error: mindError } = await supabase.storage
+          let { data: mindData, error: mindError } = await supabase.storage
             .from('mind-files')
             .upload(mindFileName, mindFile, {
               cacheControl: '3600',
               upsert: false
             })
+
+          console.log('Upload response received:')
+          console.log('Data:', mindData)
+          console.log('Error:', mindError)
 
           if (mindError) {
             console.error('Mind file upload error:', mindError)
@@ -216,8 +287,58 @@ export default function CreateExperience() {
               throw new Error(`Access forbidden (403): File may be too large, contain invalid content, or storage quota exceeded`)
             }
             
+            // If it's a network error, try retry
+            if (mindError.message.includes('fetch') || mindError.message.includes('network') || mindError.message.includes('Failed to fetch')) {
+              console.log('Network error detected, trying retry with exponential backoff...')
+              
+              // Try multiple retries with exponential backoff
+              let retryCount = 0
+              const maxRetries = 3
+              let lastError = mindError
+              
+              while (retryCount < maxRetries) {
+                retryCount++
+                const delay = Math.pow(2, retryCount) * 1000 // 2s, 4s, 8s
+                
+                console.log(`Retry attempt ${retryCount}/${maxRetries} in ${delay/1000}s...`)
+                await new Promise(resolve => setTimeout(resolve, delay))
+                
+                try {
+                  console.log(`Retrying mind file upload (attempt ${retryCount})...`)
+                  const { data: retryData, error: retryError } = await supabase.storage
+                    .from('mind-files')
+                    .upload(mindFileName, mindFile, {
+                      cacheControl: '3600',
+                      upsert: false
+                    })
+                  
+                  if (retryError) {
+                    console.error(`Retry ${retryCount} failed:`, retryError)
+                    lastError = retryError
+                    continue // Try next retry
+                  }
+                  
+                  console.log(`Retry ${retryCount} successful:`, retryData)
+                  mindData = retryData
+                  mindError = null
+                  break // Success, exit retry loop
+                  
+                } catch (retryError: any) {
+                  console.error(`Retry ${retryCount} failed with exception:`, retryError)
+                  lastError = retryError
+                  continue // Try next retry
+                }
+              }
+              
+              // If all retries failed
+              if (mindError) {
+                console.error(`All ${maxRetries} retry attempts failed`)
+                throw new Error(`Network error: Upload failed after ${maxRetries} retries. Please check your connection and try again later.`)
+              }
+            }
+            
             // If it's a CORS error, try alternative approach
-            if (mindError.message.includes('CORS') || mindError.message.includes('cross-origin')) {
+            if (mindError && (mindError.message.includes('CORS') || mindError.message.includes('cross-origin'))) {
               console.log('CORS error detected, trying alternative upload method...')
               
               // Try alternative: Convert file to base64 and store as text
