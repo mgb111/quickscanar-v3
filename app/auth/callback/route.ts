@@ -5,8 +5,10 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const state = requestUrl.searchParams.get('state')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
+  const next = requestUrl.searchParams.get('next') || '/dashboard'
 
   // Handle OAuth errors
   if (error) {
@@ -14,6 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/signin?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`, request.url))
   }
 
+  // Check for required parameters
   if (!code) {
     console.error('No authorization code received')
     return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', request.url))
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
     if (data?.user) {
       console.log('Successfully authenticated user:', data.user.email)
       // Redirect to dashboard on successful authentication
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL(next, request.url))
     } else {
       console.error('No user data received after code exchange')
       return NextResponse.redirect(new URL('/auth/signin?error=no_user&description=No user data received', request.url))

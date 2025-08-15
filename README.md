@@ -2,6 +2,8 @@
 
 A modern AR experience creation platform built with Next.js, Supabase, and MindAR.
 
+**🌐 Production URL**: [quickscanar.com](https://quickscanar.com)
+
 ## Features
 
 - **AR Experience Creation**: Upload videos and custom MindAR files to create interactive AR experiences
@@ -26,6 +28,8 @@ Google Sign-In is now fully implemented and ready to use:
 1. Configure Google OAuth in Google Cloud Console
 2. Enable Google provider in Supabase dashboard
 3. Add OAuth credentials to Supabase
+
+**Production Redirect URI**: `https://quickscanar.com/auth/callback`
 
 See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for detailed setup instructions.
 
@@ -54,6 +58,7 @@ Traditional email/password authentication is also available as an alternative.
 
 4. **Configure Google OAuth** (optional)
    - Follow the setup guide in [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
+   - Add `https://quickscanar.com/auth/callback` for production
 
 5. **Run the development server**
    ```bash
@@ -61,7 +66,7 @@ Traditional email/password authentication is also available as an alternative.
    ```
 
 6. **Open your browser**
-   - Navigate to `http://localhost:3000`
+   - Navigate to `http://localhost:3002` (or the port shown)
    - Visit `/debug` to test authentication
    - Visit `/auth/signin` to test Google OAuth
 
@@ -95,7 +100,18 @@ quickscanar-v3/
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment instructions.
+### Production (quickscanar.com)
+- **Platform**: Vercel
+- **Domain**: quickscanar.com
+- **SSL**: Automatically provided by Vercel
+- **Environment**: Production environment variables configured
+
+### Development
+- **Local**: `http://localhost:3002` (or available port)
+- **Build**: `npm run build` ✅ Working
+- **Dev Server**: `npm run dev` ✅ Working
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
 
 ## Contributing
 
@@ -114,4 +130,5 @@ For issues and questions:
 1. Check the [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for OAuth setup
 2. Review the debug page at `/debug`
 3. Check browser console and network tabs for errors
-4. Verify Supabase configuration and logs 
+4. Verify Supabase configuration and logs
+5. Check Vercel deployment logs for production issues 
