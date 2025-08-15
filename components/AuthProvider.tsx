@@ -147,10 +147,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Supabase not configured')
     }
 
+    // Determine the correct redirect URL based on environment
+    let redirectUrl: string
+    
+    if (typeof window !== 'undefined') {
+      // Client-side: check if we're in development or production
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      if (isLocalhost) {
+        // Development: use current origin (localhost:3002)
+        redirectUrl = `${window.location.origin}/auth/callback`
+      } else {
+        // Production: use environment variable or fallback to production domain
+        redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+          : 'https://quickscanar.com/auth/callback'
+      }
+    } else {
+      // Server-side: use environment variable or default to production
+      redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        : 'https://quickscanar.com/auth/callback'
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: redirectUrl
       }
     })
 

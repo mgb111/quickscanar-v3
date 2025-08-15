@@ -21,6 +21,7 @@ This checklist covers everything needed to deploy QuickScanAR to production on V
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` - Set in Vercel
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Set in Vercel
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` - Set in Vercel (if needed)
+- [ ] `NEXT_PUBLIC_SITE_URL=https://quickscanar.com` - **CRITICAL for OAuth redirects**
 - [ ] Verify all variables are set in Vercel dashboard
 
 ### 4. Domain Configuration
@@ -96,6 +97,8 @@ This checklist covers everything needed to deploy QuickScanAR to production on V
 - [ ] Check Supabase logs for authentication errors
 - [ ] Ensure environment variables are set correctly
 - [ ] Test OAuth flow step by step
+- [ ] **CRITICAL**: Set `NEXT_PUBLIC_SITE_URL=https://quickscanar.com` in Vercel
+- [ ] **CRITICAL**: Verify OAuth redirects to quickscanar.com, not localhost
 
 ### Domain Issues
 - [ ] Verify DNS records are correct
