@@ -192,6 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ Server-side - using production redirect:', redirectUrl)
     }
 
+    console.log('🎯 Final redirect URL:', redirectUrl)
+    console.log('=== End OAuth Debug ===')
+
     // CRITICAL: Validate the redirect URL format
     try {
       new URL(redirectUrl) // This will throw if URL is invalid
@@ -201,8 +204,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(`Invalid redirect URL: ${redirectUrl}`)
     }
 
-    console.log('🎯 Final redirect URL:', redirectUrl)
-    console.log('=== End OAuth Debug ===')
+    // CRITICAL: Double-check the redirect URL being sent to Supabase
+    console.log('🔍 Sending to Supabase:')
+    console.log('  Provider: google')
+    console.log('  RedirectTo:', redirectUrl)
+    console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     // FIXED: Use simple OAuth call without custom query parameters
     try {

@@ -4,11 +4,27 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  
+  // CRITICAL: Debug all incoming parameters
+  console.log('=== OAuth Callback Debug ===')
+  console.log('Full request URL:', request.url)
+  console.log('Request hostname:', requestUrl.hostname)
+  console.log('Request pathname:', requestUrl.pathname)
+  console.log('All search params:', Object.fromEntries(requestUrl.searchParams.entries()))
+  
   const code = requestUrl.searchParams.get('code')
   const state = requestUrl.searchParams.get('state')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
   const next = requestUrl.searchParams.get('next') || '/dashboard'
+
+  console.log('Extracted parameters:')
+  console.log('  code:', code ? `${code.substring(0, 20)}...` : 'null')
+  console.log('  state:', state ? `${state.substring(0, 20)}...` : 'null')
+  console.log('  error:', error)
+  console.log('  error_description:', errorDescription)
+  console.log('  next:', next)
+  console.log('=== End Callback Debug ===')
 
   // Determine the base URL for redirects
   let baseUrl: string
@@ -32,6 +48,7 @@ export async function GET(request: NextRequest) {
   // Check for required parameters
   if (!code) {
     console.error('No authorization code received')
+    console.error('This usually means the callback URL is wrong or Google is not sending the code')
     return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', baseUrl))
   }
 
