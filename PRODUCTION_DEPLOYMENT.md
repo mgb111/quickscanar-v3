@@ -13,6 +13,7 @@ This checklist covers everything needed to deploy QuickScanAR to production on V
 ### 2. Supabase Configuration
 - [ ] Enable Google provider in Supabase dashboard
 - [ ] Add Google OAuth credentials (Client ID + Secret)
+- [ ] **CRITICAL**: Set Site URL to `https://quickscanar.com` in Supabase Settings → General
 - [ ] Verify Supabase project is on production plan
 - [ ] Check that all required tables exist
 - [ ] Verify RLS policies are configured correctly

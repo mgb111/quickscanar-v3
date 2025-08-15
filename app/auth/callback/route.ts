@@ -10,16 +10,29 @@ export async function GET(request: NextRequest) {
   const errorDescription = requestUrl.searchParams.get('error_description')
   const next = requestUrl.searchParams.get('next') || '/dashboard'
 
+  // Determine the base URL for redirects
+  let baseUrl: string
+  if (requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1') {
+    // Development: use current origin
+    baseUrl = requestUrl.origin
+  } else {
+    // Production: use quickscanar.com
+    baseUrl = 'https://quickscanar.com'
+  }
+
+  console.log('Callback base URL:', baseUrl)
+  console.log('Request hostname:', requestUrl.hostname)
+
   // Handle OAuth errors
   if (error) {
     console.error('OAuth error:', error, errorDescription)
-    return NextResponse.redirect(new URL(`/auth/signin?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`, request.url))
+    return NextResponse.redirect(new URL(`/auth/signin?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`, baseUrl))
   }
 
   // Check for required parameters
   if (!code) {
     console.error('No authorization code received')
-    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', request.url))
+    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', baseUrl))
   }
 
   try {
@@ -53,19 +66,19 @@ export async function GET(request: NextRequest) {
     
     if (exchangeError) {
       console.error('Error exchanging code for session:', exchangeError)
-      return NextResponse.redirect(new URL(`/auth/signin?error=exchange_failed&description=${encodeURIComponent(exchangeError.message)}`, request.url))
+      return NextResponse.redirect(new URL(`/auth/signin?error=exchange_failed&description=${encodeURIComponent(exchangeError.message)}`, baseUrl))
     }
 
     if (data?.user) {
       console.log('Successfully authenticated user:', data.user.email)
       // Redirect to dashboard on successful authentication
-      return NextResponse.redirect(new URL(next, request.url))
+      return NextResponse.redirect(new URL(next, baseUrl))
     } else {
       console.error('No user data received after code exchange')
-      return NextResponse.redirect(new URL('/auth/signin?error=no_user&description=No user data received', request.url))
+      return NextResponse.redirect(new URL('/auth/signin?error=no_user&description=No user data received', baseUrl))
     }
   } catch (err) {
     console.error('Unexpected error in OAuth callback:', err)
-    return NextResponse.redirect(new URL('/auth/signin?error=unexpected&description=An unexpected error occurred', request.url))
+    return NextResponse.redirect(new URL('/auth/signin?error=unexpected&description=An unexpected error occurred', baseUrl))
   }
 }

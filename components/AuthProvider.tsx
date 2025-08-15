@@ -157,23 +157,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isLocalhost) {
         // Development: use current origin (localhost:3002)
         redirectUrl = `${window.location.origin}/auth/callback`
+        console.log('Development mode - using localhost redirect:', redirectUrl)
       } else {
-        // Production: use environment variable or fallback to production domain
-        redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
-          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-          : 'https://quickscanar.com/auth/callback'
+        // Production: check if we're on quickscanar.com or another domain
+        if (window.location.hostname === 'quickscanar.com' || window.location.hostname.includes('quickscanar.com')) {
+          redirectUrl = 'https://quickscanar.com/auth/callback'
+          console.log('Production mode - using quickscanar.com redirect:', redirectUrl)
+        } else {
+          // Fallback: use current origin
+          redirectUrl = `${window.location.origin}/auth/callback`
+          console.log('Fallback mode - using current origin redirect:', redirectUrl)
+        }
       }
     } else {
-      // Server-side: use environment variable or default to production
-      redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-        : 'https://quickscanar.com/auth/callback'
+      // Server-side: default to production
+      redirectUrl = 'https://quickscanar.com/auth/callback'
+      console.log('Server-side - using production redirect:', redirectUrl)
     }
+
+    console.log('Final redirect URL:', redirectUrl)
+    console.log('Current window location:', window.location.href)
+    console.log('Current hostname:', window.location.hostname)
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl
+        redirectTo: redirectUrl,
+        queryParams: {
+          // Force the redirect URL to be used
+          redirect_uri: redirectUrl
+        }
       }
     })
 

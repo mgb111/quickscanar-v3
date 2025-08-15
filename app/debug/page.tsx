@@ -194,6 +194,60 @@ export default function DebugPage() {
           </div>
         </div>
 
+        {/* OAuth Configuration Test */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">🔐 OAuth Configuration Test</h3>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Current Hostname:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {typeof window !== 'undefined' ? window.location.hostname : 'Server-side'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Current Origin:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {typeof window !== 'undefined' ? window.location.origin : 'Server-side'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Environment:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                  ? 'Development' 
+                  : 'Production'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Expected OAuth Redirect:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                  ? `${window.location.origin}/auth/callback`
+                  : 'https://quickscanar.com/auth/callback'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Site URL Env Var:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> If you're testing OAuth from production (quickscanar.com), 
+              the redirect should go to <code className="bg-blue-100 px-1 rounded">https://quickscanar.com/auth/callback</code>. 
+              If it's still going to localhost, check your Supabase OAuth configuration.
+            </p>
+          </div>
+        </div>
+
         {/* Navigation */}
         <div className="text-center">
           <Link

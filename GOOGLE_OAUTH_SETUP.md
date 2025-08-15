@@ -125,6 +125,16 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
    - Check if you're using HTTPS in production
    - Verify Supabase session configuration
 
+### 5. **CRITICAL**: OAuth still redirecting to localhost in production
+    - **Root Cause**: Supabase project has incorrect site URL configured
+    - **Solution**: 
+      1. Go to Supabase Dashboard → Settings → General
+      2. Check "Site URL" field - it should be `https://quickscanar.com`
+      3. If it shows `http://localhost:3000` or similar, change it to `https://quickscanar.com`
+      4. Save and restart your Supabase project
+    - **Why This Happens**: Supabase uses the project's site URL as the base for OAuth redirects
+    - **Verification**: After changing, test OAuth flow again
+
 ### Debug Steps
 
 1. **Check browser console** for JavaScript errors
