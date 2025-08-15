@@ -246,6 +246,27 @@ export default function DebugPage() {
               If it's still going to localhost, check your Supabase OAuth configuration.
             </p>
           </div>
+
+          {/* OAuth Test Button */}
+          <div className="mt-4">
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🧪 Testing OAuth redirect configuration...')
+                  const { signInWithGoogle } = useAuth()
+                  await signInWithGoogle()
+                } catch (error) {
+                  console.error('OAuth test failed:', error)
+                }
+              }}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+            >
+              🧪 Test OAuth Redirect (Check Console)
+            </button>
+            <p className="text-xs text-gray-600 mt-2 text-center">
+              Click this button and check the browser console for detailed OAuth redirect information
+            </p>
+          </div>
         </div>
 
         {/* Navigation */}

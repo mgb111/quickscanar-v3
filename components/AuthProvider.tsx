@@ -27,10 +27,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured()) {
       return null
     }
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    
+    console.log('🔧 Creating Supabase client with:')
+    console.log('  URL:', supabaseUrl)
+    console.log('  Key (first 20 chars):', supabaseKey.substring(0, 20) + '...')
+    
+    const client = createClient(supabaseUrl, supabaseKey)
+    
+    // Test the client configuration
+    console.log('  Client created successfully')
+    console.log('  Using environment URL:', supabaseUrl)
+    
+    return client
   }, [])
 
   // Test connection with timeout
@@ -147,50 +158,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Supabase not configured')
     }
 
-    // Determine the correct redirect URL based on environment
+    // CRITICAL: Force the correct redirect URL based on current domain
     let redirectUrl: string
     
     if (typeof window !== 'undefined') {
-      // Client-side: check if we're in development or production
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const currentHostname = window.location.hostname
+      const currentOrigin = window.location.origin
       
-      if (isLocalhost) {
-        // Development: use current origin (localhost:3002)
-        redirectUrl = `${window.location.origin}/auth/callback`
-        console.log('Development mode - using localhost redirect:', redirectUrl)
+      console.log('=== OAuth Redirect Debug ===')
+      console.log('Current hostname:', currentHostname)
+      console.log('Current origin:', currentOrigin)
+      console.log('Environment variable NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')))
+      
+      if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
+        // Development: use current origin
+        redirectUrl = `${currentOrigin}/auth/callback`
+        console.log('✅ Development mode - using localhost redirect:', redirectUrl)
+      } else if (currentHostname === 'quickscanar.com' || currentHostname.includes('quickscanar.com')) {
+        // Production: force quickscanar.com
+        redirectUrl = 'https://quickscanar.com/auth/callback'
+        console.log('✅ Production mode - using quickscanar.com redirect:', redirectUrl)
       } else {
-        // Production: check if we're on quickscanar.com or another domain
-        if (window.location.hostname === 'quickscanar.com' || window.location.hostname.includes('quickscanar.com')) {
-          redirectUrl = 'https://quickscanar.com/auth/callback'
-          console.log('Production mode - using quickscanar.com redirect:', redirectUrl)
-        } else {
-          // Fallback: use current origin
-          redirectUrl = `${window.location.origin}/auth/callback`
-          console.log('Fallback mode - using current origin redirect:', redirectUrl)
-        }
+        // Other domains (like Vercel preview): use environment variable or fallback
+        redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+          : 'https://quickscanar.com/auth/callback'
+        console.log('✅ Other domain - using configured redirect:', redirectUrl)
       }
     } else {
       // Server-side: default to production
       redirectUrl = 'https://quickscanar.com/auth/callback'
-      console.log('Server-side - using production redirect:', redirectUrl)
+      console.log('✅ Server-side - using production redirect:', redirectUrl)
     }
 
-    console.log('Final redirect URL:', redirectUrl)
-    console.log('Current window location:', window.location.href)
-    console.log('Current hostname:', window.location.hostname)
+    console.log('🎯 Final redirect URL:', redirectUrl)
+    console.log('=== End OAuth Debug ===')
 
+    // IMPORTANT: Use both redirectTo and queryParams to force the redirect
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectUrl,
         queryParams: {
-          // Force the redirect URL to be used
-          redirect_uri: redirectUrl
+          // Force the redirect URL to be used by Google OAuth
+          redirect_uri: redirectUrl,
+          // Additional parameters to ensure proper redirect
+          state: btoa(JSON.stringify({ redirectTo: redirectUrl }))
         }
       }
     })
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ OAuth error:', error)
+      throw error
+    }
+    
+    console.log('✅ OAuth request sent successfully with redirect:', redirectUrl)
   }
 
   const signOut = async () => {

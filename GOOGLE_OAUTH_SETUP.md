@@ -125,15 +125,57 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
    - Check if you're using HTTPS in production
    - Verify Supabase session configuration
 
-### 5. **CRITICAL**: OAuth still redirecting to localhost in production
-    - **Root Cause**: Supabase project has incorrect site URL configured
-    - **Solution**: 
-      1. Go to Supabase Dashboard → Settings → General
-      2. Check "Site URL" field - it should be `https://quickscanar.com`
-      3. If it shows `http://localhost:3000` or similar, change it to `https://quickscanar.com`
-      4. Save and restart your Supabase project
-    - **Why This Happens**: Supabase uses the project's site URL as the base for OAuth redirects
-    - **Verification**: After changing, test OAuth flow again
+## 🚨 **CRITICAL TROUBLESHOOTING: Still Redirecting to Localhost**
+
+If you're still experiencing localhost redirects after implementing all the fixes above, the issue is likely in your **Supabase project configuration**.
+
+### **Root Cause: Supabase Project Site URL**
+
+Your Supabase project has a hardcoded site URL that's overriding all OAuth redirects.
+
+### **How to Fix:**
+
+#### **Step 1: Check Supabase Project Settings**
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project (`pmbrotwuukafunqpttsm`)
+3. Go to **Settings** → **General**
+4. Look for **"Site URL"** field
+5. **If it shows `http://localhost:3000` or similar, this is the problem!**
+
+#### **Step 2: Update Supabase Site URL**
+1. Change the Site URL from `http://localhost:3000` to `https://quickscanar.com`
+2. Click **Save**
+3. **Restart your Supabase project** (if prompted)
+
+#### **Step 3: Verify Google OAuth Redirect URIs**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to **APIs & Services** → **Credentials**
+3. Edit your OAuth 2.0 Client ID
+4. **Remove** any localhost redirect URIs
+5. **Ensure** `https://quickscanar.com/auth/callback` is listed
+6. Save changes
+
+### **Why This Happens:**
+
+- **Supabase uses the project's Site URL as the base for ALL OAuth redirects**
+- **Even if your code specifies the correct redirect, Supabase overrides it**
+- **The project was likely created during development with localhost**
+
+### **Verification:**
+
+After making these changes:
+1. **Wait 2-3 minutes** for changes to propagate
+2. **Test OAuth flow** from production domain
+3. **Check browser console** for redirect logs
+4. **Verify** redirect goes to `https://quickscanar.com/auth/callback`
+
+### **If Still Not Working:**
+
+1. **Clear browser cache and cookies**
+2. **Test in incognito/private window**
+3. **Check Supabase logs** for OAuth errors
+4. **Verify environment variables** are set correctly
+5. **Contact Supabase support** if the issue persists
 
 ### Debug Steps
 
