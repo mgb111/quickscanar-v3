@@ -129,9 +129,15 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 If you're still experiencing localhost redirects after implementing all the fixes above, the issue is likely in your **Supabase project configuration**.
 
+### **Current Status Update:**
+
+✅ **PKCE Error Fixed**: The "invalid request: both auth code and code verifier should be non-empty" error has been resolved by removing custom query parameters that were interfering with Supabase's PKCE flow.
+
+🔍 **Redirect Issue Status**: We need to verify if the localhost redirect issue is also resolved. The PKCE error suggests the OAuth flow is working, but we need to confirm the redirect destination.
+
 ### **Root Cause: Supabase Project Site URL**
 
-Your Supabase project has a hardcoded site URL that's overriding all OAuth redirects.
+Your Supabase project likely has a hardcoded site URL that's overriding all OAuth redirects.
 
 ### **How to Fix:**
 

@@ -195,26 +195,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🎯 Final redirect URL:', redirectUrl)
     console.log('=== End OAuth Debug ===')
 
-    // IMPORTANT: Use both redirectTo and queryParams to force the redirect
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-        queryParams: {
-          // Force the redirect URL to be used by Google OAuth
-          redirect_uri: redirectUrl,
-          // Additional parameters to ensure proper redirect
-          state: btoa(JSON.stringify({ redirectTo: redirectUrl }))
+    // FIXED: Use simple OAuth call without custom query parameters
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+          // Removed custom queryParams that were interfering with PKCE flow
         }
-      }
-    })
+      })
 
-    if (error) {
-      console.error('❌ OAuth error:', error)
+      if (error) {
+        console.error('❌ OAuth error:', error)
+        throw error
+      }
+      
+      console.log('✅ OAuth request sent successfully with redirect:', redirectUrl)
+      console.log('🔍 Using redirect URL:', redirectUrl)
+      
+    } catch (error) {
+      console.error('❌ OAuth request failed:', error)
       throw error
     }
-    
-    console.log('✅ OAuth request sent successfully with redirect:', redirectUrl)
   }
 
   const signOut = async () => {

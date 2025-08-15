@@ -267,6 +267,14 @@ export default function DebugPage() {
               Click this button and check the browser console for detailed OAuth redirect information
             </p>
           </div>
+
+          {/* OAuth Status */}
+          <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+            <p className="text-sm text-green-800">
+              <strong>Good News:</strong> The "invalid request: both auth code and code verifier should be non-empty" error means the OAuth redirect is working! 
+              The issue was with custom query parameters interfering with PKCE flow. This has been fixed.
+            </p>
+          </div>
         </div>
 
         {/* Environment Variables Test */}
