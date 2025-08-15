@@ -172,11 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')))
       
       if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
-        // Development: use current origin
+        // Development: use current origin with proper callback path
         redirectUrl = `${currentOrigin}/auth/callback`
         console.log('✅ Development mode - using localhost redirect:', redirectUrl)
       } else if (currentHostname === 'quickscanar.com' || currentHostname.includes('quickscanar.com')) {
-        // Production: force quickscanar.com
+        // Production: force quickscanar.com with proper callback path
         redirectUrl = 'https://quickscanar.com/auth/callback'
         console.log('✅ Production mode - using quickscanar.com redirect:', redirectUrl)
       } else {
@@ -190,6 +190,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Server-side: default to production
       redirectUrl = 'https://quickscanar.com/auth/callback'
       console.log('✅ Server-side - using production redirect:', redirectUrl)
+    }
+
+    // CRITICAL: Validate the redirect URL format
+    try {
+      new URL(redirectUrl) // This will throw if URL is invalid
+      console.log('✅ Redirect URL is valid:', redirectUrl)
+    } catch (urlError) {
+      console.error('❌ Invalid redirect URL:', redirectUrl)
+      throw new Error(`Invalid redirect URL: ${redirectUrl}`)
     }
 
     console.log('🎯 Final redirect URL:', redirectUrl)

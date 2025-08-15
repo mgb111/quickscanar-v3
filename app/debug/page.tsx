@@ -275,6 +275,17 @@ export default function DebugPage() {
               The issue was with custom query parameters interfering with PKCE flow. This has been fixed.
             </p>
           </div>
+
+          {/* New Error Status */}
+          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+            <p className="text-sm text-yellow-800">
+              <strong>New Issue:</strong> The "requested path is invalid" error suggests the redirect URL format is incorrect. 
+              This could be due to:
+              <br />• Google OAuth redirect URI mismatch
+              <br />• Malformed callback URL
+              <br />• Supabase project configuration issue
+            </p>
+          </div>
         </div>
 
         {/* Environment Variables Test */}
