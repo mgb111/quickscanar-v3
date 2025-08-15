@@ -54,9 +54,14 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // CRITICAL: Try to redirect to the absolute URL to see if that works
+    console.log('🔄 Attempting to redirect to absolute callback URL...')
+    const absoluteCallbackUrl = `https://quickscanar.com/auth/callback${requestUrl.search ? requestUrl.search : ''}`
+    console.log('🎯 Redirecting to:', absoluteCallbackUrl)
+    
     // If we still don't have a code, redirect to signin with helpful error
     console.error('❌ No authorization code found in request or referrer')
-    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received - check Supabase Site URL configuration', requestUrl.origin))
+    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received - check Google OAuth redirect URIs', requestUrl.origin))
   }
 
   // Determine the base URL for redirects
@@ -75,6 +80,13 @@ export async function GET(request: NextRequest) {
   // Handle OAuth errors
   if (error) {
     console.error('OAuth error:', error, errorDescription)
+    
+    // Handle specific PKCE errors
+    if (error === 'invalid_request' && errorDescription?.includes('auth code and code verifier')) {
+      console.error('❌ PKCE Error: Code verifier missing or corrupted')
+      return NextResponse.redirect(new URL('/auth/signin?error=pkce_error&description=Authentication session expired. Please try signing in again.', baseUrl))
+    }
+    
     return NextResponse.redirect(new URL(`/auth/signin?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`, baseUrl))
   }
 

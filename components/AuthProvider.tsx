@@ -222,7 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         provider: 'google',
         options: {
           redirectTo: redirectUrl
-          // Removed custom queryParams that were interfering with PKCE flow
+          // CRITICAL: PKCE flow is handled automatically by Supabase
         }
       })
 
