@@ -269,6 +269,48 @@ export default function DebugPage() {
           </div>
         </div>
 
+        {/* Environment Variables Test */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">🔧 Environment Variables Test</h3>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">NEXT_PUBLIC_SUPABASE_URL:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {process.env.NEXT_PUBLIC_SUPABASE_URL || 'Not set'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">NEXT_PUBLIC_SUPABASE_ANON_KEY:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'Not set'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">NEXT_PUBLIC_SITE_URL:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">All NEXT_PUBLIC vars:</span>
+              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')).length} found
+              </span>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+            <p className="text-sm text-yellow-800">
+              <strong>Debug Info:</strong> If NEXT_PUBLIC_SITE_URL shows "Not set", the environment variable is not being read correctly. 
+              This could be why OAuth is still redirecting to localhost.
+            </p>
+          </div>
+        </div>
+
         {/* Navigation */}
         <div className="text-center">
           <Link
