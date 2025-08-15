@@ -26,6 +26,39 @@ export async function GET(request: NextRequest) {
   console.log('  next:', next)
   console.log('=== End Callback Debug ===')
 
+  // CRITICAL: Handle the case where Supabase redirects to relative path
+  // This happens when Supabase's Site URL is not properly configured
+  if (requestUrl.pathname === '/auth/callback' && !code && !error) {
+    console.log('⚠️  Supabase redirected to relative path - this indicates Site URL misconfiguration')
+    console.log('🔧 Attempting to extract code from referrer or other sources...')
+    
+    // Try to get the code from the referrer header
+    const referer = request.headers.get('referer')
+    if (referer) {
+      console.log('📋 Referer header:', referer)
+      try {
+        const refererUrl = new URL(referer)
+        const refererCode = refererUrl.searchParams.get('code')
+        if (refererCode) {
+          console.log('✅ Found code in referrer:', refererCode.substring(0, 20) + '...')
+          // Continue with the code from referrer
+          const refererState = refererUrl.searchParams.get('state')
+          if (refererCode && refererState) {
+            // Use the code from referrer
+            console.log('🔄 Using code from referrer for authentication')
+            return await handleAuthentication(refererCode, refererState, next, requestUrl)
+          }
+        }
+      } catch (refererError) {
+        console.log('❌ Could not parse referrer URL:', refererError)
+      }
+    }
+    
+    // If we still don't have a code, redirect to signin with helpful error
+    console.error('❌ No authorization code found in request or referrer')
+    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received - check Supabase Site URL configuration', requestUrl.origin))
+  }
+
   // Determine the base URL for redirects
   let baseUrl: string
   if (requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1') {
@@ -50,6 +83,22 @@ export async function GET(request: NextRequest) {
     console.error('No authorization code received')
     console.error('This usually means the callback URL is wrong or Google is not sending the code')
     return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', baseUrl))
+  }
+
+  // Handle authentication with the provided code
+  return await handleAuthentication(code, state, next, requestUrl)
+}
+
+// Helper function to handle authentication
+async function handleAuthentication(code: string, state: string | null, next: string, requestUrl: URL) {
+  // Determine the base URL for redirects
+  let baseUrl: string
+  if (requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1') {
+    // Development: use current origin
+    baseUrl = requestUrl.origin
+  } else {
+    // Production: use quickscanar.com
+    baseUrl = 'https://quickscanar.com'
   }
 
   try {

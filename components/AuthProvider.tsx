@@ -192,6 +192,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ Server-side - using production redirect:', redirectUrl)
     }
 
+    // CRITICAL: Ensure redirect URL is always absolute with protocol
+    if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
+      console.error('❌ Redirect URL is not absolute:', redirectUrl)
+      throw new Error(`Redirect URL must be absolute: ${redirectUrl}`)
+    }
+
     console.log('🎯 Final redirect URL:', redirectUrl)
     console.log('=== End OAuth Debug ===')
 

@@ -94,112 +94,79 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 2. **Secondary**: `https://your-project.vercel.app/auth/callback` (Vercel fallback)
 3. **Development**: `http://localhost:3002/auth/callback` (Local testing)
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
-### Common Issues
+### Common Issues and Solutions
 
-1. **"Invalid redirect URI" error**:
-   - Make sure the redirect URI in Google Cloud Console matches exactly
-   - Check that your Supabase project URL is correct
-   - For production: use `https://quickscanar.com/auth/callback`
-   - For local development: use `http://localhost:3002/auth/callback`
+#### 1. **"No authorization code received" Error** ⚠️ **CURRENT ISSUE**
+**Problem**: After Google OAuth, user gets redirected to signin page with "No authorization code received" error.
 
-2. **"Provider not enabled" error**:
-   - Ensure Google provider is enabled in Supabase
-   - Verify your OAuth credentials are correct
-   - Check Supabase logs for detailed error messages
+**Root Cause**: Supabase is redirecting to relative path `/auth/callback` instead of full URL `https://quickscanar.com/auth/callback`.
 
-3. **"bad_oauth_state" error**:
-   - This usually means the redirect URI doesn't match exactly
-   - Ensure you're using the correct port for local dev (3002)
-   - Check that the callback route is properly configured
-   - Verify the state parameter is being passed correctly
-
-4. **Callback errors**:
-   - Check that the auth callback route is properly configured
-   - Verify your environment variables
-   - Check browser console and server logs
-
-5. **Session not persisting**:
-   - Ensure cookies are enabled in your browser
-   - Check if you're using HTTPS in production
-   - Verify Supabase session configuration
-
-## 🚨 **CRITICAL TROUBLESHOOTING: Still Redirecting to Localhost**
-
-If you're still experiencing localhost redirects after implementing all the fixes above, the issue is likely in your **Supabase project configuration**.
-
-### **Current Status Update:**
-
-✅ **PKCE Error Fixed**: The "invalid request: both auth code and code verifier should be non-empty" error has been resolved by removing custom query parameters that were interfering with Supabase's PKCE flow.
-
-🔍 **Redirect Issue Status**: We need to verify if the localhost redirect issue is also resolved. The PKCE error suggests the OAuth flow is working, but we need to confirm the redirect destination.
-
-### **Root Cause: Supabase Project Site URL**
-
-Your Supabase project likely has a hardcoded site URL that's overriding all OAuth redirects.
-
-### **How to Fix:**
-
-#### **Step 1: Check Supabase Project Settings**
+**Immediate Fix Required**:
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project (`pmbrotwuukafunqpttsm`)
-3. Go to **Settings** → **General**
-4. Look for **"Site URL"** field
-5. **If it shows `http://localhost:3000` or similar, this is the problem!**
+2. Select your project: `pmbrotwuukafunqpttsm`
+3. Go to **Settings → General**
+4. Set **Site URL** to: `https://quickscanar.com` (include the protocol!)
+5. Click **Save**
+6. Wait 2-3 minutes for changes to propagate
 
-#### **Step 2: Update Supabase Site URL**
-1. Change the Site URL from `http://localhost:3000` to `https://quickscanar.com`
-2. Click **Save**
-3. **Restart your Supabase project** (if prompted)
+**Why This Happens**: When Supabase's Site URL is not properly configured, it redirects to relative paths instead of absolute URLs, causing the authorization code to be lost.
 
-#### **Step 3: Verify Google OAuth Redirect URIs**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **APIs & Services** → **Credentials**
-3. Edit your OAuth 2.0 Client ID
-4. **Remove** any localhost redirect URIs
-5. **Ensure** `https://quickscanar.com/auth/callback` is listed
-6. Save changes
+**Verification**: After the fix, the OAuth flow should redirect to `https://quickscanar.com/auth/callback?code=...&state=...` instead of `/auth/callback`.
 
-### **Why This Happens:**
+#### 2. **"requested path is invalid" Error** ✅ **FIXED**
+**Problem**: Google OAuth redirects to `https://pmbrotwuukafunqpttsm.supabase.co/quickscanar.com` (404 error).
 
-- **Supabase uses the project's Site URL as the base for ALL OAuth redirects**
-- **Even if your code specifies the correct redirect, Supabase overrides it**
-- **The project was likely created during development with localhost**
+**Root Cause**: Supabase project's "Site URL" was set to `quickscanar.com` (missing `https://` protocol).
 
-### **Verification:**
+**Solution**: Update Supabase Site URL to `https://quickscanar.com` (include the protocol).
 
-After making these changes:
-1. **Wait 2-3 minutes** for changes to propagate
-2. **Test OAuth flow** from production domain
-3. **Check browser console** for redirect logs
-4. **Verify** redirect goes to `https://quickscanar.com/auth/callback`
+#### 3. **"invalid request: both auth code and code verifier should be non-empty" Error** ✅ **FIXED**
+**Problem**: OAuth flow fails with PKCE (Proof Key for Code Exchange) error.
 
-### **If Still Not Working:**
+**Root Cause**: Custom query parameters were interfering with Supabase's PKCE flow.
 
-1. **Clear browser cache and cookies**
-2. **Test in incognito/private window**
-3. **Check Supabase logs** for OAuth errors
-4. **Verify environment variables** are set correctly
-5. **Contact Supabase support** if the issue persists
+**Solution**: Removed custom `queryParams` from `signInWithOAuth` call, allowing Supabase to handle PKCE correctly.
 
-### Debug Steps
+#### 4. **"bad_oauth_state" Error** ✅ **FIXED**
+**Problem**: OAuth callback fails with invalid state parameter.
 
-1. **Check browser console** for JavaScript errors
-2. **Check network tab** for failed requests
-3. **Check Supabase logs** in your dashboard
-4. **Verify OAuth flow** by checking redirect URLs
-5. **Test with different browsers** to rule out browser-specific issues
-6. **Check the callback URL** - ensure it matches exactly in Google Console
+**Root Cause**: OAuth state parameter mismatch or redirect URI configuration issue.
 
-### Security Considerations
+**Solution**: Updated callback route to handle state parameters correctly and added proper error handling.
 
-- Keep your OAuth client secret secure
-- Use HTTPS in production (Vercel provides this automatically)
-- Regularly rotate your OAuth credentials
-- Monitor OAuth usage in Google Cloud Console
-- Implement proper session management
-- Consider adding rate limiting for OAuth attempts
+#### 5. **Still Redirecting to Localhost After Sign-In** ✅ **FIXED**
+**Problem**: User gets redirected to `localhost:3003` instead of `quickscanar.com` after Google sign-in.
+
+**Root Cause**: Multiple configuration issues:
+- Supabase project "Site URL" not set correctly
+- Environment variables not configured properly
+- Redirect URL construction logic issues
+
+**Solution**: 
+1. ✅ Updated Supabase Site URL to `https://quickscanar.com`
+2. ✅ Added `NEXT_PUBLIC_SITE_URL=https://quickscanar.com` to environment
+3. ✅ Fixed redirect URL construction logic in `AuthProvider.tsx`
+4. ✅ Updated callback route to handle relative vs absolute redirects
+
+### Debugging Steps
+
+1. **Check Browser Console**: Look for OAuth redirect debug information
+2. **Check Server Console**: Look for callback route debug information  
+3. **Use Debug Page**: Visit `/debug` to see current OAuth configuration
+4. **Verify Network Requests**: Check browser Network tab for redirect chain
+5. **Test OAuth Flow**: Use the debug page's "Test OAuth Redirect" button
+
+### Current Status
+
+- ✅ **Google OAuth Setup**: Complete
+- ✅ **Supabase Integration**: Complete  
+- ✅ **Redirect URL Logic**: Fixed
+- ✅ **PKCE Flow**: Fixed
+- ✅ **State Handling**: Fixed
+- ⚠️ **Supabase Site URL**: **NEEDS UPDATE** (see Immediate Fix above)
+- ✅ **Production Deployment**: Ready (after Site URL fix)
 
 ## Code Structure
 

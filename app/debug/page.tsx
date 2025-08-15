@@ -269,21 +269,27 @@ export default function DebugPage() {
           </div>
 
           {/* OAuth Status */}
-          <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
-            <p className="text-sm text-green-800">
-              <strong>Good News:</strong> The "invalid request: both auth code and code verifier should be non-empty" error means the OAuth redirect is working! 
-              The issue was with custom query parameters interfering with PKCE flow. This has been fixed.
+          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+            <p className="text-sm text-yellow-800">
+              <strong>🚨 CRITICAL ISSUE DETECTED:</strong> Supabase is redirecting to relative path <code>/auth/callback</code> instead of full URL <code>https://quickscanar.com/auth/callback</code>
             </p>
           </div>
 
-          {/* New Error Status */}
-          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-            <p className="text-sm text-yellow-800">
-              <strong>New Issue:</strong> The "requested path is invalid" error suggests the redirect URL format is incorrect. 
-              This could be due to:
-              <br />• Google OAuth redirect URI mismatch
-              <br />• Malformed callback URL
-              <br />• Supabase project configuration issue
+          {/* IMMEDIATE FIX REQUIRED */}
+          <div className="mt-4 p-4 bg-red-50 rounded border border-red-200">
+            <p className="text-sm text-red-800 font-medium mb-3">
+              🔧 IMMEDIATE FIX REQUIRED:
+            </p>
+            <ol className="list-decimal list-inside text-red-700 text-sm space-y-1">
+              <li>Go to <a href="https://supabase.com/dashboard" target="_blank" className="underline">Supabase Dashboard</a></li>
+              <li>Select your project: <code className="bg-red-100 px-1 rounded">pmbrotwuukafunqpttsm</code></li>
+              <li>Go to <strong>Settings → General</strong></li>
+              <li>Set <strong>Site URL</strong> to: <code className="bg-red-100 px-2 py-1 rounded">https://quickscanar.com</code></li>
+              <li>Click <strong>Save</strong></li>
+              <li>Wait 2-3 minutes for changes to propagate</li>
+            </ol>
+            <p className="text-xs text-red-600 mt-3">
+              <strong>Why this happens:</strong> When Supabase's Site URL is not properly configured, it redirects to relative paths instead of absolute URLs, causing the "No authorization code received" error.
             </p>
           </div>
         </div>
