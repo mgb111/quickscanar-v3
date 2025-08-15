@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Eye, EyeOff } from 'lucide-react'
+import { Camera, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function SignIn() {
@@ -13,12 +13,27 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [oauthError, setOauthError] = useState<string | null>(null)
   const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Handle OAuth errors from callback
+  useEffect(() => {
+    const error = searchParams.get('error')
+    const description = searchParams.get('description')
+    
+    if (error) {
+      setOauthError(description || 'An error occurred during Google sign-in')
+      // Clear the error from URL
+      router.replace('/auth/signin')
+    }
+  }, [searchParams, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setOauthError(null)
 
     try {
       await signIn(email, password)
@@ -33,11 +48,15 @@ export default function SignIn() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
+    setOauthError(null)
+    
     try {
       await signInWithGoogle()
       // Google OAuth will redirect, so no need to navigate here
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in with Google')
+      const errorMessage = error.message || 'Failed to sign in with Google'
+      setOauthError(errorMessage)
+      toast.error(errorMessage)
       setGoogleLoading(false)
     }
   }
@@ -59,6 +78,26 @@ export default function SignIn() {
             </Link>
           </p>
         </div>
+
+        {/* OAuth Error Display */}
+        {oauthError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Google Sign-In Error
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  {oauthError}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
