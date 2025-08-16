@@ -32,7 +32,7 @@ export default function Home() {
                 className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Convert Images to AR
+                Create AR
               </Link>
               {isSupabaseConfigured() && !supabaseError ? (
                 user ? (
@@ -97,7 +97,7 @@ export default function Home() {
                    href="/compiler"
                    className="bg-dark-blue text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-semibold hover:bg-red-800 transition-colors flex items-center justify-center"
                  >
-                   Start Creating AR
+                   Create AR
                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                  </Link>
                  <button className="border-2 border-dark-blue text-dark-blue px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-semibold hover:bg-dark-blue hover:text-white transition-colors flex items-center justify-center">
