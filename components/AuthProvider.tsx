@@ -158,47 +158,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Supabase not configured')
     }
 
-    // CRITICAL: Force the correct redirect URL based on current domain
-    let redirectUrl: string
+    // CRITICAL FIX: Force the correct redirect URL to override Supabase bug
+    const redirectUrl = 'https://quickscanar.com/auth/callback'
     
-    if (typeof window !== 'undefined') {
-      const currentHostname = window.location.hostname
-      const currentOrigin = window.location.origin
-      
-      console.log('=== OAuth Redirect Debug ===')
-      console.log('Current hostname:', currentHostname)
-      console.log('Current origin:', currentOrigin)
-      console.log('Environment variable NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-      console.log('All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')))
-      
-      if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
-        // Development: use current origin with proper callback path
-        redirectUrl = `${currentOrigin}/auth/callback`
-        console.log('✅ Development mode - using localhost redirect:', redirectUrl)
-      } else if (currentHostname === 'quickscanar.com' || currentHostname.includes('quickscanar.com')) {
-        // Production: force quickscanar.com with proper callback path
-        redirectUrl = 'https://quickscanar.com/auth/callback'
-        console.log('✅ Production mode - using quickscanar.com redirect:', redirectUrl)
-      } else {
-        // Other domains (like Vercel preview): use environment variable or fallback
-        redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
-          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-          : 'https://quickscanar.com/auth/callback'
-        console.log('✅ Other domain - using configured redirect:', redirectUrl)
-      }
-    } else {
-      // Server-side: default to production
-      redirectUrl = 'https://quickscanar.com/auth/callback'
-      console.log('✅ Server-side - using production redirect:', redirectUrl)
-    }
-
-    // CRITICAL: Ensure redirect URL is always absolute with protocol
-    if (!redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
-      console.error('❌ Redirect URL is not absolute:', redirectUrl)
-      throw new Error(`Redirect URL must be absolute: ${redirectUrl}`)
-    }
-
-    console.log('🎯 Final redirect URL:', redirectUrl)
+    console.log('=== OAuth Redirect Debug ===')
+    console.log('🔧 FORCING redirect URL to override Supabase bug:', redirectUrl)
+    console.log('Current hostname:', typeof window !== 'undefined' ? window.location.hostname : 'server-side')
+    console.log('Current origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side')
     console.log('=== End OAuth Debug ===')
 
     // CRITICAL: Validate the redirect URL format
@@ -210,19 +176,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(`Invalid redirect URL: ${redirectUrl}`)
     }
 
-    // CRITICAL: Double-check the redirect URL being sent to Supabase
-    console.log('🔍 Sending to Supabase:')
+    // CRITICAL: Force the redirect URL to override Supabase's internal bug
+    console.log('🔍 Sending to Supabase with FORCED redirect:')
     console.log('  Provider: google')
-    console.log('  RedirectTo:', redirectUrl)
+    console.log('  RedirectTo (FORCED):', redirectUrl)
     console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
-    // FIXED: Use simple OAuth call without custom query parameters
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl
-          // CRITICAL: PKCE flow is handled automatically by Supabase
         }
       })
 
@@ -231,8 +195,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error
       }
       
-      console.log('✅ OAuth request sent successfully with redirect:', redirectUrl)
-      console.log('🔍 Using redirect URL:', redirectUrl)
+      console.log('✅ OAuth request sent successfully with FORCED redirect:', redirectUrl)
+      console.log('🔧 This should override Supabase internal redirect bug')
       
     } catch (error) {
       console.error('❌ OAuth request failed:', error)
