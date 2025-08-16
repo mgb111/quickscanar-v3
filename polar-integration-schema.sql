@@ -13,12 +13,7 @@ CREATE TABLE user_subscriptions (
   current_period_end TIMESTAMP WITH TIME ZONE,
   canceled_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_user_subscriptions_user_id (user_id),
-  INDEX idx_user_subscriptions_polar_id (polar_subscription_id),
-  INDEX idx_user_subscriptions_status (status),
-  INDEX idx_user_subscriptions_period_end (current_period_end)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create subscription plans table
@@ -31,12 +26,10 @@ CREATE TABLE subscription_plans (
   currency VARCHAR(3) NOT NULL DEFAULT 'USD',
   interval VARCHAR(20) NOT NULL CHECK (interval IN ('month', 'year')),
   features JSONB,
+  payment_link VARCHAR(500), -- Payment link for the plan
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_subscription_plans_price_id (polar_price_id),
-  INDEX idx_subscription_plans_active (is_active)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create payment history table
@@ -49,12 +42,7 @@ CREATE TABLE payment_history (
   currency VARCHAR(3) NOT NULL DEFAULT 'USD',
   status VARCHAR(50) NOT NULL CHECK (status IN ('succeeded', 'failed', 'pending', 'canceled')),
   payment_method VARCHAR(100),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_payment_history_user_id (user_id),
-  INDEX idx_payment_history_subscription_id (subscription_id),
-  INDEX idx_payment_history_status (status),
-  INDEX idx_payment_history_created_at (created_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create usage tracking table
@@ -65,12 +53,7 @@ CREATE TABLE usage_tracking (
   feature VARCHAR(100) NOT NULL,
   usage_count INTEGER DEFAULT 1,
   usage_date DATE DEFAULT CURRENT_DATE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_usage_tracking_user_id (user_id),
-  INDEX idx_usage_tracking_subscription_id (subscription_id),
-  INDEX idx_usage_tracking_feature (feature),
-  INDEX idx_usage_tracking_date (usage_date)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create subscription limits table
@@ -80,19 +63,36 @@ CREATE TABLE subscription_limits (
   feature VARCHAR(100) NOT NULL,
   limit_value INTEGER NOT NULL,
   limit_type VARCHAR(20) NOT NULL CHECK (limit_type IN ('count', 'storage_mb', 'bandwidth_gb')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_subscription_limits_plan_id (plan_id),
-  INDEX idx_subscription_limits_feature (feature)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create indexes for better performance
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions (user_id);
+CREATE INDEX idx_user_subscriptions_polar_id ON user_subscriptions (polar_subscription_id);
+CREATE INDEX idx_user_subscriptions_status ON user_subscriptions (status);
+CREATE INDEX idx_user_subscriptions_period_end ON user_subscriptions (current_period_end);
+
+CREATE INDEX idx_subscription_plans_price_id ON subscription_plans (polar_price_id);
+CREATE INDEX idx_subscription_plans_active ON subscription_plans (is_active);
+
+CREATE INDEX idx_payment_history_user_id ON payment_history (user_id);
+CREATE INDEX idx_payment_history_subscription_id ON payment_history (subscription_id);
+CREATE INDEX idx_payment_history_status ON payment_history (status);
+CREATE INDEX idx_payment_history_created_at ON payment_history (created_at);
+
+CREATE INDEX idx_usage_tracking_user_id ON usage_tracking (user_id);
+CREATE INDEX idx_usage_tracking_subscription_id ON usage_tracking (subscription_id);
+CREATE INDEX idx_usage_tracking_feature ON usage_tracking (feature);
+CREATE INDEX idx_usage_tracking_date ON usage_tracking (usage_date);
+
+CREATE INDEX idx_subscription_limits_plan_id ON subscription_limits (plan_id);
+CREATE INDEX idx_subscription_limits_feature ON subscription_limits (feature);
+
 -- Insert default subscription plans
-INSERT INTO subscription_plans (polar_price_id, name, description, amount, currency, interval, features) VALUES
-('price_free', 'Free Plan', 'Get started with AR experiences', 0, 'USD', 'month', '["1 AR Experience", "Basic Analytics", "Community Support"]'),
-('price_starter', 'Starter Plan', 'Perfect for growing creators', 999, 'USD', 'month', '["10 AR Experiences", "Standard Analytics", "Email Support", "Custom Branding"]'),
-('price_pro', 'Professional Plan', 'For businesses and agencies', 4999, 'USD', 'month', '["Unlimited AR Experiences", "Advanced Analytics", "Priority Support", "Custom Branding", "API Access", "White-label Options"]'),
-('price_starter_yearly', 'Starter Plan (Yearly)', 'Save 20% with annual billing', 9999, 'USD', 'year', '["10 AR Experiences", "Standard Analytics", "Email Support", "Custom Branding"]'),
-('price_pro_yearly', 'Professional Plan (Yearly)', 'Save 20% with annual billing', 49999, 'USD', 'year', '["Unlimited AR Experiences", "Advanced Analytics", "Priority Support", "Custom Branding", "API Access", "White-label Options"]');
+INSERT INTO subscription_plans (polar_price_id, name, description, amount, currency, interval, features, payment_link) VALUES
+('price_free', 'Free Plan', 'Get started with AR experiences', 0, 'USD', 'month', '["1 AR Experience", "Basic Analytics", "Community Support"]', NULL),
+('price_monthly', 'Monthly Plan', 'Perfect for growing creators', 4900, 'USD', 'month', '["3 AR Campaigns", "Advanced Analytics", "Priority Support", "Custom Branding"]', 'https://polar.sh/your-org/monthly-plan'),
+('price_annual', 'Annual Plan', 'Save $89/year with annual billing', 49900, 'USD', 'year', '["3 AR Campaigns per month", "Premium Analytics", "24/7 Support", "White-label Solutions"]', 'https://polar.sh/your-org/annual-plan');
 
 -- Insert default subscription limits
 INSERT INTO subscription_limits (plan_id, feature, limit_value, limit_type) VALUES
@@ -100,13 +100,13 @@ INSERT INTO subscription_limits (plan_id, feature, limit_value, limit_type) VALU
 ((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_free'), 'storage', 100, 'storage_mb'),
 ((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_free'), 'analytics_retention', 30, 'count'), -- days
 
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_starter'), 'ar_experiences', 10, 'count'),
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_starter'), 'storage', 1000, 'storage_mb'),
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_starter'), 'analytics_retention', 90, 'count'),
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_monthly'), 'ar_experiences', 3, 'count'),
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_monthly'), 'storage', 1000, 'storage_mb'),
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_monthly'), 'analytics_retention', 90, 'count'),
 
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_pro'), 'ar_experiences', -1, 'count'), -- -1 means unlimited
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_pro'), 'storage', 10000, 'storage_mb'),
-((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_pro'), 'analytics_retention', 365, 'count');
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_annual'), 'ar_experiences', 36, 'count'), -- 3 campaigns per month × 12 months
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_annual'), 'storage', 10000, 'storage_mb'),
+((SELECT id FROM subscription_plans WHERE polar_price_id = 'price_annual'), 'analytics_retention', 365, 'count');
 
 -- Create RLS policies
 ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
@@ -271,6 +271,7 @@ SELECT
   sp.amount as plan_amount,
   sp.currency as plan_currency,
   sp.interval as billing_interval,
+  sp.payment_link,
   us.current_period_end,
   us.created_at as subscription_start,
   CASE 
@@ -281,13 +282,3 @@ FROM auth.users u
 LEFT JOIN user_subscriptions us ON u.id = us.user_id
 LEFT JOIN subscription_plans sp ON us.price_id = sp.polar_price_id
 WHERE us.id IS NOT NULL;
-
--- Create indexes for better performance
-CREATE INDEX CONCURRENTLY idx_user_subscriptions_composite 
-  ON user_subscriptions (user_id, status, current_period_end);
-
-CREATE INDEX CONCURRENTLY idx_payment_history_composite 
-  ON payment_history (user_id, status, created_at);
-
-CREATE INDEX CONCURRENTLY idx_usage_tracking_composite 
-  ON usage_tracking (user_id, feature, usage_date);
