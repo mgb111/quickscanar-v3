@@ -9,7 +9,12 @@ export class CompilerScraper {
 
   async init() {
     console.log('🚀 Initializing browser for compilation...')
-    this.browser = await puppeteer.launch({
+    
+    // Different configuration for different environments
+    const isProduction = process.env.NODE_ENV === 'production'
+    const isVercel = process.env.VERCEL === '1'
+    
+    let launchOptions: any = {
       headless: true, // Run in background
       args: [
         '--no-sandbox', 
@@ -18,13 +23,39 @@ export class CompilerScraper {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor'
       ]
-    })
+    }
+
+    // For Vercel or other serverless environments
+    if (isVercel || isProduction) {
+      launchOptions.args.push(
+        '--single-process',
+        '--no-background-timer-throttling',
+        '--no-backgrounding-occluded-windows',
+        '--no-renderer-backgrounding'
+      )
+    }
+
+    // Try to use installed Chrome first, fallback to bundled
+    try {
+      this.browser = await puppeteer.launch(launchOptions)
+    } catch (error) {
+      console.log('⚠️ Failed to launch with default config, trying fallback...')
+      // Fallback configuration
+      launchOptions.executablePath = undefined // Let Puppeteer find Chrome
+      this.browser = await puppeteer.launch(launchOptions)
+    }
+
     this.page = await this.browser.newPage()
     
     // Set a longer timeout for compilation
     this.page.setDefaultTimeout(120000) // 2 minutes
+    
+    // Set user agent to avoid detection
+    await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.7258.68 Safari/537.36')
     
     console.log('✅ Browser initialized successfully')
   }
