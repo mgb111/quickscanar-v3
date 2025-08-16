@@ -17,7 +17,9 @@ export default function CreateExperience() {
   
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [useCustomMind, setUseCustomMind] = useState(false)
+  const [compilingImage, setCompilingImage] = useState(false)
   
   // Optimize progress updates to reduce re-renders
   const updateProgress = useCallback((message: string) => {
@@ -27,10 +29,16 @@ export default function CreateExperience() {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Check if we have either a custom .mind file
-    if (!mindFile) {
-      toast.error('Please upload a custom .mind file')
+    // Check if we have either a custom .mind file or an image to convert
+    if (!mindFile && !imageFile) {
+      toast.error('Please upload either a .mind file or an image to convert')
       return
+    }
+    
+    // If we have an image but no mind file, convert it first
+    if (imageFile && !mindFile) {
+      handleImageCompilation()
+      return // Will restart the process after compilation
     }
     
     if (!videoFile) {
@@ -206,8 +214,8 @@ export default function CreateExperience() {
           throw new Error(`Mind file upload failed: ${uploadError.message}`)
         }
       } else {
-        // The .mind file should already contain the image data
-        throw new Error('Custom .mind file is required. Please upload a .mind file.')
+        // This shouldn't happen as we check above
+        throw new Error('Mind file is required. Please upload a .mind file or convert an image.')
       }
  
       // Ensure we have a valid mind file URL
@@ -420,9 +428,12 @@ export default function CreateExperience() {
                     if (file) {
                       setMindFile(file);
                       setUseCustomMind(true);
+                      // Clear image file if user uploads mind file directly
+                      if (imageFile) {
+                        setImageFile(null);
+                      }
                     }
-                  }, [])}
-                  required
+                  }, [imageFile])}
                   className="hidden"
                 />
                 <label htmlFor="mindFile" className="cursor-pointer">
@@ -492,13 +503,13 @@ export default function CreateExperience() {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={submitting || !mindFile || !videoFile}
+                disabled={submitting || compilingImage || (!mindFile && !imageFile) || !videoFile}
                 className="w-full bg-dark-blue text-white py-3 px-6 rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
-                {submitting ? (
+                {submitting || compilingImage ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Creating Experience...
+                    {compilingImage ? 'Converting Image...' : 'Creating Experience...'}
                   </>
                 ) : (
                   <>
@@ -508,6 +519,16 @@ export default function CreateExperience() {
                 )}
               </button>
             </div>
+
+            {/* Progress Display */}
+            {compilationProgress && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 flex items-center">
+                  {compilingImage && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></div>}
+                  {compilationProgress}
+                </p>
+              </div>
+            )}
           </form>
         </div>
         
