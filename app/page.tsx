@@ -26,12 +26,12 @@ export default function Home() {
               <Camera className="h-8 w-8 text-white" />
               <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <Link
                 href="/compiler"
-                className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center"
+                className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center ml-2 sm:ml-0"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2 hidden sm:inline" />
                 Create AR
               </Link>
               {isSupabaseConfigured() && !supabaseError ? (

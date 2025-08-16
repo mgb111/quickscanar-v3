@@ -111,7 +111,7 @@ export default function Dashboard() {
               <Camera className="h-8 w-8 text-white" />
               <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <span className="text-sm text-white">{user?.email}</span>
               <button
                 onClick={() => router.push('/auth/signout')}
@@ -152,7 +152,7 @@ export default function Dashboard() {
               href="/compiler"
               className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
             >
-              <Upload className="h-5 w-5 mr-2" />
+              <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">Create AR</span>
               <span className="sm:hidden">Create AR</span>
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -176,7 +176,7 @@ export default function Dashboard() {
               href="/dashboard/create"
               className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
             >
-              <Video className="h-5 w-5 mr-2" />
+              <Video className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">Create Experience</span>
               <span className="sm:hidden">Create AR</span>
               <ArrowRight className="h-4 w-4 ml-2" />
@@ -203,7 +203,7 @@ export default function Dashboard() {
                   href="/compiler"
                   className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none"
                 >
-                  <Upload className="h-5 w-5 mr-2" />
+                  <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
                   <span className="hidden sm:inline">Create AR First</span>
                   <span className="sm:hidden">Create AR First</span>
                   <ArrowRight className="h-4 w-4 ml-2" />
