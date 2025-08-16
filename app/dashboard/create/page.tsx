@@ -305,7 +305,7 @@ export default function CreateExperience() {
         setSubmitting(false)
         setCompilationProgress('')
       }
-    }, [mindFile, videoFile, title, description, user?.id, router, updateProgress])
+    }, [mindFile, videoFile, title, description, user?.id, router, updateProgress, imageFile, handleImageCompilation, useCustomMind, supabase])
 
   if (loading) {
     return (
@@ -328,7 +328,7 @@ export default function CreateExperience() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-white">{user?.email}</span>
               <button
-                onClick={useCallback(() => router.push('/auth/signout'), [router])}
+                onClick={() => router.push('/auth/signout')}
                 className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
@@ -442,7 +442,7 @@ export default function CreateExperience() {
                 id="title"
                 name="title"
                 value={title}
-                onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value), [])}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Enter a name for your AR experience"
@@ -458,7 +458,7 @@ export default function CreateExperience() {
                 id="description"
                 name="description"
                 value={description}
-                onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value), [])}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Describe your AR experience"
@@ -479,7 +479,7 @@ export default function CreateExperience() {
                   id="imageFile"
                   name="imageFile"
                   accept="image/*"
-                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setImageFile(file);
@@ -489,7 +489,7 @@ export default function CreateExperience() {
                         setUseCustomMind(false);
                       }
                     }
-                  }, [mindFile])}
+                  }}
                   className="hidden"
                 />
                 <label htmlFor="imageFile" className="cursor-pointer">
@@ -533,7 +533,7 @@ export default function CreateExperience() {
                   id="mindFile"
                   name="mindFile"
                   accept=".mind"
-                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setMindFile(file);
@@ -543,7 +543,7 @@ export default function CreateExperience() {
                         setImageFile(null);
                       }
                     }
-                  }, [imageFile])}
+                  }}
                   className="hidden"
                 />
                 <label htmlFor="mindFile" className="cursor-pointer">
@@ -580,12 +580,12 @@ export default function CreateExperience() {
                   id="videoFile"
                   name="videoFile"
                   accept="video/*"
-                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setVideoFile(file);
                     }
-                  }, [])}
+                  }}
                   required
                   className="hidden"
                 />
