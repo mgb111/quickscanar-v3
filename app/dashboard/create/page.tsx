@@ -462,13 +462,67 @@ export default function CreateExperience() {
               />
             </div>
 
+            {/* Image Upload for Auto-Conversion */}
+            <div>
+              <label htmlFor="imageFile" className="block text-sm font-medium text-black mb-2">
+                Upload Image (Auto-Convert to AR) <span className="text-green-600">Recommended</span>
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Upload any image (JPG, PNG) and we'll automatically convert it to AR format for you!
+              </p>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
+                <input
+                  type="file"
+                  id="imageFile"
+                  name="imageFile"
+                  accept="image/*"
+                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      // Clear mind file if user uploads new image
+                      if (mindFile) {
+                        setMindFile(null);
+                        setUseCustomMind(false);
+                      }
+                    }
+                  }, [mindFile])}
+                  className="hidden"
+                />
+                <label htmlFor="imageFile" className="cursor-pointer">
+                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">JPG, PNG, or other image formats</p>
+                </label>
+              </div>
+              {imageFile && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✓ Ready for conversion: {imageFile.name}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    This image will be automatically converted to AR format when you create the experience
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* OR Divider */}
+            <div className="flex items-center">
+              <div className="flex-grow border-t border-gray-300"></div>
+              <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
+              <div className="flex-grow border-t border-gray-300"></div>
+            </div>
+
             {/* Mind File Upload */}
             <div>
               <label htmlFor="mindFile" className="block text-sm font-medium text-black mb-2">
-                Mind File (.mind) <span className="text-red-500">*</span>
+                Upload Pre-Converted Mind File (.mind) <span className="text-gray-500">Advanced</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                This is the AR-ready version of your image. If you don't have one, use the "Convert Images" button above first.
+                Already have a .mind file? Upload it directly here. Otherwise, use the image upload above.
               </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
                 <input
@@ -567,7 +621,7 @@ export default function CreateExperience() {
                 ) : (
                   <>
                     <Plus className="h-5 w-5 mr-2" />
-                    Create AR Experience
+                    {imageFile && !mindFile ? 'Convert Image & Create Experience' : 'Create AR Experience'}
                   </>
                 )}
               </button>
