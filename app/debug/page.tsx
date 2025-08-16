@@ -336,31 +336,31 @@ export default function DebugPage() {
         
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Current Configuration</h2>
-          <div className="space-y-3">
+              <div className="space-y-3">
             <div>
               <span className="font-medium">Current URL:</span>
               <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                 {debugInfo.currentUrl}
               </span>
-            </div>
+                </div>
             <div>
               <span className="font-medium">Current Origin:</span>
               <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                 {debugInfo.currentOrigin}
               </span>
-            </div>
+                </div>
             <div>
               <span className="font-medium">Current Hostname:</span>
               <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                 {debugInfo.currentHostname}
               </span>
-            </div>
+                </div>
+              </div>
           </div>
-        </div>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Environment Variables</h2>
-          <div className="space-y-3">
+            <div className="space-y-3">
             {Object.entries(debugInfo.environment || {}).map(([key, value]) => (
               <div key={key}>
                 <span className="font-medium">{key}:</span>
@@ -368,14 +368,14 @@ export default function DebugPage() {
                   {value || 'undefined'}
                 </span>
                 {value && (
-                  <button
+              <button
                     onClick={() => copyToClipboard(value as string)}
                     className="ml-2 text-xs text-blue-600 hover:text-blue-800"
                   >
                     Copy
-                  </button>
-                )}
-              </div>
+              </button>
+              )}
+            </div>
             ))}
           </div>
         </div>
@@ -453,15 +453,15 @@ export default function DebugPage() {
                 {loading ? 'Inspecting...' : 'Inspect OAuth Config'}
               </button>
 
-              <button
+            <button
                 onClick={testDetailedOAuth}
                 disabled={loading}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
               >
                 {loading ? 'Inspecting...' : 'Deep OAuth Analysis'}
-              </button>
-            </div>
-            
+            </button>
+          </div>
+
             {/* OAuth Debug Log */}
             {oauthDebug.length > 0 && (
               <div className="mt-4 p-4 bg-gray-100 rounded-lg">
@@ -471,7 +471,7 @@ export default function DebugPage() {
                     <div key={index} className="font-mono">{log}</div>
                   ))}
                 </div>
-              </div>
+          </div>
             )}
           </div>
         </div>
@@ -493,8 +493,8 @@ export default function DebugPage() {
               </code>
             </div>
           </div>
-        </div>
-
+            </div>
+            
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-purple-800 mb-4">🚨 URGENT: Configuration Conflict Detected</h2>
           <div className="space-y-3 text-purple-700">
@@ -518,9 +518,9 @@ export default function DebugPage() {
                 <li>Test OAuth again</li>
               </ol>
             </div>
+            </div>
           </div>
-        </div>
-
+          
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-yellow-800 mb-4">Troubleshooting Steps</h2>
           <div className="space-y-3 text-yellow-700">

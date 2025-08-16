@@ -5,7 +5,6 @@ import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode.react'
 
@@ -22,7 +21,7 @@ type ARExperience = {
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const router = useRouter()
   const [experiences, setExperiences] = useState<ARExperience[]>([])
   const [loadingExperiences, setLoadingExperiences] = useState(true)

@@ -5,11 +5,10 @@ import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Upload, ArrowLeft, Video, Plus, Camera, ArrowRight } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 export default function CreateExperience() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')

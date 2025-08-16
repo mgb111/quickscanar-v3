@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/components/AuthProvider'
 import { Camera, ArrowLeft, Share2, Smartphone, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import QRCode from 'qrcode.react'
@@ -26,6 +26,7 @@ type ARExperience = {
 export default function ExperienceViewer() {
   const params = useParams()
   const router = useRouter()
+  const { supabase } = useAuth()
   const [experience, setExperience] = useState<ARExperience | null>(null)
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)

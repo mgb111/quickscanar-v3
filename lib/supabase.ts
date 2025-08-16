@@ -20,14 +20,19 @@ export const getSupabaseClient = (): SupabaseClient | null => {
   }
   
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: 'pkce'
+      }
+    })
   }
   
   return supabaseInstance
 }
 
-// Create a single client instance for direct use
-export const supabase = isSupabaseConfigured() ? createClient(supabaseUrl, supabaseAnonKey) : null
+// Note: The main supabase client is now managed by AuthProvider
+// Use useAuth() hook to access the configured client instead of importing this
+// export const supabase = ...
 
 export type Database = {
   public: {
