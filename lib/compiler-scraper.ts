@@ -183,7 +183,9 @@ Environment details:
       // Look for START button (this is what the official MindAR compiler uses)
       console.log('🔍 Looking for START button...')
       const startSelectors = [
+        '.startButton_OY2G', // Exact class from debug output
         'button:contains("Start")',
+        '.button.button--primary',
         'input[value*="Start"]',
         'button:contains("start")',
         '#start',
@@ -226,37 +228,94 @@ Environment details:
       // Wait for compilation to complete (progress bar reaches 100%)
       console.log('⏳ Waiting for compilation progress to complete...')
       
-      // Monitor progress and wait for completion
-      let progressComplete = false
+      // Monitor progress and wait for completion (MindAR specific)
+      console.log('⏳ Monitoring MindAR compilation progress...')
+      let compilationComplete = false
       let attempts = 0
-      const maxAttempts = 60 // 60 attempts = 2 minutes max wait
+      const maxAttempts = 90 // 3 minutes max wait
       
-      while (!progressComplete && attempts < maxAttempts) {
+      while (!compilationComplete && attempts < maxAttempts) {
         try {
-          // Check if there's a progress indicator and if it shows 100%
-          const progressText = await this.page.evaluate(() => {
-            const progressElements = document.querySelectorAll('.progress, [class*="progress"], [id*="progress"]')
-            for (let i = 0; i < progressElements.length; i++) {
-              const elem = progressElements[i]
-              if (elem.textContent && elem.textContent.includes('100')) {
-                return elem.textContent
+          // Look for completion indicators in the MindAR interface
+          const status = await this.page.evaluate(() => {
+            // Look for the mindar overlay and its content
+            const overlay = document.querySelector('.mindar-ui-overlay') as HTMLElement
+            if (overlay) {
+              // Check if overlay is hidden (compilation done)
+              const isHidden = overlay.style.display === 'none' || 
+                              overlay.style.visibility === 'hidden' ||
+                              window.getComputedStyle(overlay).display === 'none'
+              
+              if (isHidden) {
+                return { overlayHidden: true, status: 'completed' }
               }
             }
-            return null
+            
+            // Look for download buttons/links that appear after completion
+            const downloadElements = Array.from(document.querySelectorAll('a, button')).filter(elem => {
+              const text = (elem.textContent || '').toLowerCase()
+              const href = (elem as HTMLAnchorElement).href || ''
+              return text.includes('download') || text.includes('compiled') || href.includes('.mind')
+            })
+            
+            if (downloadElements.length > 0) {
+              return { 
+                downloadFound: true, 
+                status: 'completed',
+                downloadElements: downloadElements.map(el => ({
+                  text: el.textContent?.trim(),
+                  href: (el as HTMLAnchorElement).href || null,
+                  tag: el.tagName
+                }))
+              }
+            }
+            
+            // Look for progress indicators
+            const progressIndicators = Array.from(document.querySelectorAll('*')).filter(elem => {
+              const text = elem.textContent || ''
+              return text.includes('%') && !text.includes('100%')
+            })
+            
+            // Look for specific MindAR status messages
+            const bodyText = document.body.innerText
+            const hasError = bodyText.includes('error') || bodyText.includes('failed')
+            const hasProgress = bodyText.includes('compiling') || bodyText.includes('processing')
+            
+            return {
+              progressIndicators: progressIndicators.length,
+              hasError,
+              hasProgress,
+              status: hasError ? 'error' : hasProgress ? 'processing' : 'waiting'
+            }
           })
           
-          if (progressText) {
-            console.log(`📊 Progress: ${progressText}`)
-            progressComplete = true
+          console.log(`🔄 Attempt ${attempts + 1}: Status = ${status.status}`)
+          
+          if (status.overlayHidden || status.downloadFound) {
+            console.log('✅ Compilation completed!')
+            if (status.downloadElements) {
+              console.log('📥 Download elements found:', status.downloadElements)
+            }
+            compilationComplete = true
             break
+          }
+          
+          if (status.hasError) {
+            throw new Error('MindAR compilation reported an error')
           }
           
           attempts++
           await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds between checks
-        } catch (e) {
+          
+        } catch (e: any) {
+          console.log(`⚠️ Monitoring error: ${e.message}`)
           attempts++
           await new Promise(resolve => setTimeout(resolve, 2000))
         }
+      }
+      
+      if (!compilationComplete) {
+        throw new Error('Compilation did not complete within the expected time (3 minutes)')
       }
       
       // Then look for the "Download Compiled" button which appears when done
