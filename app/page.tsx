@@ -162,27 +162,33 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trusted by Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Trusted by 150+ Creators
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join the community of creators who are already using AR to boost their marketing results
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-400">CREATOR</div>
-          </div>
-        </div>
-      </section>
+             {/* Trusted by Section */}
+       <section className="py-20 bg-gray-50">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="text-center mb-16">
+             <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+               Trusted by 150+ Creators
+             </h2>
+             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+               Join the community of creators who are already using AR to boost their marketing results
+             </p>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             <div className="text-center">
+               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">50+</div>
+               <p className="text-lg text-gray-600">AR Experiences per month</p>
+             </div>
+             <div className="text-center">
+               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">10 min</div>
+               <p className="text-lg text-gray-600">Average creation time</p>
+             </div>
+             <div className="text-center">
+               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">300%</div>
+               <p className="text-lg text-gray-600">Increase in engagement</p>
+             </div>
+           </div>
+         </div>
+       </section>
 
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
