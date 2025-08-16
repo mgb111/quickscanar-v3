@@ -183,27 +183,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     // CRITICAL: Set up redirect interceptor BEFORE calling OAuth
-    let originalReplace: any = null
+    let originalLocation: any = null
     if (typeof window !== 'undefined') {
       console.log('🔧 Setting up redirect interceptor...')
       
-      // Store the original location.replace function
-      originalReplace = window.location.replace
+      // Store the original location.href setter
+      originalLocation = Object.getOwnPropertyDescriptor(window.location, 'href')
       
-      // Override location.replace to catch relative redirects
-      window.location.replace = function(url: string) {
-        console.log('🔍 Intercepted redirect to:', url)
-        
-        // If Supabase tries to redirect to a relative path, force it to production
-        if (url.startsWith('/auth/callback')) {
-          const productionUrl = `https://quickscanar.com${url}`
-          console.log('🚨 CRITICAL: Caught relative redirect, forcing to:', productionUrl)
-          return originalReplace.call(this, productionUrl)
-        }
-        
-        // For all other URLs, use the original function
-        return originalReplace.call(this, url)
-      }
+      // Override location.href to catch relative redirects
+      Object.defineProperty(window.location, 'href', {
+        set: function(url: string) {
+          console.log('🔍 Intercepted redirect to:', url)
+          
+          // If Supabase tries to redirect to a relative path, force it to production
+          if (url.startsWith('/auth/callback')) {
+            const productionUrl = `https://quickscanar.com${url}`
+            console.log('🚨 CRITICAL: Caught relative redirect, forcing to:', productionUrl)
+            return originalLocation?.set?.call(this, productionUrl)
+          }
+          
+          // For all other URLs, use the original setter
+          return originalLocation?.set?.call(this, url)
+        },
+        get: function() {
+          return originalLocation?.get?.call(this) || ''
+        },
+        configurable: true
+      })
       
       console.log('✅ Redirect interceptor set up')
     }
@@ -227,10 +233,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('❌ OAuth request failed:', error)
       
-      // Restore original location.replace function
-      if (typeof window !== 'undefined') {
-        window.location.replace = originalReplace
-        console.log('🔄 Restored original location.replace function')
+      // Restore original location.href property
+      if (typeof window !== 'undefined' && originalLocation) {
+        Object.defineProperty(window.location, 'href', originalLocation)
+        console.log('🔄 Restored original location.href property')
       }
       
       throw error
