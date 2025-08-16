@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video } from 'lucide-react'
+import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode.react'
 
@@ -179,6 +179,30 @@ export default function Dashboard() {
               <Video className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">Create Experience</span>
               <span className="sm:hidden">Create AR</span>
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Analytics */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-dark-blue" />
+                Step 3: Track Performance
+              </h3>
+              <p className="text-gray-600">
+                Monitor engagement, conversions, and user behavior with detailed analytics
+              </p>
+            </div>
+            <Link
+              href="/analytics"
+              className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
+            >
+              <BarChart3 className="h-5 w-5 mr-2 hidden sm:inline" />
+              <span className="hidden sm:inline">View Analytics</span>
+              <span className="sm:hidden">Analytics</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </div>

@@ -7,6 +7,7 @@ import { Camera, ArrowLeft, Share2, Smartphone, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import QRCode from 'qrcode.react'
 import toast from 'react-hot-toast'
+import AnalyticsTracker from '@/components/AnalyticsTracker'
 
 type ARExperience = {
   id: string
@@ -235,6 +236,18 @@ export default function ExperienceViewer() {
           </div>
         )}
       </div>
+      
+      {/* Analytics Tracking */}
+      {params.id && (
+        <AnalyticsTracker 
+          experienceId={params.id as string} 
+          userId={experience?.id}
+          onEvent={(event) => {
+            console.log('Analytics event:', event)
+            // Handle custom analytics events here
+          }}
+        />
+      )}
     </div>
   )
 } 
