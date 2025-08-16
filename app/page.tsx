@@ -26,55 +26,56 @@ export default function Home() {
               <Camera className="h-8 w-8 text-white" />
               <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </div>
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <Link
-                href="/compiler"
-                className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center ml-2 sm:ml-0"
-              >
-                <Upload className="h-4 w-4 mr-2 hidden sm:inline" />
-                Create AR
-              </Link>
-              {isSupabaseConfigured() && !supabaseError ? (
-                user ? (
-                  <>
-                    <Link
-                      href="/dashboard"
-                      className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/auth/signout"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign Out
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/auth/signin"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/auth/signup"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )
-              ) : (
-                <Link
-                  href="/compiler"
-                  className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
-                >
-                  Try Demo
-                </Link>
-              )}
-            </div>
+                         <div className="flex items-center space-x-3 sm:space-x-4">
+               {/* Create AR button - hidden on mobile, visible on desktop */}
+               <Link
+                 href="/compiler"
+                 className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center ml-2 sm:ml-0 hidden sm:flex"
+               >
+                 <Upload className="h-4 w-4 mr-2 hidden sm:inline" />
+                 Create AR
+               </Link>
+               {isSupabaseConfigured() && !supabaseError ? (
+                 user ? (
+                   <>
+                     <Link
+                       href="/dashboard"
+                       className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+                     >
+                       Dashboard
+                     </Link>
+                     <Link
+                       href="/auth/signout"
+                       className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                     >
+                       Sign Out
+                     </Link>
+                   </>
+                 ) : (
+                   <>
+                     <Link
+                       href="/auth/signin"
+                       className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                     >
+                       Sign In
+                     </Link>
+                     <Link
+                       href="/auth/signup"
+                       className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                     >
+                       Sign Up
+                     </Link>
+                   </>
+                 )
+               ) : (
+                 <Link
+                   href="/compiler"
+                   className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 hidden sm:inline-flex"
+                 >
+                   Try Demo
+                 </Link>
+               )}
+             </div>
           </div>
         </div>
       </nav>
