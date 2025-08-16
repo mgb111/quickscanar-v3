@@ -125,21 +125,21 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
-        <div className="text-center text-black mb-8">
-          <h1 className="text-4xl font-bold mb-4 tracking-tight">
+        <div className="text-center text-black mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 tracking-tight">
             AR Experience Dashboard
           </h1>
-          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl opacity-80 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
             Create and manage your augmented reality experiences
           </p>
         </div>
 
         {/* Step 1: Convert Images */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
                 <Upload className="h-5 w-5 mr-2 text-dark-blue" />
                 Step 1: Convert Your Images to AR Format
@@ -150,18 +150,20 @@ export default function Dashboard() {
             </div>
             <Link
               href="/compiler"
-              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+              className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
             >
-              Convert Images
+              <Upload className="h-5 w-5 mr-2" />
+              <span className="hidden sm:inline">Convert Images to AR</span>
+              <span className="sm:hidden">Convert to AR</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </div>
         </div>
 
         {/* Create New Experience */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
                 <Video className="h-5 w-5 mr-2 text-dark-blue" />
                 Step 2: Create New AR Experience
@@ -172,16 +174,18 @@ export default function Dashboard() {
             </div>
             <Link
               href="/dashboard/create"
-              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
             >
-              Create Experience
+              <Video className="h-5 w-5 mr-2" />
+              <span className="hidden sm:inline">Create Experience</span>
+              <span className="sm:hidden">Create AR</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </div>
         </div>
 
         {/* Existing Experiences */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm">
           <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
             <Camera className="h-5 w-5 mr-2 text-dark-blue" />
             Your AR Experiences
@@ -194,12 +198,14 @@ export default function Dashboard() {
               <p className="text-gray-600 mb-6">
                 Start by converting your images to AR format, then create your first experience.
               </p>
-              <div className="space-x-4">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/compiler"
-                  className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors inline-flex items-center"
+                  className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none"
                 >
-                  Convert Images First
+                  <Upload className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">Convert Images First</span>
+                  <span className="sm:hidden">Convert First</span>
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </div>
