@@ -183,35 +183,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     // CRITICAL: Set up redirect interceptor BEFORE calling OAuth
-    let originalLocation: any = null
+    let redirectObserver: any = null
     if (typeof window !== 'undefined') {
       console.log('🔧 Setting up redirect interceptor...')
       
-      // Store the original location.href setter
-      originalLocation = Object.getOwnPropertyDescriptor(window.location, 'href')
-      
-      // Override location.href to catch relative redirects
-      Object.defineProperty(window.location, 'href', {
-        set: function(url: string) {
-          console.log('🔍 Intercepted redirect to:', url)
-          
-          // If Supabase tries to redirect to a relative path, force it to production
-          if (url.startsWith('/auth/callback')) {
-            const productionUrl = `https://quickscanar.com${url}`
-            console.log('🚨 CRITICAL: Caught relative redirect, forcing to:', productionUrl)
-            return originalLocation?.set?.call(this, productionUrl)
+      // Use MutationObserver to watch for navigation changes
+      redirectObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Check if the current URL is a relative redirect
+            const currentUrl = window.location.href
+            if (currentUrl.includes('/auth/callback') && !currentUrl.includes('quickscanar.com')) {
+              console.log('🚨 CRITICAL: Detected relative redirect, forcing to production URL')
+              
+              // Force redirect to production URL
+              const productionUrl = `https://quickscanar.com${window.location.pathname}${window.location.search}`
+              console.log('🔄 Redirecting to:', productionUrl)
+              
+              // Use a small delay to ensure the redirect happens
+              setTimeout(() => {
+                window.location.href = productionUrl
+              }, 100)
+            }
           }
-          
-          // For all other URLs, use the original setter
-          return originalLocation?.set?.call(this, url)
-        },
-        get: function() {
-          return originalLocation?.get?.call(this) || ''
-        },
-        configurable: true
+        })
       })
       
-      console.log('✅ Redirect interceptor set up')
+      // Start observing
+      redirectObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      })
+      
+      console.log('✅ Redirect interceptor set up with MutationObserver')
     }
 
     try {
@@ -233,10 +237,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('❌ OAuth request failed:', error)
       
-      // Restore original location.href property
-      if (typeof window !== 'undefined' && originalLocation) {
-        Object.defineProperty(window.location, 'href', originalLocation)
-        console.log('🔄 Restored original location.href property')
+      // Disconnect the redirect observer
+      if (typeof window !== 'undefined' && redirectObserver) {
+        redirectObserver.disconnect()
+        console.log('🔄 Disconnected redirect observer')
       }
       
       throw error
