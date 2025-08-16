@@ -112,12 +112,18 @@ export default function Home() {
                <div className="relative rounded-2xl overflow-hidden shadow-2xl mx-4 sm:mx-0">
                  {/* AR Experience Preview Image */}
                  <div className="relative">
-                                                            <img 
-                       src="/ar-experience-preview.gif" 
-                       alt="AR Experience Preview - Hand holding smartphone with underwater sea turtle AR overlay"
-                       className="w-full h-auto rounded-2xl"
-                       style={{ maxHeight: '400px', objectFit: 'cover' }}
-                     />
+                   <img 
+                     src="/ar-experience-preview.gif" 
+                     alt="AR Experience Preview - Hand holding smartphone with underwater sea turtle AR overlay"
+                     className="w-full h-auto rounded-2xl"
+                     style={{ 
+                       maxHeight: '400px', 
+                       objectFit: 'cover',
+                       aspectRatio: '1/1',
+                       width: '400px',
+                       height: '400px'
+                     }}
+                   />
                  </div>
                </div>
              </div>
