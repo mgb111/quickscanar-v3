@@ -35,9 +35,13 @@ export async function GET(
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="msapplication-navbutton-color" content="#1a1a2e" />
+    <meta name="apple-mobile-web-app-title" content="AR Experience" />
     <title>${experience.title} - AR Experience</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -52,9 +56,20 @@ export async function GET(
         width: 100vw;
         height: 100vh;
         overflow: hidden;
-        background: #000;
-        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         user-select: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Mobile-first responsive design */
+      @media (max-width: 768px) {
+        body {
+          background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%);
+        }
       }
 
       a-scene {
@@ -77,6 +92,110 @@ export async function GET(
         will-change: transform;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
+      }
+
+      /* Mobile AR scene optimization */
+      @media (max-width: 768px) {
+        a-scene {
+          touch-action: manipulation;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          -khtml-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+      }
+
+      /* Mobile overlay improvements */
+      @media (max-width: 768px) {
+        #overlay > div {
+          max-width: 85vw !important;
+          padding: 20px !important;
+          border-radius: 20px !important;
+        }
+        
+        #overlay h2 {
+          font-size: 20px !important;
+        }
+        
+        #overlay p {
+          font-size: 14px !important;
+        }
+        
+        #startBtn {
+          padding: 14px 28px !important;
+          font-size: 15px !important;
+          border-radius: 14px !important;
+        }
+      }
+
+      /* Small mobile devices */
+      @media (max-width: 480px) {
+        #overlay > div {
+          max-width: 90vw !important;
+          padding: 18px !important;
+        }
+        
+        #overlay h2 {
+          font-size: 18px !important;
+        }
+        
+        #overlay p {
+          font-size: 13px !important;
+        }
+        
+        #startBtn {
+          padding: 12px 24px !important;
+          font-size: 14px !important;
+        }
+      }
+
+      /* Landscape mobile optimization */
+      @media (max-width: 768px) and (orientation: landscape) {
+        #overlay > div {
+          max-width: 70vw !important;
+          padding: 20px !important;
+        }
+        
+        .status-indicator {
+          max-width: 70vw !important;
+        }
+      }
+
+      /* Interactive button effects */
+      #startBtn:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 12px 35px rgba(102,126,234,0.6) !important;
+      }
+
+      #startBtn:active {
+        transform: scale(0.98) !important;
+        transition: transform 0.1s ease !important;
+      }
+
+      /* Mobile touch improvements */
+      @media (max-width: 768px) {
+        #startBtn {
+          -webkit-tap-highlight-color: transparent !important;
+          touch-action: manipulation !important;
+        }
+        
+        #startBtn:active {
+          transform: scale(0.95) !important;
+        }
+      }
+
+      /* Loading animation for button */
+      #startBtn.loading {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        animation: pulse 2s infinite !important;
+      }
+
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
       }
 
       /* Force smooth transitions on all AR elements */
@@ -102,10 +221,62 @@ export async function GET(
         color: white;
         text-align: center;
         z-index: 1002;
-        background: rgba(0,0,0,0.8);
-        padding: 20px;
-        border-radius: 10px;
+        background: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         display: none;
+        max-width: 90vw;
+        min-width: 280px;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .status-indicator h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #ffffff;
+        margin: 0 0 8px 0;
+      }
+
+      .status-indicator p {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.4;
+        margin: 0;
+      }
+
+      /* Mobile status indicator */
+      @media (max-width: 768px) {
+        .status-indicator {
+          padding: 20px;
+          border-radius: 16px;
+          max-width: 85vw;
+          min-width: 260px;
+        }
+        
+        .status-indicator h3 {
+          font-size: 16px;
+          margin-bottom: 6px;
+        }
+        
+        .status-indicator p {
+          font-size: 13px;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -40%);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%);
+        }
       }
 
       .a-loader,
@@ -143,11 +314,19 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:1003;">
-      <div style="text-align:center;color:white;max-width:320px;padding:20px;">
-        <h2 style="font-size:20px;font-weight:bold;margin-bottom:10px;">Ready to start AR</h2>
-        <p style="font-size:14px;opacity:0.9;margin-bottom:16px;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
-        <button id="startBtn" style="background:#cc3300;color:white;border:none;border-radius:8px;padding:12px 18px;font-weight:600;cursor:pointer;">Start AR</button>
+    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.95);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
+      <div style="text-align:center;color:white;max-width:90vw;padding:24px;background:rgba(26,26,46,0.9);border-radius:24px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <div style="margin-bottom:20px;">
+          <div style="width:60px;height:60px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Ready to start AR</h2>
+          <p style="font-size:16px;opacity:0.9;margin:0;line-height:1.5;color:rgba(255,255,255,0.9);">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
+        </div>
+        <button id="startBtn" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(102,126,234,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
     </div>
 
@@ -475,14 +654,37 @@ export async function GET(
 
         // Tap to start to satisfy autoplay/camera permissions
         if (startBtn && overlay) {
+          // Add loading state to button
           startBtn.addEventListener('click', async () => {
+            startBtn.classList.add('loading');
+            startBtn.textContent = 'Starting...';
+            
             try {
               if (video) await video.play().catch(() => {});
             } catch {}
-            overlay.style.display = 'none';
-            showStatus('Initializing...', 'Starting camera and tracker');
-            setTimeout(hideStatus, 1000);
+            
+            // Smooth fade out for overlay
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.5s ease';
+            
+            setTimeout(() => {
+              overlay.style.display = 'none';
+              showStatus('Initializing...', 'Starting camera and tracker');
+              setTimeout(hideStatus, 1000);
+            }, 500);
+            
           }, { once: true });
+
+          // Mobile touch improvements
+          if ('ontouchstart' in window) {
+            startBtn.addEventListener('touchstart', () => {
+              startBtn.style.transform = 'scale(0.95)';
+            });
+            
+            startBtn.addEventListener('touchend', () => {
+              startBtn.style.transform = 'scale(1)';
+            });
+          }
         }
 
         setInterval(nukeLoadingScreens, 1000);
