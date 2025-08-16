@@ -149,10 +149,10 @@ export class CompilerScraper {
       // Get the download URL
       let downloadUrl = null
       if (downloadElement.tagName === 'A') {
-        downloadUrl = await downloadElement.evaluate(el => el.href)
+        downloadUrl = await downloadElement.evaluate((el: any) => el.href)
       } else {
         // Look for data attributes or click to trigger download
-        downloadUrl = await downloadElement.evaluate(el => 
+        downloadUrl = await downloadElement.evaluate((el: any) => 
           el.getAttribute('data-download-url') || 
           el.getAttribute('href') ||
           el.querySelector('a')?.href
@@ -165,7 +165,7 @@ export class CompilerScraper {
         await downloadElement.click()
         
         // Wait for download to start and capture response
-        const response = await this.page.waitForResponse(response => 
+        const response = await this.page.waitForResponse((response: any) => 
           response.url().includes('.mind') || 
           response.headers()['content-type']?.includes('application/octet-stream')
         )
@@ -200,7 +200,7 @@ export class CompilerScraper {
         
         // Look for error messages on page
         const errorMessages = await this.page.$$eval('[class*="error"], .alert-danger, .error-message', 
-          elements => elements.map(el => el.textContent)
+          (elements: any[]) => elements.map((el: any) => el.textContent)
         )
         if (errorMessages.length > 0) {
           console.log('⚠️ Page errors found:', errorMessages)
@@ -209,7 +209,7 @@ export class CompilerScraper {
         console.log('Unable to get debug info from page')
       }
       
-      throw new Error(`Failed to convert image to mind file: ${error.message}`)
+      throw new Error(`Failed to convert image to mind file: ${(error as any).message}`)
     }
   }
 

@@ -26,6 +26,59 @@ export default function CreateExperience() {
     setCompilationProgress(message)
   }, [])
 
+  // Auto-compile image to mind file
+  const handleImageCompilation = useCallback(async () => {
+    if (!imageFile) {
+      toast.error('Please upload an image first')
+      return
+    }
+
+    setCompilingImage(true)
+    updateProgress('Converting image to AR format...')
+
+    try {
+      const formData = new FormData()
+      formData.append('image', imageFile)
+
+      const response = await fetch('/api/compile-mind', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.details || 'Failed to convert image')
+      }
+
+      // Get the compiled .mind file
+      const mindBlob = await response.blob()
+      const compiledMindFile = new File([mindBlob], `${imageFile.name.replace(/\.[^/.]+$/, '')}.mind`, { 
+        type: 'application/octet-stream' 
+      })
+
+      setMindFile(compiledMindFile)
+      setUseCustomMind(true)
+      updateProgress('Image converted successfully!')
+      toast.success('Image converted to AR format! Now creating your experience...')
+
+      // Small delay for user feedback, then proceed with creation
+      setTimeout(() => {
+        // Trigger form submission again after conversion
+        const form = document.querySelector('form')
+        if (form) {
+          form.dispatchEvent(new Event('submit', { bubbles: true }))
+        }
+      }, 1500)
+
+    } catch (error: any) {
+      console.error('Image compilation failed:', error)
+      toast.error(error.message || 'Failed to convert image to AR format')
+      updateProgress('')
+    } finally {
+      setCompilingImage(false)
+    }
+  }, [imageFile, updateProgress])
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
