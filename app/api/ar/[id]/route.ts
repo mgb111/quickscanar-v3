@@ -79,6 +79,21 @@ export async function GET(
         -webkit-backface-visibility: hidden;
       }
 
+      /* Force smooth transitions on all AR elements */
+      a-entity[mindar-image-target] {
+        transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+      }
+
+      a-plane {
+        transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+      }
+
+      /* Reduce jitter with CSS stabilization */
+      #videoPlane {
+        transform-style: preserve-3d !important;
+        transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+      }
+
       .status-indicator {
         position: fixed;
         top: 50%;
@@ -140,7 +155,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 100; missTolerance: 10; warmupTolerance: 3;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.00001; filterBeta: 1000; missTolerance: 15; warmupTolerance: 2;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -185,6 +200,7 @@ export async function GET(
           visible="false"
           geometry="primitive: plane; skipCache: true"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
+          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
         ></a-plane>
       </a-entity>
     </a-scene>
@@ -313,6 +329,13 @@ export async function GET(
           scene.addEventListener('arReady', () => {
             console.log('MindAR arReady');
             scene.style.opacity = '1';
+            
+            // Apply custom stabilization after AR is ready
+            setTimeout(() => {
+              interceptMatrixUpdates();
+              addFrameRateLimiter();
+              console.log('Applied custom matrix stabilization and frame rate limiting');
+            }, 1000);
           });
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
@@ -324,6 +347,67 @@ export async function GET(
         let targetFoundTimeout = null;
         let targetLostTimeout = null;
         let isTargetVisible = false;
+        
+        // Advanced stabilization system
+        let lastTransform = null;
+        let transformBuffer = [];
+        const TRANSFORM_BUFFER_SIZE = 5;
+        const SMOOTHING_FACTOR = 0.7;
+        
+        // Custom matrix smoothing function
+        function smoothTransform(newTransform) {
+          if (!lastTransform) {
+            lastTransform = newTransform;
+            return newTransform;
+          }
+          
+          // Simple exponential smoothing
+          const smoothed = newTransform.map((row, i) => 
+            row.map((val, j) => 
+              SMOOTHING_FACTOR * lastTransform[i][j] + (1 - SMOOTHING_FACTOR) * val
+            )
+          );
+          
+          lastTransform = smoothed;
+          return smoothed;
+        }
+        
+        // Override MindAR's matrix updates for custom stabilization
+        function interceptMatrixUpdates() {
+          const target = document.querySelector('#target');
+          if (target && target.object3D) {
+            const originalUpdateMatrix = target.updateWorldMatrix;
+            target.updateWorldMatrix = function(worldMatrix) {
+              if (worldMatrix && isTargetVisible) {
+                // Apply custom smoothing to the world matrix
+                const smoothedMatrix = smoothTransform(worldMatrix);
+                originalUpdateMatrix.call(this, smoothedMatrix);
+              } else {
+                originalUpdateMatrix.call(this, worldMatrix);
+              }
+            };
+          }
+        }
+        
+        // Add frame rate limiting to reduce update frequency
+        let lastUpdateTime = 0;
+        const UPDATE_INTERVAL = 1000 / 30; // Limit to 30 FPS for stability
+        
+        function addFrameRateLimiter() {
+          const scene = document.querySelector('a-scene');
+          if (scene && scene.systems && scene.systems['mindar-image-system']) {
+            const system = scene.systems['mindar-image-system'];
+            const originalProcessVideo = system.processingVideo;
+            
+            system.processVideo = function(input) {
+              const now = Date.now();
+              if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+                lastUpdateTime = now;
+                return originalProcessVideo.call(this, input);
+              }
+            };
+          }
+        }
 
         if (target) {
           console.log('Target element found, adding event listeners');
