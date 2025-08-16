@@ -26,6 +26,16 @@ export async function GET(request: NextRequest) {
   console.log('  next:', next)
   console.log('=== End Callback Debug ===')
 
+  // CRITICAL: Check if this is the forced redirect URL we implemented
+  if (requestUrl.hostname === 'quickscanar.com' && requestUrl.pathname === '/auth/callback') {
+    console.log('✅ This is the correct production callback URL')
+    if (code) {
+      console.log('✅ Authorization code received - proceeding with authentication')
+    } else {
+      console.log('❌ No authorization code despite correct URL - this indicates a deeper issue')
+    }
+  }
+
   // CRITICAL: Handle the case where Supabase redirects to relative path
   // This happens when Supabase's Site URL is not properly configured
   if (requestUrl.pathname === '/auth/callback' && !code && !error) {
@@ -94,6 +104,13 @@ export async function GET(request: NextRequest) {
   if (!code) {
     console.error('No authorization code received')
     console.error('This usually means the callback URL is wrong or Google is not sending the code')
+    
+    // CRITICAL: Check if this is the forced redirect URL we implemented
+    if (requestUrl.hostname === 'quickscanar.com' && requestUrl.pathname === '/auth/callback') {
+      console.error('❌ CRITICAL: Forced redirect URL is working but no code received')
+      console.error('This suggests the issue is in Google OAuth or Supabase internal processing')
+      return NextResponse.redirect(new URL('/auth/signin?error=forced_redirect_failed&description=Forced redirect URL working but no authorization code received. This indicates a Google OAuth or Supabase internal issue.', baseUrl))
+    }
     
     // Provide more specific error message based on the context
     let errorDescription = 'No authorization code received'
