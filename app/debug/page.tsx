@@ -196,6 +196,48 @@ export default function DebugPage() {
     }
   }
 
+  const testOAuthFlowStepByStep = async () => {
+    setLoading(true)
+    setOauthDebug([])
+    
+    try {
+      setOauthDebug(prev => [...prev, '🔍 Testing OAuth flow step by step...'])
+      setOauthDebug(prev => [...prev, `📍 Current URL: ${window.location.href}`])
+      setOauthDebug(prev => [...prev, `🌐 Current Origin: ${window.location.origin}`])
+      setOauthDebug(prev => [...prev, `🔑 Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`])
+      setOauthDebug(prev => [...prev, `🏠 Site URL: ${process.env.NEXT_PUBLIC_SITE_URL}`])
+      
+      // Test the OAuth flow with detailed logging
+      setOauthDebug(prev => [...prev, '🚀 Step 1: Calling signInWithGoogle...'])
+      
+      // Capture the current URL before OAuth
+      const beforeOAuth = window.location.href
+      setOauthDebug(prev => [...prev, `📍 URL before OAuth: ${beforeOAuth}`])
+      
+      // Test the OAuth flow
+      await signInWithGoogle()
+      
+      setOauthDebug(prev => [...prev, '✅ Step 2: OAuth request sent successfully'])
+      setOauthDebug(prev => [...prev, '🔄 Step 3: You should be redirected to Google now...'])
+      setOauthDebug(prev => [...prev, '📝 Step 4: Check the network tab for the full redirect chain'])
+      setOauthDebug(prev => [...prev, '⚠️  If you see the "no code" error again, the issue is in the redirect chain'])
+      
+    } catch (error: any) {
+      console.error('Step-by-step OAuth test failed:', error)
+      setOauthDebug(prev => [...prev, `❌ Step-by-step OAuth test failed: ${error.message}`])
+      
+      // Show more detailed error info
+      if (error.message.includes('redirect')) {
+        setOauthDebug(prev => [...prev, '⚠️  This looks like a redirect URL configuration issue'])
+        setOauthDebug(prev => [...prev, '🔧 Check that https://quickscanar.com/auth/callback is in both:'])
+        setOauthDebug(prev => [...prev, '   - Supabase Redirect URLs'])
+        setOauthDebug(prev => [...prev, '   - Google OAuth redirect URIs'])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -294,6 +336,14 @@ export default function DebugPage() {
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Test Supabase OAuth Config
+              </button>
+
+              <button
+                onClick={testOAuthFlowStepByStep}
+                disabled={loading}
+                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {loading ? 'Testing...' : 'Test OAuth Step by Step'}
               </button>
 
               <button
