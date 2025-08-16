@@ -256,6 +256,35 @@ export default function DebugPage() {
     }
   }
 
+  const testActualOAuthRedirect = async () => {
+    setLoading(true)
+    setOauthDebug(prev => [...prev, '🧪 Testing actual OAuth redirect simulation...'])
+    
+    try {
+      setOauthDebug(prev => [...prev, '🚀 Simulating what Supabase would do...'])
+      
+      // Simulate the exact OAuth flow that's failing
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const redirectTo = 'https://quickscanar.com/auth/callback'
+      
+      setOauthDebug(prev => [...prev, `📍 Supabase URL: ${supabaseUrl}`])
+      setOauthDebug(prev => [...prev, `🎯 Redirect To: ${redirectTo}`])
+      
+      // Construct the OAuth URL that Supabase should use
+      const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`
+      setOauthDebug(prev => [...prev, `🔗 Expected OAuth URL: ${oauthUrl}`])
+      
+      setOauthDebug(prev => [...prev, '⚠️  If Supabase is redirecting to /auth/callback instead of the full URL...'])
+      setOauthDebug(prev => [...prev, '⚠️  ...then there are conflicting redirect URLs in your Supabase settings'])
+      setOauthDebug(prev => [...prev, '⚠️  You need to REMOVE ALL redirect URLs and add ONLY the correct one'])
+      
+    } catch (error: any) {
+      setOauthDebug(prev => [...prev, `❌ OAuth simulation failed: ${error.message}`])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const testOAuthFlowStepByStep = async () => {
     setLoading(true)
     setOauthDebug([])
@@ -406,6 +435,14 @@ export default function DebugPage() {
                 className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:opacity-50"
               >
                 {loading ? 'Checking...' : 'Check Redirect Conflicts'}
+              </button>
+
+              <button
+                onClick={testActualOAuthRedirect}
+                disabled={loading}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {loading ? 'Simulating...' : 'Simulate OAuth Redirect'}
               </button>
 
               <button
