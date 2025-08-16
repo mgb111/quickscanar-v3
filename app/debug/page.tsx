@@ -79,6 +79,41 @@ export default function DebugPage() {
     }
   }
 
+  const testDetailedOAuth = async () => {
+    setLoading(true)
+    setOauthDebug([])
+    
+    try {
+      setOauthDebug(prev => [...prev, '🔍 Starting detailed OAuth test...'])
+      setOauthDebug(prev => [...prev, `📍 Current URL: ${window.location.href}`])
+      setOauthDebug(prev => [...prev, `🌐 Current Origin: ${window.location.origin}`])
+      setOauthDebug(prev => [...prev, `🔑 Supabase URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`])
+      setOauthDebug(prev => [...prev, `🏠 Site URL: ${process.env.NEXT_PUBLIC_SITE_URL}`])
+      
+      // Test the OAuth flow
+      setOauthDebug(prev => [...prev, '🚀 Calling signInWithGoogle...'])
+      await signInWithGoogle()
+      
+      setOauthDebug(prev => [...prev, '✅ OAuth request sent successfully'])
+      setOauthDebug(prev => [...prev, '🔄 You should be redirected to Google now...'])
+      setOauthDebug(prev => [...prev, '📝 Check the network tab for the full redirect chain'])
+      
+    } catch (error: any) {
+      console.error('Detailed OAuth test failed:', error)
+      setOauthDebug(prev => [...prev, `❌ Detailed OAuth test failed: ${error.message}`])
+      
+      // Show more detailed error info
+      if (error.message.includes('redirect')) {
+        setOauthDebug(prev => [...prev, '⚠️  This looks like a redirect URL configuration issue'])
+        setOauthDebug(prev => [...prev, '🔧 Check that https://quickscanar.com/auth/callback is in both:'])
+        setOauthDebug(prev => [...prev, '   - Supabase Redirect URLs'])
+        setOauthDebug(prev => [...prev, '   - Google OAuth redirect URIs'])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     alert('Copied to clipboard!')
@@ -122,6 +157,43 @@ export default function DebugPage() {
     
     setOauthDebug(prev => [...prev, `🎯 Final redirect URL: ${redirectUrl}`])
     setOauthDebug(prev => [...prev, '⚠️  This URL must be in both Supabase Redirect URLs and Google OAuth redirect URIs'])
+  }
+
+  const testSupabaseOAuthConfig = async () => {
+    setOauthDebug(prev => [...prev, '🔍 Testing Supabase OAuth configuration...'])
+    
+    try {
+      // Test if we can access Supabase auth endpoints
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!supabaseUrl) {
+        setOauthDebug(prev => [...prev, '❌ NEXT_PUBLIC_SUPABASE_URL not set'])
+        return
+      }
+      
+      setOauthDebug(prev => [...prev, `📍 Supabase URL: ${supabaseUrl}`])
+      
+      // Test the auth endpoint
+      const authUrl = `${supabaseUrl}/auth/v1/authorize`
+      setOauthDebug(prev => [...prev, `🔗 Testing auth endpoint: ${authUrl}`])
+      
+      const response = await fetch(authUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      setOauthDebug(prev => [...prev, `📡 Auth endpoint response: ${response.status} ${response.statusText}`])
+      
+      if (response.status === 400) {
+        setOauthDebug(prev => [...prev, '✅ Auth endpoint accessible (400 is expected for missing params)'])
+      } else {
+        setOauthDebug(prev => [...prev, `⚠️  Unexpected response: ${response.status}`])
+      }
+      
+    } catch (error: any) {
+      setOauthDebug(prev => [...prev, `❌ Supabase test failed: ${error.message}`])
+    }
   }
 
   return (
@@ -218,11 +290,18 @@ export default function DebugPage() {
               </button>
               
               <button
-                onClick={testOAuthRedirect}
-                disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                onClick={testSupabaseOAuthConfig}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
-                {loading ? 'Testing...' : 'Test OAuth Redirect'}
+                Test Supabase OAuth Config
+              </button>
+
+              <button
+                onClick={testDetailedOAuth}
+                disabled={loading}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {loading ? 'Testing...' : 'Test Detailed OAuth'}
               </button>
             </div>
             
