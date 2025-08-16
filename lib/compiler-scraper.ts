@@ -9,10 +9,17 @@ export class CompilerScraper {
 
   async init() {
     console.log('🚀 Initializing browser for compilation...')
+    console.log('Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      platform: process.platform,
+      arch: process.arch
+    })
     
     // Different configuration for different environments
     const isProduction = process.env.NODE_ENV === 'production'
     const isVercel = process.env.VERCEL === '1'
+    const isServerless = isVercel || process.env.AWS_LAMBDA_FUNCTION_NAME
     
     let launchOptions: any = {
       headless: true, // Run in background
@@ -25,28 +32,107 @@ export class CompilerScraper {
         '--no-zygote',
         '--disable-gpu',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
       ]
     }
 
-    // For Vercel or other serverless environments
-    if (isVercel || isProduction) {
+    // For serverless environments, try to find Chrome in common locations
+    if (isServerless) {
+      console.log('🔍 Serverless environment detected, trying to find Chrome...')
+      
+      // Common Chrome paths in different environments
+      const chromePaths = [
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+        '/opt/google/chrome/chrome',
+        '/snap/bin/chromium',
+        process.env.CHROME_PATH
+      ].filter(Boolean)
+
+      for (const chromePath of chromePaths) {
+        try {
+          const fs = require('fs')
+          if (fs.existsSync(chromePath)) {
+            console.log(`✅ Found Chrome at: ${chromePath}`)
+            launchOptions.executablePath = chromePath
+            break
+          }
+        } catch (error) {
+          console.log(`⚠️ Chrome not found at: ${chromePath}`)
+        }
+      }
+
+      // Additional serverless optimizations
       launchOptions.args.push(
         '--single-process',
-        '--no-background-timer-throttling',
-        '--no-backgrounding-occluded-windows',
-        '--no-renderer-backgrounding'
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-default-apps'
       )
     }
 
-    // Try to use installed Chrome first, fallback to bundled
-    try {
-      this.browser = await puppeteer.launch(launchOptions)
-    } catch (error) {
-      console.log('⚠️ Failed to launch with default config, trying fallback...')
-      // Fallback configuration
-      launchOptions.executablePath = undefined // Let Puppeteer find Chrome
-      this.browser = await puppeteer.launch(launchOptions)
+    // Multiple fallback strategies
+    const strategies = [
+      // Strategy 1: Use specified executablePath or let Puppeteer auto-detect
+      () => {
+        console.log('🚀 Strategy 1: Auto-detect or specified path')
+        return puppeteer.launch(launchOptions)
+      },
+      
+      // Strategy 2: Force download if not found
+      () => {
+        console.log('🚀 Strategy 2: Force browser download')
+        const { executablePath, ...optionsWithoutPath } = launchOptions
+        return puppeteer.launch({
+          ...optionsWithoutPath,
+          // Don't specify executablePath to force download
+        })
+      },
+      
+      // Strategy 3: Minimal configuration
+      () => {
+        console.log('🚀 Strategy 3: Minimal configuration')
+        return puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+      }
+    ]
+
+    let lastError
+    for (let index = 0; index < strategies.length; index++) {
+      const strategy = strategies[index]
+      try {
+        console.log(`Trying launch strategy ${index + 1}...`)
+        this.browser = await strategy()
+        console.log(`✅ Strategy ${index + 1} successful`)
+        break
+      } catch (error: any) {
+        console.log(`❌ Strategy ${index + 1} failed:`, error.message)
+        lastError = error
+        
+        if (index === strategies.length - 1) {
+          // All strategies failed
+          throw new Error(`All browser launch strategies failed. Last error: ${error.message}. 
+            
+Troubleshooting:
+1. If running locally: Run 'npx puppeteer browsers install chrome'
+2. If on server: Install Chrome with 'apt-get install -y google-chrome-stable'
+3. If serverless: Chrome might not be available in this environment
+4. Consider using a service like Browserless.io for serverless web scraping
+
+Environment details:
+- Platform: ${process.platform}
+- Arch: ${process.arch}
+- NODE_ENV: ${process.env.NODE_ENV}
+- Cache path issue detected: ${error.message.includes('/home/sbx_user1051/') ? 'Yes (serverless container)' : 'No'}`)
+        }
+      }
     }
 
     this.page = await this.browser.newPage()

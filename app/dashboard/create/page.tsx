@@ -47,7 +47,13 @@ export default function CreateExperience() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.details || 'Failed to convert image')
+        
+        // Handle specific error types
+        if (errorData.error && errorData.error.includes('Chrome')) {
+          throw new Error(`Automated conversion not available: ${errorData.error}. Please use the manual compiler at /compiler or upload a pre-converted .mind file.`)
+        }
+        
+        throw new Error(errorData.details || errorData.error || 'Failed to convert image')
       }
 
       // Get the compiled .mind file

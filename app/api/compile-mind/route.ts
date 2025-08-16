@@ -64,11 +64,46 @@ export async function POST(request: NextRequest) {
       })
       
     } catch (conversionError: any) {
-      console.error('❌ Conversion failed:', conversionError)
+      console.error('❌ Web scraping conversion failed:', conversionError)
+      
+      // If web scraping fails, provide helpful error message and fallback options
+      let errorMessage = 'Web scraping conversion failed'
+      let suggestions = []
+      
+      if (conversionError.message.includes('Chrome')) {
+        errorMessage = 'Chrome browser not available in this environment'
+        suggestions = [
+          'Try uploading a pre-converted .mind file instead',
+          'Use the manual compiler at /compiler to convert your image',
+          'This typically happens in serverless environments where Chrome is not available'
+        ]
+      } else if (conversionError.message.includes('network') || conversionError.message.includes('timeout')) {
+        errorMessage = 'Network error accessing the compiler'
+        suggestions = [
+          'Check your internet connection',
+          'Try again in a few moments',
+          'The compiler page might be temporarily unavailable'
+        ]
+      } else {
+        suggestions = [
+          'Try using a different image format (JPG or PNG)',
+          'Ensure the image is not corrupted',
+          'Try uploading a pre-converted .mind file instead'
+        ]
+      }
       
       return NextResponse.json({ 
-        error: 'Conversion failed',
-        details: conversionError.message || 'Failed to convert image to mind file'
+        error: errorMessage,
+        details: conversionError.message,
+        suggestions: suggestions,
+        fallback: {
+          message: 'You can still create AR experiences by:',
+          options: [
+            '1. Visit /compiler to manually convert your image',
+            '2. Upload a pre-converted .mind file on the create page',
+            '3. Try again later when the automated system is available'
+          ]
+        }
       }, { status: 500 })
       
     } finally {
