@@ -26,6 +26,32 @@ export async function GET(request: NextRequest) {
   console.log('  next:', next)
   console.log('=== End Callback Debug ===')
 
+  // CRITICAL FIX: Catch relative redirects and force them to production URL
+  if (requestUrl.pathname === '/auth/callback' && requestUrl.hostname !== 'quickscanar.com') {
+    console.log('🚨 CRITICAL: Caught relative redirect - forcing to production URL')
+    console.log('🔧 Current URL:', request.url)
+    console.log('🎯 Redirecting to production callback with same parameters')
+    
+    // Force redirect to production URL with all the same parameters
+    const productionUrl = `https://quickscanar.com/auth/callback${requestUrl.search}`
+    console.log('🔄 Redirecting to:', productionUrl)
+    
+    return NextResponse.redirect(productionUrl)
+  }
+
+  // CRITICAL FIX: Catch the specific Supabase redirect pattern with trailing slash
+  if (requestUrl.pathname === '/auth/callback/' && requestUrl.hostname !== 'quickscanar.com') {
+    console.log('🚨 CRITICAL: Caught trailing slash redirect - forcing to production URL')
+    console.log('🔧 Current URL:', request.url)
+    console.log('🎯 Redirecting to production callback with same parameters')
+    
+    // Force redirect to production URL with all the same parameters
+    const productionUrl = `https://quickscanar.com/auth/callback${requestUrl.search}`
+    console.log('🔄 Redirecting to:', productionUrl)
+    
+    return NextResponse.redirect(productionUrl)
+  }
+
   // CRITICAL: Check if this is the forced redirect URL we implemented
   if (requestUrl.hostname === 'quickscanar.com' && requestUrl.pathname === '/auth/callback') {
     console.log('✅ This is the correct production callback URL')
