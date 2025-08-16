@@ -63,6 +63,20 @@ export async function GET(
         position: absolute;
         top: 0;
         left: 0;
+        transform: translateZ(0);
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        -webkit-transform: translateZ(0);
+        -webkit-perspective: 1000;
+        perspective: 1000;
+      }
+
+      a-scene canvas {
+        transform: translateZ(0);
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
       }
 
       .status-indicator {
@@ -126,14 +140,14 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl};"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 100; missTolerance: 10; warmupTolerance: 3;"
       color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
+      renderer="colorManagement: true, physicallyCorrectLights, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
       loading-screen="enabled: false"
-      style="opacity:0; transition: opacity .3s ease;"
+      style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
         <video
@@ -144,6 +158,7 @@ export async function GET(
           playsinline
           crossorigin="anonymous"
           preload="auto"
+          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
       </a-assets>
 
@@ -166,8 +181,10 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
-          material="shader: flat; src: #videoTexture; transparent: true"
+          material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
           visible="false"
+          geometry="primitive: plane; skipCache: true"
+          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></a-plane>
       </a-entity>
     </a-scene>
@@ -260,6 +277,13 @@ export async function GET(
         }
 
         if (video && videoPlane && backgroundPlane) {
+          // Optimize video for performance
+          video.playsInline = true;
+          video.autoplay = false;
+          video.controls = false;
+          video.setAttribute('webkit-playsinline', 'true');
+          video.setAttribute('x5-playsinline', 'true');
+
           video.addEventListener('loadedmetadata', () => {
             console.log('Video metadata loaded');
             const ratio = video.videoWidth / video.videoHeight || (16/9);
@@ -268,6 +292,19 @@ export async function GET(
             videoPlane.setAttribute('height', planeHeight);
             backgroundPlane.setAttribute('width', 1);
             backgroundPlane.setAttribute('height', planeHeight);
+            
+            // Enable hardware acceleration for video
+            video.style.transform = 'translateZ(0)';
+            video.style.willChange = 'transform';
+            video.style.backfaceVisibility = 'hidden';
+          });
+
+          // Reduce video updates for smoother playback
+          video.addEventListener('timeupdate', () => {
+            if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+              // Force repaint for smooth updates
+              videoPlane.setAttribute('material', 'shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1');
+            }
           });
         }
 
@@ -283,23 +320,70 @@ export async function GET(
           });
         }
 
+        // Add tracking stabilization
+        let targetFoundTimeout = null;
+        let targetLostTimeout = null;
+        let isTargetVisible = false;
+
         if (target) {
           console.log('Target element found, adding event listeners');
+          
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
-            if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
-            if (videoPlane) videoPlane.setAttribute('visible', 'true');
-            if (video) video.play().catch(() => {});
-            showStatus('Target Found!', 'AR content should be visible');
-            setTimeout(hideStatus, 1500);
+            
+            // Clear any pending lost timeout
+            if (targetLostTimeout) {
+              clearTimeout(targetLostTimeout);
+              targetLostTimeout = null;
+            }
+            
+            // Debounce target found to reduce flickering
+            if (targetFoundTimeout) clearTimeout(targetFoundTimeout);
+            targetFoundTimeout = setTimeout(() => {
+              if (!isTargetVisible) {
+                isTargetVisible = true;
+                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
+                if (videoPlane) {
+                  videoPlane.setAttribute('visible', 'true');
+                  // Add smooth animation for appearance
+                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                }
+                if (video) {
+                  video.currentTime = 0; // Restart video
+                  video.play().catch(() => {});
+                }
+                showStatus('Target Found!', 'AR content should be visible');
+                setTimeout(hideStatus, 1500);
+              }
+            }, 100); // 100ms debounce
           });
 
           target.addEventListener('targetLost', () => {
             console.log('Target lost!');
-            if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
-            if (videoPlane) videoPlane.setAttribute('visible', 'false');
-            if (video) video.pause();
-            showStatus('Target Lost', 'Point camera at your marker again');
+            
+            // Clear any pending found timeout
+            if (targetFoundTimeout) {
+              clearTimeout(targetFoundTimeout);
+              targetFoundTimeout = null;
+            }
+            
+            // Debounce target lost to reduce flickering
+            if (targetLostTimeout) clearTimeout(targetLostTimeout);
+            targetLostTimeout = setTimeout(() => {
+              if (isTargetVisible) {
+                isTargetVisible = false;
+                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
+                if (videoPlane) {
+                  // Add smooth animation for disappearance
+                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
+                  setTimeout(() => {
+                    videoPlane.setAttribute('visible', 'false');
+                  }, 200);
+                }
+                if (video) video.pause();
+                showStatus('Target Lost', 'Point camera at your marker again');
+              }
+            }, 300); // 300ms debounce for lost (longer to prevent flickering)
           });
         } else {
           console.error('Target element not found!');
