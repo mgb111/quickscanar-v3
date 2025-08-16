@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CompilerScraper } from '@/lib/compiler-scraper'
+import { MindARServerCompiler } from '@/lib/mindar-server-compiler'
 
 export async function POST(request: NextRequest) {
   console.log('🎯 Mind compilation API called')
@@ -42,73 +43,61 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const scraper = new CompilerScraper()
+    // Strategy 1: Try browser automation first
+    let mindFileBuffer: Buffer | null = null
+    let webScrapingFailed = false
     
     try {
-      console.log('🚀 Initializing scraper...')
-      await scraper.init()
+      console.log('🚀 Strategy 1: Trying browser automation...')
+      const scraper = new CompilerScraper()
       
-      console.log('🔄 Starting conversion process...')
-      const mindFileBuffer = await scraper.convertImageToMind(imageFile)
-      
-      console.log('✅ Conversion completed successfully')
-      console.log('📊 Mind file size:', mindFileBuffer.length, 'bytes')
-      
-      // Return the .mind file
-      return new NextResponse(mindFileBuffer, {
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${imageFile.name.replace(/\.[^/.]+$/, '')}.mind"`,
-          'Content-Length': mindFileBuffer.length.toString()
-        }
-      })
-      
-    } catch (conversionError: any) {
-      console.error('❌ Web scraping conversion failed:', conversionError)
-      
-      // If web scraping fails, provide helpful error message and fallback options
-      let errorMessage = 'Web scraping conversion failed'
-      let suggestions = []
-      
-      if (conversionError.message.includes('Chrome')) {
-        errorMessage = 'Chrome browser not available in this environment'
-        suggestions = [
-          'Try uploading a pre-converted .mind file instead',
-          'Use the manual compiler at /compiler to convert your image',
-          'This typically happens in serverless environments where Chrome is not available'
-        ]
-      } else if (conversionError.message.includes('network') || conversionError.message.includes('timeout')) {
-        errorMessage = 'Network error accessing the compiler'
-        suggestions = [
-          'Check your internet connection',
-          'Try again in a few moments',
-          'The compiler page might be temporarily unavailable'
-        ]
-      } else {
-        suggestions = [
-          'Try using a different image format (JPG or PNG)',
-          'Ensure the image is not corrupted',
-          'Try uploading a pre-converted .mind file instead'
-        ]
+      try {
+        await scraper.init()
+        mindFileBuffer = await scraper.convertImageToMind(imageFile)
+        console.log('✅ Browser automation successful')
+      } finally {
+        await scraper.close()
       }
       
-      return NextResponse.json({ 
-        error: errorMessage,
-        details: conversionError.message,
-        suggestions: suggestions,
-        fallback: {
-          message: 'You can still create AR experiences by:',
-          options: [
-            '1. Visit /compiler to manually convert your image',
-            '2. Upload a pre-converted .mind file on the create page',
-            '3. Try again later when the automated system is available'
-          ]
-        }
-      }, { status: 500 })
+    } catch (browserError: any) {
+      console.log('❌ Browser automation failed:', browserError.message)
+      webScrapingFailed = true
       
-    } finally {
-      await scraper.close()
+      // Strategy 2: Fall back to server-side compilation
+      if (browserError.message.includes('Chrome') || browserError.message.includes('browser')) {
+        console.log('🚀 Strategy 2: Trying server-side MindAR compilation...')
+        
+        try {
+          const serverCompiler = new MindARServerCompiler()
+          const imageBuffer = Buffer.from(await imageFile.arrayBuffer())
+          mindFileBuffer = await serverCompiler.compileImageToMindBuffer(imageBuffer)
+          console.log('✅ Server-side compilation successful')
+        } catch (serverError: any) {
+          console.error('❌ Server-side compilation also failed:', serverError.message)
+          throw new Error(`Both browser automation and server-side compilation failed. Browser error: ${browserError.message}. Server error: ${serverError.message}`)
+        }
+      } else {
+        throw browserError
+      }
     }
+    
+    if (!mindFileBuffer) {
+      throw new Error('Failed to generate mind file using any available method')
+    }
+    
+    console.log('✅ Mind file generation completed successfully')
+    console.log('📊 Mind file size:', mindFileBuffer.length, 'bytes')
+    console.log('🔧 Method used:', webScrapingFailed ? 'Server-side compilation' : 'Browser automation')
+    
+    // Return the .mind file
+    return new NextResponse(mindFileBuffer, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${imageFile.name.replace(/\.[^/.]+$/, '')}.mind"`,
+        'Content-Length': mindFileBuffer.length.toString(),
+        'X-Compilation-Method': webScrapingFailed ? 'server-side' : 'browser-automation'
+      }
+    })
     
   } catch (error: any) {
     console.error('❌ API error:', error)
