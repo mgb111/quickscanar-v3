@@ -17,89 +17,19 @@ export default function CreateExperience() {
   
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
   const [useCustomMind, setUseCustomMind] = useState(false)
-  const [compilingImage, setCompilingImage] = useState(false)
   
   // Optimize progress updates to reduce re-renders
   const updateProgress = useCallback((message: string) => {
     setCompilationProgress(message)
   }, [])
 
-  // Auto-compile image to mind file
-  const handleImageCompilation = useCallback(async () => {
-    if (!imageFile) {
-      toast.error('Please upload an image first')
-      return
-    }
-
-    setCompilingImage(true)
-    updateProgress('Converting image to AR format...')
-
-    try {
-      const formData = new FormData()
-      formData.append('image', imageFile)
-
-      const response = await fetch('/api/compile-mind', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        
-        // Handle specific error types
-        if (errorData.error && errorData.error.includes('Chrome')) {
-          throw new Error(`Automated conversion not available: ${errorData.error}. Please use the manual compiler at /compiler or upload a pre-converted .mind file.`)
-        }
-        
-        throw new Error(errorData.details || errorData.error || 'Failed to convert image')
-      }
-
-      // Get the compiled .mind file
-      const mindBlob = await response.blob()
-      const compiledMindFile = new File([mindBlob], `${imageFile.name.replace(/\.[^/.]+$/, '')}.mind`, { 
-        type: 'application/octet-stream' 
-      })
-
-      setMindFile(compiledMindFile)
-      setUseCustomMind(true)
-      updateProgress('Image converted successfully!')
-      toast.success('Image converted to AR format! Now creating your experience...')
-
-      // Small delay for user feedback, then proceed with creation
-      setTimeout(() => {
-        // Set a flag to indicate we should proceed with creation
-        setCompilingImage(false)
-        updateProgress('Ready to create experience! Click "Create AR Experience" again.')
-      }, 1500)
-
-    } catch (error: any) {
-      console.error('Image compilation failed:', error)
-      toast.error(error.message || 'Failed to convert image to AR format')
-      updateProgress('')
-      setCompilingImage(false)
-    }
-  }, [imageFile, updateProgress])
-
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Check if we have either a custom .mind file or an image to convert
-    if (!mindFile && !imageFile) {
-      toast.error('Please upload either a .mind file or an image to convert')
-      return
-    }
-    
-    // If we have an image but no mind file, convert it first
-    if (imageFile && !mindFile) {
-      handleImageCompilation()
-      return // Will restart the process after compilation
-    }
-    
-    // Ensure we have a mind file before proceeding
+    // Check if we have either a custom .mind file
     if (!mindFile) {
-      toast.error('Please wait for image conversion to complete or upload a .mind file')
+      toast.error('Please upload a custom .mind file')
       return
     }
     
@@ -276,8 +206,8 @@ export default function CreateExperience() {
           throw new Error(`Mind file upload failed: ${uploadError.message}`)
         }
       } else {
-        // This shouldn't happen as we check above
-        throw new Error('Mind file is required. Please upload a .mind file or convert an image.')
+        // The .mind file should already contain the image data
+        throw new Error('Custom .mind file is required. Please upload a .mind file.')
       }
  
       // Ensure we have a valid mind file URL
@@ -311,7 +241,7 @@ export default function CreateExperience() {
         setSubmitting(false)
         setCompilationProgress('')
       }
-    }, [mindFile, videoFile, title, description, user?.id, router, updateProgress, imageFile, handleImageCompilation, useCustomMind, supabase])
+    }, [mindFile, videoFile, title, description, user?.id, router, updateProgress])
 
   if (loading) {
     return (
@@ -334,7 +264,7 @@ export default function CreateExperience() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-white">{user?.email}</span>
               <button
-                onClick={() => router.push('/auth/signout')}
+                onClick={useCallback(() => router.push('/auth/signout'), [router])}
                 className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
@@ -448,7 +378,7 @@ export default function CreateExperience() {
                 id="title"
                 name="title"
                 value={title}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value), [])}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Enter a name for your AR experience"
@@ -464,74 +394,20 @@ export default function CreateExperience() {
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                onChange={useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value), [])}
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent text-black placeholder-gray-500"
                 placeholder="Describe your AR experience"
               />
             </div>
 
-            {/* Image Upload for Auto-Conversion */}
-            <div>
-              <label htmlFor="imageFile" className="block text-sm font-medium text-black mb-2">
-                Upload Image (Auto-Convert to AR) <span className="text-green-600">Recommended</span>
-              </label>
-              <p className="text-xs text-gray-500 mb-3">
-                Upload any image (JPG, PNG) and we'll automatically convert it to AR format for you!
-              </p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
-                <input
-                  type="file"
-                  id="imageFile"
-                  name="imageFile"
-                  accept="image/*"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setImageFile(file);
-                      // Clear mind file if user uploads new image
-                      if (mindFile) {
-                        setMindFile(null);
-                        setUseCustomMind(false);
-                      }
-                    }
-                  }}
-                  className="hidden"
-                />
-                <label htmlFor="imageFile" className="cursor-pointer">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    <span className="font-medium text-dark-blue">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">JPG, PNG, or other image formats</p>
-                </label>
-              </div>
-              {imageFile && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800 font-medium">
-                    ✓ Ready for conversion: {imageFile.name}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">
-                    This image will be automatically converted to AR format when you create the experience
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* OR Divider */}
-            <div className="flex items-center">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
-            </div>
-
             {/* Mind File Upload */}
             <div>
               <label htmlFor="mindFile" className="block text-sm font-medium text-black mb-2">
-                Upload Pre-Converted Mind File (.mind) <span className="text-gray-500">Advanced</span>
+                Mind File (.mind) <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                Already have a .mind file? Upload it directly here. Otherwise, use the image upload above.
+                This is the AR-ready version of your image. If you don't have one, use the "Convert Images" button above first.
               </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
                 <input
@@ -539,17 +415,14 @@ export default function CreateExperience() {
                   id="mindFile"
                   name="mindFile"
                   accept=".mind"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setMindFile(file);
                       setUseCustomMind(true);
-                      // Clear image file if user uploads mind file directly
-                      if (imageFile) {
-                        setImageFile(null);
-                      }
                     }
-                  }}
+                  }, [])}
+                  required
                   className="hidden"
                 />
                 <label htmlFor="mindFile" className="cursor-pointer">
@@ -586,12 +459,12 @@ export default function CreateExperience() {
                   id="videoFile"
                   name="videoFile"
                   accept="video/*"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setVideoFile(file);
                     }
-                  }}
+                  }, [])}
                   required
                   className="hidden"
                 />
@@ -619,32 +492,22 @@ export default function CreateExperience() {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={submitting || compilingImage || (!mindFile && !imageFile) || !videoFile}
+                disabled={submitting || !mindFile || !videoFile}
                 className="w-full bg-dark-blue text-white py-3 px-6 rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
-                {submitting || compilingImage ? (
+                {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    {compilingImage ? 'Converting Image...' : 'Creating Experience...'}
+                    Creating Experience...
                   </>
                 ) : (
                   <>
                     <Plus className="h-5 w-5 mr-2" />
-                    {imageFile && !mindFile ? 'Convert Image First' : 'Create AR Experience'}
+                    Create AR Experience
                   </>
                 )}
               </button>
             </div>
-
-            {/* Progress Display */}
-            {compilationProgress && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800 flex items-center">
-                  {compilingImage && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800 mr-2"></div>}
-                  {compilationProgress}
-                </p>
-              </div>
-            )}
           </form>
         </div>
         
