@@ -20,8 +20,6 @@ function SignInContent() {
 
   // Handle OAuth errors from callback
   useEffect(() => {
-    if (!searchParams) return
-    
     const error = searchParams.get('error')
     const description = searchParams.get('description')
     

@@ -158,95 +158,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Supabase not configured')
     }
 
-    // CRITICAL FIX: Force the correct redirect URL to override Supabase bug
-    const redirectUrl = 'https://quickscanar.com/auth/callback'
-    
-    console.log('=== OAuth Redirect Debug ===')
-    console.log('🔧 FORCING redirect URL to override Supabase bug:', redirectUrl)
-    console.log('Current hostname:', typeof window !== 'undefined' ? window.location.hostname : 'server-side')
-    console.log('Current origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side')
-    console.log('=== End OAuth Debug ===')
-
-    // CRITICAL: Validate the redirect URL format
-    try {
-      new URL(redirectUrl) // This will throw if URL is invalid
-      console.log('✅ Redirect URL is valid:', redirectUrl)
-    } catch (urlError) {
-      console.error('❌ Invalid redirect URL:', redirectUrl)
-      throw new Error(`Invalid redirect URL: ${redirectUrl}`)
-    }
-
-    // CRITICAL: Force the redirect URL to override Supabase's internal bug
-    console.log('🔍 Sending to Supabase with FORCED redirect:')
-    console.log('  Provider: google')
-    console.log('  RedirectTo (FORCED):', redirectUrl)
-    console.log('  QueryParams.redirect_to (FORCED):', redirectUrl)
-    console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-
-    // CRITICAL: Set up redirect interceptor BEFORE calling OAuth
-    let redirectObserver: any = null
-    if (typeof window !== 'undefined') {
-      console.log('🔧 Setting up redirect interceptor...')
-      
-      // Use MutationObserver to watch for navigation changes
-      redirectObserver = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === 'childList') {
-            // Check if the current URL is a relative redirect
-            const currentUrl = window.location.href
-            if (currentUrl.includes('/auth/callback') && !currentUrl.includes('quickscanar.com')) {
-              console.log('🚨 CRITICAL: Detected relative redirect, forcing to production URL')
-              
-              // Force redirect to production URL
-              const productionUrl = `https://quickscanar.com${window.location.pathname}${window.location.search}`
-              console.log('🔄 Redirecting to:', productionUrl)
-              
-              // Use a small delay to ensure the redirect happens
-              setTimeout(() => {
-                window.location.href = productionUrl
-              }, 100)
-            }
-          }
-        })
-      })
-      
-      // Start observing
-      redirectObserver.observe(document.body, {
-        childList: true,
-        subtree: true
-      })
-      
-      console.log('✅ Redirect interceptor set up with MutationObserver')
-    }
-
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            redirect_to: redirectUrl
-          }
+          redirectTo: 'https://quickscanar.com'
         }
       })
 
       if (error) {
-        console.error('❌ OAuth error:', error)
+        console.error('OAuth error:', error)
         throw error
       }
       
-      console.log('✅ OAuth request sent successfully with FORCED redirect:', redirectUrl)
-      console.log('🔧 This should override Supabase internal redirect bug')
+      console.log('✅ OAuth request sent successfully')
       
     } catch (error) {
-      console.error('❌ OAuth request failed:', error)
-      
-      // Disconnect the redirect observer
-      if (typeof window !== 'undefined' && redirectObserver) {
-        redirectObserver.disconnect()
-        console.log('🔄 Disconnected redirect observer')
-      }
-      
+      console.error('OAuth request failed:', error)
       throw error
     }
   }
