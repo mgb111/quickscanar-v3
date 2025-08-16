@@ -47,7 +47,7 @@ export default function CompilerPage() {
             AR Image Compiler
           </h1>
           <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
-            Convert your images to AR-ready targets with our advanced MindAR compilation engine
+            Create AR-ready targets with our advanced MindAR compilation engine
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export default function CompilerPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 inline-block shadow-sm">
             <h3 className="text-black font-semibold mb-2">Ready to create your AR experience?</h3>
             <p className="text-gray-600 text-sm mb-4">
-              After converting your images, proceed to create your AR experience with videos and .mind files.
+              After creating your AR targets, proceed to create your AR experience with videos and .mind files.
             </p>
             <Link
               href="/dashboard/create"

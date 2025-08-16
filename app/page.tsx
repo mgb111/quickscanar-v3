@@ -115,13 +115,10 @@ export default function Home() {
                    <img 
                      src="/ar-experience-preview.gif" 
                      alt="AR Experience Preview - Hand holding smartphone with underwater sea turtle AR overlay"
-                     className="w-full h-auto rounded-2xl"
+                     className="w-full h-auto rounded-2xl max-w-[400px] mx-auto"
                      style={{ 
-                       maxHeight: '400px', 
-                       objectFit: 'cover',
                        aspectRatio: '1/1',
-                       width: '400px',
-                       height: '400px'
+                       objectFit: 'cover'
                      }}
                    />
                  </div>
@@ -203,9 +200,9 @@ export default function Home() {
                <div className="bg-dark-blue rounded-full w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center mb-4 sm:mb-6">
                  <span className="text-xl sm:text-2xl font-bold text-white">1</span>
                </div>
-               <h3 className="text-lg sm:text-xl font-bold text-black mb-3 sm:mb-4">Upload & Convert</h3>
+               <h3 className="text-lg sm:text-xl font-bold text-black mb-3 sm:mb-4">Upload & Create</h3>
                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-                 Upload your images and convert them to AR-ready targets using our advanced MindAR compiler.
+                 Upload your images and create AR-ready targets using our advanced MindAR compiler.
                </p>
                <Link
                  href="/compiler"

@@ -242,7 +242,7 @@ export default function ConvertPage() {
         {/* File Upload Section */}
         <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
           <h3 className="text-2xl font-bold text-black mb-6 text-center">
-            Convert Your Images
+            Create AR Targets
           </h3>
           
           <div className="max-w-2xl mx-auto">
@@ -308,7 +308,7 @@ export default function ConvertPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 inline-block shadow-sm">
             <h3 className="text-black font-semibold mb-2">Ready to create your AR experience?</h3>
             <p className="text-gray-600 text-sm mb-4">
-              After converting your images, proceed to create your AR experience with videos and .mind files.
+              After creating your AR targets, proceed to create your AR experience with videos and .mind files.
             </p>
             <Link
               href="/dashboard/create"

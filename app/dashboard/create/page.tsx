@@ -303,7 +303,7 @@ export default function CreateExperience() {
             <div className="grid md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white p-4 rounded-lg border border-blue-100">
                 <div className="font-semibold text-blue-800 mb-2">1. Upload Your Image</div>
-                <p className="text-blue-700">First, convert a photo to AR format using our compiler. This creates a "mind file" that your phone can recognize.</p>
+                <p className="text-blue-700">First, create AR format from your photo using our compiler. This creates a "mind file" that your phone can recognize.</p>
               </div>
               <div className="bg-white p-4 rounded-lg border border-blue-100">
                 <div className="font-semibold text-blue-800 mb-2">2. Add Your Video</div>
@@ -317,7 +317,7 @@ export default function CreateExperience() {
           </div>
         </div>
 
-      {/* Step 2: Convert Images */}
+      {/* Step 2: Create AR Experience */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -326,14 +326,14 @@ export default function CreateExperience() {
               Step 2: Create New AR Experience
             </h3>
             <p className="text-gray-600">
-              Now let's build your AR experience by combining your converted image with a video
+              Now let's build your AR experience by combining your AR-ready image with a video
             </p>
           </div>
           <Link
             href="/compiler"
             className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
           >
-            Convert Images
+            Create AR
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </div>
@@ -407,7 +407,7 @@ export default function CreateExperience() {
                 Mind File (.mind) <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-gray-500 mb-3">
-                This is the AR-ready version of your image. If you don't have one, use the "Convert Images" button above first.
+                This is the AR-ready version of your image. If you don't have one, use the "Create AR" button above first.
               </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
                 <input

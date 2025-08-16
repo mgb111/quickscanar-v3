@@ -136,16 +136,16 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Step 1: Convert Images */}
+        {/* Step 1: Create AR Format */}
         <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
                 <Upload className="h-5 w-5 mr-2 text-dark-blue" />
-                Step 1: Convert Your Images to AR Format
+                Step 1: Create AR Format
               </h3>
               <p className="text-gray-600">
-                First, convert your images to AR-ready targets using our MindAR compiler
+                First, create AR-ready targets using our MindAR compiler
               </p>
             </div>
             <Link
@@ -153,8 +153,8 @@ export default function Dashboard() {
               className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
             >
               <Upload className="h-5 w-5 mr-2" />
-              <span className="hidden sm:inline">Convert Images to AR</span>
-              <span className="sm:hidden">Convert to AR</span>
+              <span className="hidden sm:inline">Create AR</span>
+              <span className="sm:hidden">Create AR</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
               <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">No experiences yet</h4>
               <p className="text-gray-600 mb-6">
-                Start by converting your images to AR format, then create your first experience.
+                Start by creating AR format, then create your first experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -204,8 +204,8 @@ export default function Dashboard() {
                   className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none"
                 >
                   <Upload className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Convert Images First</span>
-                  <span className="sm:hidden">Convert First</span>
+                  <span className="hidden sm:inline">Create AR First</span>
+                  <span className="sm:hidden">Create AR First</span>
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </div>
