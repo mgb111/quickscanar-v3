@@ -63,18 +63,15 @@ export default function CreateExperience() {
 
       // Small delay for user feedback, then proceed with creation
       setTimeout(() => {
-        // Trigger form submission again after conversion
-        const form = document.querySelector('form')
-        if (form) {
-          form.dispatchEvent(new Event('submit', { bubbles: true }))
-        }
+        // Set a flag to indicate we should proceed with creation
+        setCompilingImage(false)
+        updateProgress('Ready to create experience! Click "Create AR Experience" again.')
       }, 1500)
 
     } catch (error: any) {
       console.error('Image compilation failed:', error)
       toast.error(error.message || 'Failed to convert image to AR format')
       updateProgress('')
-    } finally {
       setCompilingImage(false)
     }
   }, [imageFile, updateProgress])
@@ -92,6 +89,12 @@ export default function CreateExperience() {
     if (imageFile && !mindFile) {
       handleImageCompilation()
       return // Will restart the process after compilation
+    }
+    
+    // Ensure we have a mind file before proceeding
+    if (!mindFile) {
+      toast.error('Please wait for image conversion to complete or upload a .mind file')
+      return
     }
     
     if (!videoFile) {
@@ -621,7 +624,7 @@ export default function CreateExperience() {
                 ) : (
                   <>
                     <Plus className="h-5 w-5 mr-2" />
-                    {imageFile && !mindFile ? 'Convert Image & Create Experience' : 'Create AR Experience'}
+                    {imageFile && !mindFile ? 'Convert Image First' : 'Create AR Experience'}
                   </>
                 )}
               </button>
