@@ -27,6 +27,7 @@ export default function DebugPage() {
     supabase: { hasClient: false }
   })
   const [loading, setLoading] = useState(false)
+  const [oauthDebug, setOauthDebug] = useState<string[]>([])
   const { signInWithGoogle, supabase } = useAuth()
 
   useEffect(() => {
@@ -53,11 +54,25 @@ export default function DebugPage() {
 
   const testOAuthRedirect = async () => {
     setLoading(true)
+    setOauthDebug([])
+    
     try {
       console.log('🧪 Testing OAuth redirect...')
+      
+      // Add debug info
+      setOauthDebug(prev => [...prev, '🧪 Starting OAuth test...'])
+      setOauthDebug(prev => [...prev, `📍 Current URL: ${window.location.href}`])
+      setOauthDebug(prev => [...prev, `🌐 Current Origin: ${window.location.origin}`])
+      
+      // Test the OAuth flow
       await signInWithGoogle()
+      
+      setOauthDebug(prev => [...prev, '✅ OAuth request sent successfully'])
+      setOauthDebug(prev => [...prev, '🔄 You should be redirected to Google now...'])
+      
     } catch (error: any) {
       console.error('OAuth test failed:', error)
+      setOauthDebug(prev => [...prev, `❌ OAuth test failed: ${error.message}`])
       alert(`OAuth test failed: ${error.message}`)
     } finally {
       setLoading(false)
@@ -67,6 +82,46 @@ export default function DebugPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     alert('Copied to clipboard!')
+  }
+
+  const checkRedirectUrls = () => {
+    const currentDomain = process.env.NEXT_PUBLIC_SITE_URL || 'https://quickscanar.com'
+    const expectedCallback = `${currentDomain}/auth/callback`
+    
+    setOauthDebug(prev => [...prev, '🔍 Checking redirect URL configuration...'])
+    setOauthDebug(prev => [...prev, `📍 Expected callback URL: ${expectedCallback}`])
+    setOauthDebug(prev => [...prev, '⚠️  Make sure this URL is in your Supabase Redirect URLs list'])
+    setOauthDebug(prev => [...prev, '⚠️  Make sure this URL is in your Google OAuth redirect URIs'])
+  }
+
+  const testRedirectUrlConstruction = () => {
+    setOauthDebug(prev => [...prev, '🧪 Testing redirect URL construction...'])
+    
+    // Simulate the same logic from AuthProvider
+    let redirectUrl: string
+    
+    const currentHostname = window.location.hostname
+    const currentOrigin = window.location.origin
+    
+    setOauthDebug(prev => [...prev, `📍 Current hostname: ${currentHostname}`])
+    setOauthDebug(prev => [...prev, `📍 Current origin: ${currentOrigin}`])
+    setOauthDebug(prev => [...prev, `📍 NEXT_PUBLIC_SITE_URL: ${process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}`])
+    
+    if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
+      redirectUrl = `${currentOrigin}/auth/callback`
+      setOauthDebug(prev => [...prev, `✅ Development mode - using localhost redirect: ${redirectUrl}`])
+    } else if (currentHostname === 'quickscanar.com' || currentHostname.includes('quickscanar.com')) {
+      redirectUrl = 'https://quickscanar.com/auth/callback'
+      setOauthDebug(prev => [...prev, `✅ Production mode - using quickscanar.com redirect: ${redirectUrl}`])
+    } else {
+      redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        : 'https://quickscanar.com/auth/callback'
+      setOauthDebug(prev => [...prev, `✅ Other domain - using configured redirect: ${redirectUrl}`])
+    }
+    
+    setOauthDebug(prev => [...prev, `🎯 Final redirect URL: ${redirectUrl}`])
+    setOauthDebug(prev => [...prev, '⚠️  This URL must be in both Supabase Redirect URLs and Google OAuth redirect URIs'])
   }
 
   return (
@@ -141,18 +196,66 @@ export default function DebugPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">OAuth Testing</h2>
+          <h2 className="text-xl font-semibold mb-4">OAuth Testing & Debugging</h2>
           <div className="space-y-4">
             <p className="text-gray-600">
-              Click the button below to test the Google OAuth flow. This will help identify where the issue occurs.
+              Use these tools to test and debug the OAuth flow step by step.
             </p>
-            <button
-              onClick={testOAuthRedirect}
-              disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Testing...' : 'Test OAuth Redirect'}
-            </button>
+            
+            <div className="flex space-x-4">
+              <button
+                onClick={checkRedirectUrls}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Check Redirect URLs
+              </button>
+              
+              <button
+                onClick={testRedirectUrlConstruction}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              >
+                Test URL Construction
+              </button>
+              
+              <button
+                onClick={testOAuthRedirect}
+                disabled={loading}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Testing...' : 'Test OAuth Redirect'}
+              </button>
+            </div>
+            
+            {/* OAuth Debug Log */}
+            {oauthDebug.length > 0 && (
+              <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                <h3 className="font-medium mb-2">OAuth Debug Log:</h3>
+                <div className="space-y-1 text-sm">
+                  {oauthDebug.map((log, index) => (
+                    <div key={index} className="font-mono">{log}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-red-800 mb-4">🚨 CRITICAL: Fix Required</h2>
+          <div className="space-y-3 text-red-700">
+            <p className="font-medium">Your Supabase Site URL is correct, but you need to add the callback path to Redirect URLs:</p>
+            <div className="bg-red-100 p-3 rounded">
+              <p className="font-medium">Add this to Supabase Redirect URLs:</p>
+              <code className="block bg-white p-2 rounded mt-2 font-mono text-sm">
+                https://quickscanar.com/auth/callback
+              </code>
+            </div>
+            <div className="bg-red-100 p-3 rounded">
+              <p className="font-medium">Add this to Google OAuth redirect URIs:</p>
+              <code className="block bg-white p-2 rounded mt-2 font-mono text-sm">
+                https://quickscanar.com/auth/callback
+              </code>
+            </div>
           </div>
         </div>
 
@@ -161,18 +264,26 @@ export default function DebugPage() {
           <div className="space-y-3 text-yellow-700">
             <div className="flex items-start">
               <span className="font-medium mr-2">1.</span>
-              <span>Check your Supabase project settings: <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline">Dashboard</a></span>
+              <span>Go to Supabase Dashboard → Authentication → URL Configuration</span>
             </div>
             <div className="flex items-start">
               <span className="font-medium mr-2">2.</span>
-              <span>Go to Settings → General and set Site URL to: <code className="bg-yellow-100 px-2 py-1 rounded">https://quickscanar.com</code></span>
+              <span>Under "Redirect URLs", add: <code className="bg-yellow-100 px-1 rounded">https://quickscanar.com/auth/callback</code></span>
             </div>
             <div className="flex items-start">
               <span className="font-medium mr-2">3.</span>
-              <span>Wait 2-3 minutes for changes to propagate</span>
+              <span>Go to Google Cloud Console → OAuth 2.0 Client IDs</span>
             </div>
             <div className="flex items-start">
               <span className="font-medium mr-2">4.</span>
+              <span>Add the same callback URL to authorized redirect URIs</span>
+            </div>
+            <div className="flex items-start">
+              <span className="font-medium mr-2">5.</span>
+              <span>Wait 2-3 minutes for changes to propagate</span>
+            </div>
+            <div className="flex items-start">
+              <span className="font-medium mr-2">6.</span>
               <span>Test the OAuth flow again</span>
             </div>
           </div>
