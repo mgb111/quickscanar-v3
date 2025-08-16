@@ -157,9 +157,9 @@ Environment details:
       
       console.log('📁 Temporary image saved:', tempImagePath)
       
-      // Navigate to your compiler page
-      console.log('🌐 Navigating to compiler page...')
-      await this.page.goto('https://quickscanar.com/compiler/', { 
+      // Navigate directly to the official MindAR compiler (not your wrapper page)
+      console.log('🌐 Navigating to official MindAR compiler...')
+      await this.page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile/', { 
         waitUntil: 'networkidle0' 
       })
       
@@ -178,28 +178,27 @@ Environment details:
       console.log('✅ File uploaded successfully')
       
       // Wait a moment for file processing
-      await this.page.waitForTimeout(2000)
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Look for compile button with multiple possible selectors
-      console.log('🔍 Looking for compile button...')
-      const compileSelectors = [
-        'button:contains("Compile")',
-        'button:contains("Convert")', 
-        'button:contains("Generate")',
-        '.compile-btn',
-        '#compile-btn',
-        '.convert-btn',
-        '#convert-btn',
-        '[data-action="compile"]',
-        'input[type="submit"]'
+      // Look for START button (this is what the official MindAR compiler uses)
+      console.log('🔍 Looking for START button...')
+      const startSelectors = [
+        'button:contains("Start")',
+        'input[value*="Start"]',
+        'button:contains("start")',
+        '#start',
+        '.start',
+        'button[onclick]',
+        'input[type="button"]',
+        'button' // fallback to any button
       ]
       
-      let compileButton = null
-      for (const selector of compileSelectors) {
+      let startButton = null
+      for (const selector of startSelectors) {
         try {
-          compileButton = await this.page.$(selector)
-          if (compileButton) {
-            console.log(`✅ Found compile button with selector: ${selector}`)
+          startButton = await this.page.$(selector)
+          if (startButton) {
+            console.log(`✅ Found start button with selector: ${selector}`)
             break
           }
         } catch (e) {
@@ -207,38 +206,77 @@ Environment details:
         }
       }
       
-      if (!compileButton) {
+      if (!startButton) {
         // Try to find any button on the page
-        const allButtons = await this.page.$$('button')
+        const allButtons = await this.page.$$('button, input[type="button"]')
         console.log(`📊 Found ${allButtons.length} buttons on page`)
         
         if (allButtons.length > 0) {
-          compileButton = allButtons[allButtons.length - 1] // Use last button as fallback
-          console.log('⚠️ Using fallback button (last button on page)')
+          startButton = allButtons[0] // Use first button as it's likely the start button
+          console.log('⚠️ Using fallback button (first button on page)')
         } else {
-          throw new Error('No compile button found on page')
+          throw new Error('No start button found on page')
         }
       }
       
-      // Click the compile button
-      console.log('🎯 Clicking compile button...')
-      await compileButton.click()
+      // Click the start button
+      console.log('🎯 Clicking START button...')
+      await startButton.click()
       
-      // Wait for compilation to complete - look for various success indicators
-      console.log('⏳ Waiting for compilation to complete...')
-      const completionSelectors = [
-        '.download-ready',
-        '.mind-file-ready', 
-        '[data-status="completed"]',
-        '.download-link',
-        '.mind-download',
-        'a[href$=".mind"]',
+      // Wait for compilation to complete (progress bar reaches 100%)
+      console.log('⏳ Waiting for compilation progress to complete...')
+      
+      // Monitor progress and wait for completion
+      let progressComplete = false
+      let attempts = 0
+      const maxAttempts = 60 // 60 attempts = 2 minutes max wait
+      
+      while (!progressComplete && attempts < maxAttempts) {
+        try {
+          // Check if there's a progress indicator and if it shows 100%
+          const progressText = await this.page.evaluate(() => {
+            const progressElements = document.querySelectorAll('.progress, [class*="progress"], [id*="progress"]')
+            for (let i = 0; i < progressElements.length; i++) {
+              const elem = progressElements[i]
+              if (elem.textContent && elem.textContent.includes('100')) {
+                return elem.textContent
+              }
+            }
+            return null
+          })
+          
+          if (progressText) {
+            console.log(`📊 Progress: ${progressText}`)
+            progressComplete = true
+            break
+          }
+          
+          attempts++
+          await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds between checks
+        } catch (e) {
+          attempts++
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      }
+      
+      // Then look for the "Download Compiled" button which appears when done
+      console.log('🔍 Looking for Download Compiled button...')
+      const downloadSelectors = [
         'button:contains("Download")',
-        '.compilation-complete'
+        'a:contains("Download")',
+        'button:contains("download")',
+        'a:contains("download")',
+        '.download',
+        '#download',
+        'button[download]',
+        'a[download]',
+        'a[href$=".mind"]',
+        'button:contains("Compiled")',
+        '.download-ready'
       ]
       
       let downloadElement = null
-      for (const selector of completionSelectors) {
+      for (const selector of downloadSelectors) {
         try {
           await this.page.waitForSelector(selector, { timeout: 90000 }) // 1.5 minutes
           downloadElement = await this.page.$(selector)
@@ -254,7 +292,7 @@ Environment details:
       if (!downloadElement) {
         // Fallback: wait for any new link or button that might be the download
         console.log('⚠️ Using fallback download detection...')
-        await this.page.waitForTimeout(30000) // Wait 30 seconds for processing
+        await new Promise(resolve => setTimeout(resolve, 30000)) // Wait 30 seconds for processing
         
         // Look for any .mind file link
         downloadElement = await this.page.$('a[href$=".mind"]')
