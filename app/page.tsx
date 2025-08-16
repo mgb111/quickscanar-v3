@@ -22,10 +22,12 @@ export default function Home() {
       <nav className="bg-dark-blue shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Camera className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
-            </div>
+                         <div className="flex items-center">
+               <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                 <Camera className="h-8 w-8 text-white" />
+                 <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
+               </Link>
+             </div>
                          <div className="flex items-center space-x-3 sm:space-x-4">
                {/* Create AR button - hidden on mobile, visible on desktop */}
                <Link
