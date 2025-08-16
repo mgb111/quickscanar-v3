@@ -216,6 +216,46 @@ export default function DebugPage() {
     }
   }
 
+  const testSupabaseRedirectUrlConflicts = async () => {
+    setLoading(true)
+    setOauthDebug(prev => [...prev, '🔍 Testing for Supabase redirect URL conflicts...'])
+    
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!supabaseUrl) {
+        setOauthDebug(prev => [...prev, '❌ NEXT_PUBLIC_SUPABASE_URL not set'])
+        return
+      }
+      
+      setOauthDebug(prev => [...prev, '🧪 Testing different redirect URL patterns...'])
+      
+      // Test various redirect URL patterns that might be cached
+      const testUrls = [
+        'https://quickscanar.com/auth/callback',
+        'https://quickscanar.com/auth/callback/',
+        'https://quickscanar.com/auth/callback?',
+        'https://quickscanar.com/auth/callback#',
+        'https://quickscanar.com/auth/callback/auth/callback',
+        'https://quickscanar.com/auth/callback/auth/callback/',
+        'https://quickscanar.com/auth/callback/auth/callback?',
+        'https://quickscanar.com/auth/callback/auth/callback#'
+      ]
+      
+      setOauthDebug(prev => [...prev, '📋 Testing these URL patterns for conflicts:'])
+      testUrls.forEach(url => {
+        setOauthDebug(prev => [...prev, `   - ${url}`])
+      })
+      
+      setOauthDebug(prev => [...prev, '⚠️  If any of these URLs exist in your Supabase Redirect URLs, remove them'])
+      setOauthDebug(prev => [...prev, '⚠️  Only keep: https://quickscanar.com/auth/callback'])
+      
+    } catch (error: any) {
+      setOauthDebug(prev => [...prev, `❌ Conflict test failed: ${error.message}`])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const testOAuthFlowStepByStep = async () => {
     setLoading(true)
     setOauthDebug([])
@@ -361,6 +401,14 @@ export default function DebugPage() {
               </button>
 
               <button
+                onClick={testSupabaseRedirectUrlConflicts}
+                disabled={loading}
+                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:opacity-50"
+              >
+                {loading ? 'Checking...' : 'Check Redirect Conflicts'}
+              </button>
+
+              <button
                 onClick={testOAuthFlowStepByStep}
                 disabled={loading}
                 className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
@@ -406,6 +454,32 @@ export default function DebugPage() {
               <code className="block bg-white p-2 rounded mt-2 font-mono text-sm">
                 https://quickscanar.com/auth/callback
               </code>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-purple-800 mb-4">🚨 URGENT: Configuration Conflict Detected</h2>
+          <div className="space-y-3 text-purple-700">
+            <p className="font-medium">Your configuration is correct, but Supabase is still redirecting to relative paths. This indicates:</p>
+            <div className="bg-purple-100 p-3 rounded">
+              <p className="font-medium">Possible Issues:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li>Conflicting redirect URLs in Supabase</li>
+                <li>Cached old configuration</li>
+                <li>Multiple redirect URL entries</li>
+                <li>Trailing slashes or query parameters</li>
+              </ul>
+            </div>
+            <div className="bg-purple-100 p-3 rounded">
+              <p className="font-medium">Immediate Action Required:</p>
+              <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
+                <li>Go to Supabase Dashboard → Authentication → URL Configuration</li>
+                <li><strong>REMOVE ALL existing redirect URLs</strong></li>
+                <li>Add ONLY: <code className="bg-purple-200 px-1 rounded">https://quickscanar.com/auth/callback</code></li>
+                <li>Save and wait 5 minutes</li>
+                <li>Test OAuth again</li>
+              </ol>
             </div>
           </div>
         </div>
