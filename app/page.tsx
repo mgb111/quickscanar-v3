@@ -115,7 +115,7 @@ export default function Home() {
                    <img 
                      src="/ar-experience-preview.gif" 
                      alt="AR Experience Preview - Hand holding smartphone with underwater sea turtle AR overlay"
-                     className="w-full h-auto rounded-2xl max-w-[400px] mx-auto"
+                     className="w-full h-auto rounded-2xl"
                      style={{ 
                        aspectRatio: '1/1',
                        objectFit: 'cover'
