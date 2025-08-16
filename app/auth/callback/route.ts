@@ -94,7 +94,16 @@ export async function GET(request: NextRequest) {
   if (!code) {
     console.error('No authorization code received')
     console.error('This usually means the callback URL is wrong or Google is not sending the code')
-    return NextResponse.redirect(new URL('/auth/signin?error=no_code&description=No authorization code received', baseUrl))
+    
+    // Provide more specific error message based on the context
+    let errorDescription = 'No authorization code received'
+    if (requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1') {
+      errorDescription += ' - Check that your Supabase Site URL is set correctly for development'
+    } else {
+      errorDescription += ' - Check that your Supabase Site URL is set to https://quickscanar.com'
+    }
+    
+    return NextResponse.redirect(new URL(`/auth/signin?error=no_code&description=${encodeURIComponent(errorDescription)}`, baseUrl))
   }
 
   // Handle authentication with the provided code

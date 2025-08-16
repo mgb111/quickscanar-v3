@@ -93,6 +93,15 @@ function SignInContent() {
                 <div className="mt-2 text-sm text-red-700">
                   {oauthError}
                 </div>
+                {oauthError.includes('No authorization code received') && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-xs text-yellow-800">
+                      <strong>Quick Fix:</strong> This usually means your Supabase Site URL is not configured correctly. 
+                      Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline">Supabase Dashboard</a>, 
+                      go to Settings → General, and set Site URL to <code className="bg-yellow-100 px-1 rounded">https://quickscanar.com</code>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

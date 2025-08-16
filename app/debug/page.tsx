@@ -1,358 +1,192 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Camera, LogOut, User, Shield, Database, Globe } from 'lucide-react'
-import toast from 'react-hot-toast'
+
+interface DebugInfo {
+  timestamp?: string
+  userAgent?: string
+  currentUrl?: string
+  currentOrigin?: string
+  currentHostname?: string
+  environment: {
+    NODE_ENV?: string
+    NEXT_PUBLIC_SUPABASE_URL?: string
+    NEXT_PUBLIC_SITE_URL?: string
+    NEXT_PUBLIC_VERCEL_URL?: string
+  }
+  supabase: {
+    url?: string
+    hasClient: boolean
+  }
+}
 
 export default function DebugPage() {
-  const { user, loading, signOut, signInWithGoogle, supabase, supabaseError } = useAuth()
-  const router = useRouter()
-  const [googleLoading, setGoogleLoading] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+    environment: {},
+    supabase: { hasClient: false }
+  })
+  const [loading, setLoading] = useState(false)
+  const { signInWithGoogle, supabase } = useAuth()
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true)
+  useEffect(() => {
+    // Collect debug information
+    const info: DebugInfo = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      currentUrl: window.location.href,
+      currentOrigin: window.location.origin,
+      currentHostname: window.location.hostname,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+        NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
+      },
+      supabase: {
+        url: supabase ? 'Configured' : 'Not configured',
+        hasClient: !!supabase,
+      }
+    }
+    setDebugInfo(info)
+  }, [supabase])
+
+  const testOAuthRedirect = async () => {
+    setLoading(true)
     try {
+      console.log('🧪 Testing OAuth redirect...')
       await signInWithGoogle()
-      toast.success('Redirecting to Google...')
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in with Google')
-      setGoogleLoading(false)
+      console.error('OAuth test failed:', error)
+      alert(`OAuth test failed: ${error.message}`)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      toast.success('Signed out successfully')
-      router.push('/')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to sign out')
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-blue mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading authentication status...</p>
-        </div>
-      </div>
-    )
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    alert('Copied to clipboard!')
   }
 
   return (
-    <div className="min-h-screen bg-cream py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-dark-blue mb-4">
-            <Camera className="h-10 w-10 text-white" />
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">OAuth Debug Information</h1>
+        
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Current Configuration</h2>
+          <div className="space-y-3">
+            <div>
+              <span className="font-medium">Current URL:</span>
+              <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {debugInfo.currentUrl}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium">Current Origin:</span>
+              <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {debugInfo.currentOrigin}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium">Current Hostname:</span>
+              <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {debugInfo.currentHostname}
+              </span>
+            </div>
           </div>
-          <h1 className="text-4xl font-extrabold text-black mb-4">
-            QuickScanAR Debug Dashboard
-          </h1>
-          <p className="text-lg text-gray-600">
-            Authentication and system status information
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          {/* Authentication Status */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <Shield className="h-6 w-6 text-dark-blue mr-2" />
-              <h2 className="text-xl font-semibold text-gray-900">Authentication Status</h2>
-            </div>
-            
-            {user ? (
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <User className="h-5 w-5 text-green-500 mr-2" />
-                  <span className="text-green-700 font-medium">Authenticated</span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <p><strong>Email:</strong> {user.email}</p>
-                  <p><strong>ID:</strong> {user.id}</p>
-                  <p><strong>Provider:</strong> {user.app_metadata?.provider || 'email'}</p>
-                  <p><strong>Created:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  <LogOut className="h-4 w-4 inline mr-2" />
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <User className="h-5 w-5 text-red-500 mr-2" />
-                  <span className="text-red-700 font-medium">Not Authenticated</span>
-                </div>
-                <p className="text-sm text-gray-600">You need to sign in to access the dashboard.</p>
-                <div className="space-y-2">
-                  <Link
-                    href="/auth/signin"
-                    className="block w-full bg-dark-blue hover:bg-red-800 text-white px-4 py-2 rounded-md text-sm font-medium text-center transition-colors"
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Environment Variables</h2>
+          <div className="space-y-3">
+            {Object.entries(debugInfo.environment || {}).map(([key, value]) => (
+              <div key={key}>
+                <span className="font-medium">{key}:</span>
+                <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                  {value || 'undefined'}
+                </span>
+                {value && (
+                  <button
+                    onClick={() => copyToClipboard(value as string)}
+                    className="ml-2 text-xs text-blue-600 hover:text-blue-800"
                   >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    className="block w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium text-center transition-colors"
-                  >
-                    Create Account
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Google OAuth Testing */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <Globe className="h-6 w-6 text-dark-blue mr-2" />
-              <h2 className="text-xl font-semibold text-gray-900">Google OAuth Testing</h2>
-            </div>
-            
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Test Google sign-in functionality directly from this page.
-              </p>
-              
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={googleLoading || !!user}
-                className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {googleLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    {user ? 'Already Signed In' : 'Test Google Sign-In'}
-                  </>
+                    Copy
+                  </button>
                 )}
-              </button>
-              
-              {user && (
-                <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
-                  <strong>Success!</strong> You are signed in with {user.app_metadata?.provider === 'google' ? 'Google' : 'email'}.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* System Status */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <Database className="h-6 w-6 text-dark-blue mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">System Status</h2>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Supabase Connection:</span>
-              {supabase ? (
-                <span className="text-green-600 font-medium">Connected</span>
-              ) : (
-                <span className="text-red-600 font-medium">Not Configured</span>
-              )}
-            </div>
-            
-            {supabaseError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-800">
-                  <strong>Supabase Error:</strong> {supabaseError}
-                </p>
               </div>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Environment:</span>
-              <span className="text-gray-600 font-mono text-sm">
-                {process.env.NODE_ENV || 'development'}
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Supabase Configuration</h2>
+          <div className="space-y-3">
+            <div>
+              <span className="font-medium">Supabase Client:</span>
+              <span className={`ml-2 px-2 py-1 rounded text-sm ${
+                debugInfo.supabase?.hasClient ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {debugInfo.supabase?.hasClient ? 'Available' : 'Not Available'}
               </span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Supabase URL:</span>
-              <span className="text-gray-600 font-mono text-sm">
-                {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Configured' : 'Not Set'}
+            <div>
+              <span className="font-medium">Supabase URL:</span>
+              <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {debugInfo.supabase?.url || 'Not configured'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* OAuth Configuration Test */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">🔐 OAuth Configuration Test</h3>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Current Hostname:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {typeof window !== 'undefined' ? window.location.hostname : 'Server-side'}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Current Origin:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {typeof window !== 'undefined' ? window.location.origin : 'Server-side'}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Environment:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-                  ? 'Development' 
-                  : 'Production'}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Expected OAuth Redirect:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                  ? `${window.location.origin}/auth/callback`
-                  : 'https://quickscanar.com/auth/callback'}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Site URL Env Var:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> If you're testing OAuth from production (quickscanar.com), 
-              the redirect should go to <code className="bg-blue-100 px-1 rounded">https://quickscanar.com/auth/callback</code>. 
-              If it's still going to localhost, check your Supabase OAuth configuration.
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">OAuth Testing</h2>
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Click the button below to test the Google OAuth flow. This will help identify where the issue occurs.
             </p>
-          </div>
-
-          {/* OAuth Test Button */}
-          <div className="mt-4">
             <button
-              onClick={async () => {
-                try {
-                  console.log('🧪 Testing OAuth redirect configuration...')
-                  const { signInWithGoogle } = useAuth()
-                  await signInWithGoogle()
-                } catch (error) {
-                  console.error('OAuth test failed:', error)
-                }
-              }}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              onClick={testOAuthRedirect}
+              disabled={loading}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              🧪 Test OAuth Redirect (Check Console)
+              {loading ? 'Testing...' : 'Test OAuth Redirect'}
             </button>
-            <p className="text-xs text-gray-600 mt-2 text-center">
-              Click this button and check the browser console for detailed OAuth redirect information
-            </p>
-          </div>
-
-          {/* OAuth Status */}
-          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-            <p className="text-sm text-yellow-800">
-              <strong>🚨 CRITICAL ISSUE DETECTED:</strong> Supabase is redirecting to relative path <code>/auth/callback</code> instead of full URL <code>https://quickscanar.com/auth/callback</code>
-            </p>
-          </div>
-
-          {/* IMMEDIATE FIX REQUIRED */}
-          <div className="mt-4 p-4 bg-red-50 rounded border border-red-200">
-            <p className="text-sm text-red-800 font-medium mb-3">
-              🔧 IMMEDIATE FIX REQUIRED:
-            </p>
-            <ol className="list-decimal list-inside text-red-700 text-sm space-y-1">
-              <li>Go to <a href="https://supabase.com/dashboard" target="_blank" className="underline">Supabase Dashboard</a></li>
-              <li>Select your project: <code className="bg-red-100 px-1 rounded">pmbrotwuukafunqpttsm</code></li>
-              <li>Go to <strong>Settings → General</strong></li>
-              <li>Set <strong>Site URL</strong> to: <code className="bg-red-100 px-2 py-1 rounded">https://quickscanar.com</code></li>
-              <li>Click <strong>Save</strong></li>
-              <li>Wait 2-3 minutes for changes to propagate</li>
-            </ol>
-            <p className="text-xs text-red-600 mt-3">
-              <strong>Why this happens:</strong> When Supabase's Site URL is not properly configured, it redirects to relative paths instead of absolute URLs, causing the "No authorization code received" error.
-            </p>
           </div>
         </div>
 
-        {/* Environment Variables Test */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">🔧 Environment Variables Test</h3>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">NEXT_PUBLIC_SUPABASE_URL:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.NEXT_PUBLIC_SUPABASE_URL || 'Not set'}
-              </span>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-yellow-800 mb-4">Troubleshooting Steps</h2>
+          <div className="space-y-3 text-yellow-700">
+            <div className="flex items-start">
+              <span className="font-medium mr-2">1.</span>
+              <span>Check your Supabase project settings: <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline">Dashboard</a></span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">NEXT_PUBLIC_SUPABASE_ANON_KEY:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'Not set'}
-              </span>
+            <div className="flex items-start">
+              <span className="font-medium mr-2">2.</span>
+              <span>Go to Settings → General and set Site URL to: <code className="bg-yellow-100 px-2 py-1 rounded">https://quickscanar.com</code></span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">NEXT_PUBLIC_SITE_URL:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.NEXT_PUBLIC_SITE_URL || 'Not set'}
-              </span>
+            <div className="flex items-start">
+              <span className="font-medium mr-2">3.</span>
+              <span>Wait 2-3 minutes for changes to propagate</span>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">All NEXT_PUBLIC vars:</span>
-              <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                {Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')).length} found
-              </span>
+            <div className="flex items-start">
+              <span className="font-medium mr-2">4.</span>
+              <span>Test the OAuth flow again</span>
             </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-            <p className="text-sm text-yellow-800">
-              <strong>Debug Info:</strong> If NEXT_PUBLIC_SITE_URL shows "Not set", the environment variable is not being read correctly. 
-              This could be why OAuth is still redirecting to localhost.
-            </p>
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-dark-blue bg-white hover:bg-gray-50 border-dark-blue transition-colors"
-          >
-            Back to Home
-          </Link>
-          
-          {user && (
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-dark-blue hover:bg-red-800 ml-3 transition-colors"
-            >
-              Go to Dashboard
-            </Link>
-          )}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-blue-800 mb-4">Expected OAuth Flow</h2>
+          <div className="space-y-2 text-blue-700 text-sm">
+            <div>1. User clicks "Sign in with Google"</div>
+            <div>2. Supabase redirects to Google OAuth</div>
+            <div>3. Google redirects back to: <code className="bg-blue-100 px-1 rounded">https://quickscanar.com/auth/callback?code=...&state=...</code></div>
+            <div>4. Callback route processes the code and creates session</div>
+            <div>5. User is redirected to dashboard</div>
+          </div>
         </div>
       </div>
     </div>
