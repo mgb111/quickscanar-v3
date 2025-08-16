@@ -180,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🔍 Sending to Supabase with FORCED redirect:')
     console.log('  Provider: google')
     console.log('  RedirectTo (FORCED):', redirectUrl)
+    console.log('  QueryParams.redirect_to (FORCED):', redirectUrl)
     console.log('  Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
     // CRITICAL: Set up redirect interceptor BEFORE calling OAuth
@@ -222,7 +223,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl
+          redirectTo: redirectUrl,
+          queryParams: {
+            redirect_to: redirectUrl
+          }
         }
       })
 
