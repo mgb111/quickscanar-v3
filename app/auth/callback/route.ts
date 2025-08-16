@@ -27,13 +27,30 @@ export async function GET(request: Request) {
     )
     
     try {
-      await supabase.auth.exchangeCodeForSession(code)
+      // CRITICAL: Wait for the result and check if it was successful
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error('Error exchanging code for session:', error)
+        return NextResponse.redirect(new URL('/auth/signin?error=auth_error', requestUrl.origin))
+      }
+      
+      if (!data.session) {
+        console.error('No session created after code exchange')
+        return NextResponse.redirect(new URL('/auth/signin?error=no_session', requestUrl.origin))
+      }
+      
+      console.log('✅ Session created successfully for user:', data.session.user.email)
+      
     } catch (error) {
       console.error('Error exchanging code for session:', error)
       return NextResponse.redirect(new URL('/auth/signin?error=auth_error', requestUrl.origin))
     }
+  } else {
+    console.error('No authorization code received')
+    return NextResponse.redirect(new URL('/auth/signin?error=no_code', requestUrl.origin))
   }
 
-  // Important: Use absolute URL for redirect in production
+  // Only redirect to dashboard if session creation was successful
   return NextResponse.redirect(new URL(next, requestUrl.origin))
 }
