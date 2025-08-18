@@ -32,17 +32,15 @@ CREATE TABLE subscription_plans (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create payment history table
+-- Table for payment history
 CREATE TABLE payment_history (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  subscription_id UUID REFERENCES user_subscriptions(id) ON DELETE CASCADE,
-  polar_invoice_id VARCHAR(255) NOT NULL,
-  amount INTEGER NOT NULL, -- Amount in cents
-  currency VARCHAR(3) NOT NULL DEFAULT 'USD',
-  status VARCHAR(50) NOT NULL CHECK (status IN ('succeeded', 'failed', 'pending', 'canceled')),
-  payment_method VARCHAR(100),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    polar_order_id TEXT UNIQUE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    amount BIGINT NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    payment_date TIMESTAMPTZ NOT NULL
 );
 
 -- Create usage tracking table

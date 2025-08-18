@@ -9,33 +9,34 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-    const signature = request.headers.get('polar-signature')
-    
-    // Verify webhook signature (you should implement proper signature verification)
-    // For now, we'll trust the webhook
+    // TODO: Implement proper signature verification using POLAR_WEBHOOK_SECRET
+    // const signature = request.headers.get('polar-signature')
     
     const event = JSON.parse(body)
     console.log('Polar.sh webhook received:', event.type)
 
     switch (event.type) {
-      case 'customer.subscription.created':
+      // Subscription events
+      case 'subscription.created':
         await handleSubscriptionCreated(event.data)
         break
-      
-      case 'customer.subscription.updated':
+      case 'subscription.updated':
+      case 'subscription.active':
         await handleSubscriptionUpdated(event.data)
         break
-      
-      case 'customer.subscription.deleted':
+      case 'subscription.canceled':
+      case 'subscription.revoked':
         await handleSubscriptionDeleted(event.data)
         break
       
-      case 'invoice.payment_succeeded':
+      // Order/Payment events
+      case 'order.paid':
         await handlePaymentSucceeded(event.data)
         break
-      
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data)
+      case 'order.updated':
+        // This event can signify many things. We might handle payment failures here.
+        // For now, let's just log it to see the payload.
+        console.log('Order updated event received:', JSON.stringify(event.data, null, 2))
         break
       
       default:
@@ -58,14 +59,14 @@ async function handleSubscriptionCreated(subscription: any) {
       .from('user_subscriptions')
       .upsert({
         polar_subscription_id: subscription.id,
-        user_id: subscription.customer_id, // This now correctly links to the Supabase user ID
-        plan_name: subscription.plan_name || 'Unknown Plan',
+        user_id: subscription.customer_id,
+        plan_name: subscription.price.product.name || 'Unknown Plan',
         status: subscription.status,
         current_period_start: subscription.current_period_start,
         current_period_end: subscription.current_period_end,
         cancel_at_period_end: subscription.cancel_at_period_end,
-        created_at: subscription.created,
-        updated_at: subscription.updated
+        created_at: subscription.created_at,
+        updated_at: new Date().toISOString()
       })
 
     if (error) {
@@ -74,7 +75,7 @@ async function handleSubscriptionCreated(subscription: any) {
       console.log('Subscription created in Supabase:', subscription.id)
     }
   } catch (error) {
-    console.error('Error handling subscription created:', error)
+    console.error('Error handling subscription.created:', error)
   }
 }
 
@@ -83,12 +84,12 @@ async function handleSubscriptionUpdated(subscription: any) {
     const { error } = await supabase
       .from('user_subscriptions')
       .update({
-        plan_name: subscription.plan_name || 'Unknown Plan',
+        plan_name: subscription.price.product.name || 'Unknown Plan',
         status: subscription.status,
         current_period_start: subscription.current_period_start,
         current_period_end: subscription.current_period_end,
         cancel_at_period_end: subscription.cancel_at_period_end,
-        updated_at: subscription.updated
+        updated_at: new Date().toISOString()
       })
       .eq('polar_subscription_id', subscription.id)
 
@@ -98,7 +99,7 @@ async function handleSubscriptionUpdated(subscription: any) {
       console.log('Subscription updated in Supabase:', subscription.id)
     }
   } catch (error) {
-    console.error('Error handling subscription updated:', error)
+    console.error('Error handling subscription.updated:', error)
   }
 }
 
@@ -113,93 +114,53 @@ async function handleSubscriptionDeleted(subscription: any) {
       .eq('polar_subscription_id', subscription.id)
 
     if (error) {
-      console.error('Error updating subscription status in Supabase:', error)
+      console.error('Error marking subscription as canceled in Supabase:', error)
     } else {
       console.log('Subscription marked as canceled in Supabase:', subscription.id)
     }
   } catch (error) {
-    console.error('Error handling subscription deleted:', error)
+    console.error('Error handling subscription.canceled:', error)
   }
 }
 
-async function handlePaymentSucceeded(invoice: any) {
+async function handlePaymentSucceeded(order: any) {
   try {
-    // Update subscription status if needed
-    if (invoice.subscription_id) {
+    // When an order is paid, the subscription is typically created or renewed.
+    // Let's ensure the subscription status is active.
+    if (order.subscription_id) {
       const { error } = await supabase
         .from('user_subscriptions')
         .update({
           status: 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('polar_subscription_id', invoice.subscription_id)
+        .eq('polar_subscription_id', order.subscription_id)
 
       if (error) {
         console.error('Error updating subscription status after payment:', error)
       } else {
-        console.log('Subscription status updated after successful payment:', invoice.subscription_id)
+        console.log('Subscription status updated to active after successful payment:', order.subscription_id)
       }
     }
 
-    // Log payment in payment_history table
+    // Log the successful payment in the payment_history table
     const { error: paymentError } = await supabase
       .from('payment_history')
       .insert({
-        polar_invoice_id: invoice.id,
-        user_id: invoice.customer_id, // This now correctly links to the Supabase user ID
-        amount: invoice.amount,
-        currency: invoice.currency,
+        polar_order_id: order.id, // Using order ID instead of invoice ID
+        user_id: order.customer_id,
+        amount: order.amount,
+        currency: order.currency,
         status: 'succeeded',
-        payment_date: new Date().toISOString()
+        payment_date: order.created_at || new Date().toISOString()
       })
 
     if (paymentError) {
       console.error('Error logging payment in Supabase:', paymentError)
     } else {
-      console.log('Payment logged in Supabase:', invoice.id)
+      console.log('Successful payment logged in Supabase for order:', order.id)
     }
   } catch (error) {
-    console.error('Error handling payment succeeded:', error)
-  }
-}
-
-async function handlePaymentFailed(invoice: any) {
-  try {
-    // Update subscription status if needed
-    if (invoice.subscription_id) {
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({
-          status: 'past_due',
-          updated_at: new Date().toISOString()
-        })
-        .eq('polar_subscription_id', invoice.subscription_id)
-
-      if (error) {
-        console.error('Error updating subscription status after failed payment:', error)
-      } else {
-        console.log('Subscription status updated after failed payment:', invoice.subscription_id)
-      }
-    }
-
-    // Log failed payment
-    const { error: paymentError } = await supabase
-      .from('payment_history')
-      .insert({
-        polar_invoice_id: invoice.id,
-        user_id: invoice.customer_id, // This now correctly links to the Supabase user ID
-        amount: invoice.amount,
-        currency: invoice.currency,
-        status: 'failed',
-        payment_date: new Date().toISOString()
-      })
-
-    if (paymentError) {
-      console.error('Error logging failed payment in Supabase:', paymentError)
-    } else {
-      console.log('Failed payment logged in Supabase:', invoice.id)
-    }
-  } catch (error) {
-    console.error('Error handling payment failed:', error)
+    console.error('Error handling order.paid:', error)
   }
 }
