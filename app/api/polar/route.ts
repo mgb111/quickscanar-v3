@@ -50,6 +50,13 @@ export async function GET(request: NextRequest) {
     }
 
     switch (action) {
+      case 'health':
+        return NextResponse.json({ 
+          status: 'ok', 
+          timestamp: new Date().toISOString(),
+          polarApiKey: !!process.env.POLAR_API_KEY,
+          polarApiUrl: POLAR_API_URL
+        })
       case 'subscription':
         return await getSubscription(userId)
       case 'prices':
@@ -147,7 +154,20 @@ async function getSubscription(userId: string) {
 
 async function getPrices() {
   try {
+    console.log('🔍 getPrices called - POLAR_API_KEY exists:', !!process.env.POLAR_API_KEY)
+    console.log('🔍 POLAR_API_URL:', POLAR_API_URL)
+    
+    // Check if API key exists
+    if (!process.env.POLAR_API_KEY) {
+      console.error('❌ POLAR_API_KEY not found in environment variables')
+      return NextResponse.json(
+        { error: 'Polar.sh API key not configured' },
+        { status: 500 }
+      )
+    }
+
     // Fetch available pricing tiers from Polar.sh
+    console.log('📡 Fetching from:', `${POLAR_API_URL}/prices`)
     const response = await fetch(`${POLAR_API_URL}/prices`, {
       headers: {
         'Authorization': `Bearer ${process.env.POLAR_API_KEY}`,
@@ -155,11 +175,17 @@ async function getPrices() {
       }
     })
 
+    console.log('📡 Response status:', response.status)
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      throw new Error('Failed to fetch prices from Polar.sh')
+      const errorText = await response.text()
+      console.error('❌ Polar.sh API error:', response.status, errorText)
+      throw new Error(`Failed to fetch prices from Polar.sh: ${response.status} ${errorText}`)
     }
 
     const prices = await response.json()
+    console.log('✅ Raw prices from Polar.sh:', prices)
     
     // Filter and format prices for QuickScanAR
     const formattedPrices = prices.data
@@ -174,11 +200,13 @@ async function getPrices() {
         description: getDescriptionForPrice(price.unit_amount, price.recurring.interval)
       }))
 
+    console.log('🎯 Formatted prices:', formattedPrices)
     return NextResponse.json({ prices: formattedPrices })
   } catch (error) {
-    console.error('Error fetching prices:', error)
+    console.error('💥 Error in getPrices:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch pricing information' },
+      { error: 'Failed to fetch pricing information', details: errorMessage },
       { status: 500 }
     )
   }

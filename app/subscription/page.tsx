@@ -46,9 +46,13 @@ export default function SubscriptionPage() {
   const [isSubscribing, setIsSubscribing] = useState(false)
 
   useEffect(() => {
+    console.log('🔐 Subscription page useEffect - User:', user, 'Loading:', loading)
     if (user) {
+      console.log('✅ User authenticated, fetching plans and subscription...')
       fetchPlans()
       fetchCurrentSubscription()
+    } else {
+      console.log('❌ No user found, plans will not be fetched')
     }
   }, [user])
 
@@ -71,9 +75,13 @@ export default function SubscriptionPage() {
 
   const fetchPlans = async () => {
     try {
+      console.log('🔍 Fetching plans from API...')
       const response = await fetch('/api/polar?action=prices')
+      console.log('📡 API Response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Plans data received:', data)
         const formattedPlans = data.prices.map((price: any) => ({
           id: price.id,
           name: price.name,
@@ -86,11 +94,20 @@ export default function SubscriptionPage() {
           recommended: price.amount >= 999 && price.amount < 4999 && price.recurring.interval === 'month',
           polarCheckoutUrl: price.checkout_url || `https://buy.polar.sh/${price.id}`
         }))
+        console.log('🎯 Formatted plans:', formattedPlans)
         setPlans(formattedPlans)
+      } else {
+        console.error('❌ API call failed:', response.status, response.statusText)
+        const errorData = await response.text()
+        console.error('❌ Error details:', errorData)
+        // Fallback to default plans with actual Polar.sh checkout URL
+        console.log('🔄 Falling back to default plans...')
+        setPlans(getDefaultPlans())
       }
     } catch (error) {
-      console.error('Failed to fetch plans:', error)
+      console.error('💥 Error fetching plans:', error)
       // Fallback to default plans with actual Polar.sh checkout URL
+      console.log('🔄 Falling back to default plans due to error...')
       setPlans(getDefaultPlans())
     }
     setIsLoading(false)
@@ -319,6 +336,56 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Debug Information - Remove this after fixing the issue */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium">Debug Info</h3>
+              <div className="mt-2 text-sm">
+                <p><strong>User:</strong> {user ? `Authenticated (${user.email})` : 'Not authenticated'}</p>
+                <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
+                <p><strong>Plans Count:</strong> {plans.length}</p>
+                <p><strong>Current Subscription:</strong> {currentSubscription ? 'Yes' : 'No'}</p>
+                <p><strong>Is Loading:</strong> {isLoading ? 'Yes' : 'No'}</p>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => {
+                    console.log('🧪 Manual test button clicked')
+                    fetchPlans()
+                  }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
+                >
+                  Test Fetch Plans
+                </button>
+                <button
+                  onClick={async () => {
+                    console.log('🧪 Testing API health...')
+                    try {
+                      const response = await fetch('/api/polar?action=health')
+                      const data = await response.json()
+                      console.log('🏥 API Health:', data)
+                      alert(`API Health: ${JSON.stringify(data, null, 2)}`)
+                    } catch (error) {
+                      console.error('💥 Health check failed:', error)
+                      alert('Health check failed')
+                    }
+                  }}
+                  className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600 ml-2"
+                >
+                  Test API Health
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
