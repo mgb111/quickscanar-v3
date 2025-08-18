@@ -11,7 +11,6 @@ import toast from 'react-hot-toast'
 interface ARExperience {
   id: string
   title: string
-  description: string
   mind_file_url: string
   video_file_url: string
   user_id: string
@@ -23,7 +22,6 @@ export default function CreateExperience() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
   const [useCustomMind, setUseCustomMind] = useState(false)
@@ -136,7 +134,6 @@ export default function CreateExperience() {
       // Create AR experience record
       const experienceData = {
         title: title.trim(),
-        description: description.trim(),
         video_file_url: videoUrl,
         mind_file_url: mindUrl || null,
         user_id: user!.id
@@ -178,7 +175,7 @@ export default function CreateExperience() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-dark-blue"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
       </div>
     )
   }
@@ -200,12 +197,12 @@ export default function CreateExperience() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center text-black mb-8">
-          <div className="flex justify-center mb-4">
+        {/* Header Section */}
+        <div className="text-center text-black mb-12">
+          <div className="flex justify-center mb-6">
             <Link 
               href="/dashboard" 
-              className="inline-flex items-center text-dark-blue hover:text-blue-900 text-sm font-medium"
+              className="inline-flex items-center text-red-600 hover:text-red-800 text-sm font-medium"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
@@ -214,99 +211,95 @@ export default function CreateExperience() {
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
             Create AR Experience
           </h1>
-          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed mb-6">
+          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
             Build an augmented reality experience that plays videos when you point your camera at specific images
           </p>
         </div>
 
         {/* Step 1: Compile Image to AR Format */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+              <h3 className="text-2xl font-semibold mb-3 text-black flex items-center">
+                <Camera className="h-6 w-6 mr-3 text-red-600" />
                 Step 1: Compile Image to AR Format
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-lg">
                 First, convert your image to AR-ready format using our compiler
               </p>
             </div>
             <Link
               href="/compiler"
-              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+              className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
             >
               Go to Compiler
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRight className="h-5 w-5 ml-2" />
             </Link>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">What happens in the compiler:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Upload your image (JPG, PNG, etc.)</li>
-              <li>• Our AI processes it to create a .mind file</li>
-              <li>• The .mind file contains the image recognition data</li>
-              <li>• Download the .mind file to use in your AR experience</li>
+          <div className="bg-cream border border-black rounded-xl p-6">
+            <h4 className="font-semibold text-black mb-4 text-lg">What happens in the compiler:</h4>
+            <ul className="text-black space-y-2 text-base">
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Upload your image (JPG, PNG, etc.)
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Our AI processes it to create a .mind file
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                The .mind file contains the image recognition data
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Download the .mind file to use in your AR experience
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Step 2: Create AR Experience Form */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
-            <Upload className="h-5 w-5 mr-2 text-dark-blue" />
+        <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
+          <h3 className="text-2xl font-semibold mb-6 text-black flex items-center">
+            <Upload className="h-6 w-6 mr-3 text-red-600" />
             Step 2: Create New AR Experience
           </h3>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title and Description */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Experience Title *
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent"
-                  placeholder="Enter a descriptive title"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-blue focus:border-transparent"
-                  placeholder="Describe what users will see"
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Title Input */}
+            <div>
+              <label htmlFor="title" className="block text-lg font-medium text-black mb-3">
+                Experience Title *
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-6 py-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-red-600 focus:border-transparent text-lg"
+                placeholder="Enter a descriptive title"
+                required
+              />
             </div>
 
             {/* File Uploads */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-black mb-3">
                   Video File *
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
-                    <div className="space-y-2">
-                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
-                      <p className="text-sm text-gray-600">{videoFile.name}</p>
+                    <div className="space-y-3">
+                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                      <p className="text-base text-black font-medium">{videoFile.name}</p>
                       <button
                         type="button"
                         onClick={() => removeFile('video')}
-                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto"
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
                       >
                         <X className="h-4 w-4 mr-1" />
                         Remove
@@ -314,13 +307,13 @@ export default function CreateExperience() {
                     </div>
                   ) : (
                     <div>
-                      <Video className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        <label htmlFor="video-upload" className="cursor-pointer text-dark-blue hover:text-blue-700">
+                      <Video className="h-10 w-10 text-black mx-auto mb-3" />
+                      <p className="text-base text-black">
+                        <label htmlFor="video-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
                           Click to upload video
                         </label>
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">MP4, WebM, or other common formats</p>
+                      <p className="text-sm text-gray-600 mt-2">MP4, WebM, or other common formats</p>
                       <input
                         id="video-upload"
                         type="file"
@@ -335,33 +328,33 @@ export default function CreateExperience() {
 
               {/* Mind File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-black mb-3">
                   Mind File (.mind)
                 </label>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="use-custom-mind"
                       checked={useCustomMind}
                       onChange={(e) => setUseCustomMind(e.target.checked)}
-                      className="h-4 w-4 text-dark-blue focus:ring-dark-blue border-gray-300 rounded"
+                      className="h-5 w-5 text-red-600 focus:ring-red-600 border-black rounded"
                     />
-                    <label htmlFor="use-custom-mind" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="use-custom-mind" className="ml-3 text-base text-black font-medium">
                       Use custom mind file
                     </label>
                   </div>
                   
                   {!useCustomMind && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-dark-blue transition-colors">
+                    <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                       {mindFile ? (
-                        <div className="space-y-2">
-                          <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
-                          <p className="text-sm text-gray-600">{mindFile.name}</p>
+                        <div className="space-y-3">
+                          <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                          <p className="text-base text-black font-medium">{mindFile.name}</p>
                           <button
                             type="button"
                             onClick={() => removeFile('mind')}
-                            className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto"
+                            className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
                           >
                             <X className="h-4 w-4 mr-1" />
                             Remove
@@ -369,13 +362,13 @@ export default function CreateExperience() {
                         </div>
                       ) : (
                         <div>
-                          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600">
-                            <label htmlFor="mind-upload" className="cursor-pointer text-dark-blue hover:text-blue-700">
+                          <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                          <p className="text-base text-black">
+                            <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
                               Upload .mind file
                             </label>
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">From Step 1 compiler</p>
+                          <p className="text-sm text-gray-600 mt-2">From Step 1 compiler</p>
                           <input
                             id="mind-upload"
                             type="file"
@@ -392,20 +385,20 @@ export default function CreateExperience() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-4">
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-dark-blue text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="bg-red-600 text-white px-12 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-lg shadow-lg"
               >
                 {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
                     Creating Experience...
                   </>
                 ) : (
                   <>
-                    <Plus className="h-5 w-5 mr-2" />
+                    <Plus className="h-6 w-6 mr-2" />
                     Create AR Experience
                   </>
                 )}
@@ -414,14 +407,14 @@ export default function CreateExperience() {
 
             {/* Progress Bar */}
             {submitting && compilationProgress > 0 && (
-              <div className="mt-4">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <div className="mt-6">
+                <div className="flex justify-between text-base text-black mb-3 font-medium">
                   <span>Compiling...</span>
                   <span>{compilationProgress}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-cream border-2 border-black rounded-full h-3">
                   <div
-                    className="bg-dark-blue h-2 rounded-full transition-all duration-300"
+                    className="bg-red-600 h-3 rounded-full transition-all duration-300"
                     style={{ width: `${compilationProgress}%` }}
                   ></div>
                 </div>
@@ -431,23 +424,23 @@ export default function CreateExperience() {
         </div>
 
         {/* How to Use Your AR Experience */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mt-8 shadow-sm">
-          <h3 className="text-xl font-semibold mb-4 text-black flex items-center">
-            <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+        <div className="bg-white border border-black rounded-2xl p-8 shadow-lg">
+          <h3 className="text-2xl font-semibold mb-6 text-black flex items-center">
+            <Camera className="h-6 w-6 mr-3 text-red-600" />
             How to Use Your AR Experience
           </h3>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <h4 className="font-medium text-gray-800 mb-3">For You (Creator):</h4>
-              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+              <h4 className="font-semibold text-black mb-4 text-lg">For You (Creator):</h4>
+              <ol className="text-black space-y-3 list-decimal list-inside text-base">
                 <li>After creating, you'll get a unique link to your experience</li>
                 <li>Share this link with others or embed it on your website</li>
                 <li>You can edit or delete your experience anytime from your dashboard</li>
               </ol>
             </div>
             <div>
-              <h4 className="font-medium text-gray-800 mb-3">For Users:</h4>
-              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+              <h4 className="font-semibold text-black mb-4 text-lg">For Users:</h4>
+              <ol className="text-black space-y-3 list-decimal list-inside text-base">
                 <li>Open the link on their phone (works best on mobile)</li>
                 <li>Allow camera access when prompted</li>
                 <li>Point their camera at the image you used to create the .mind file</li>
@@ -456,9 +449,9 @@ export default function CreateExperience() {
             </div>
           </div>
           
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">💡 Pro Tips:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+          <div className="mt-8 p-6 bg-cream border-2 border-black rounded-xl">
+            <h4 className="font-semibold text-black mb-3 text-lg">💡 Pro Tips:</h4>
+            <ul className="text-black space-y-2 text-base">
               <li>• Use high-quality, clear images for better recognition</li>
               <li>• Keep videos under 2 minutes for best performance</li>
               <li>• Test your experience on different devices</li>

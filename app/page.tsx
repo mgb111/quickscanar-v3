@@ -17,7 +17,7 @@ function HomePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-dark-blue"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
       </div>
     )
   }
@@ -34,21 +34,21 @@ function HomePage() {
       />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-50 to-indigo-100 py-20 lg:py-32">
+      <section className="relative bg-cream py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+              <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
                 Transform Your
-                <span className="block text-dark-blue">Marketing with AR</span>
+                <span className="block text-red-600">Marketing with AR</span>
               </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
                 Create immersive augmented reality experiences that drive engagement, boost brand awareness, and deliver measurable ROI through experiential marketing.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/compiler"
-                  className="bg-dark-blue text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-800 transition-colors flex items-center justify-center"
+                  className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black"
                 >
                   Create AR
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -59,7 +59,7 @@ function HomePage() {
               <img 
                 src="/ar-experience-preview.gif" 
                 alt="AR Experience Preview"
-                className="w-full h-auto rounded-2xl shadow-2xl"
+                className="w-full h-auto rounded-2xl shadow-2xl border-2 border-black"
                 style={{ 
                   aspectRatio: '1/1',
                   objectFit: 'cover'
@@ -74,38 +74,38 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Everything You Need to Create AR Experiences
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               Powerful AR tools designed to capture attention and convert visitors into customers
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Camera className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">AR Target Compiler</h3>
-              <p className="text-gray-600 text-lg">
+              <h3 className="text-2xl font-bold text-black mb-4">AR Target Compiler</h3>
+              <p className="text-black opacity-80 text-lg">
                 Convert any image into AR-ready targets with our advanced MindAR compilation engine
               </p>
             </div>
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Video className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Experience Builder</h3>
-              <p className="text-gray-600 text-lg">
+              <h3 className="text-2xl font-bold text-black mb-4">Experience Builder</h3>
+              <p className="text-black opacity-80 text-lg">
                 Create immersive AR experiences by combining targets with videos and interactive content
               </p>
             </div>
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Analytics Dashboard</h3>
-              <p className="text-gray-600 text-lg">
+              <h3 className="text-2xl font-bold text-black mb-4">Analytics Dashboard</h3>
+              <p className="text-black opacity-80 text-lg">
                 Track engagement metrics and measure ROI with detailed performance insights
               </p>
             </div>
@@ -114,28 +114,28 @@ function HomePage() {
       </section>
 
       {/* Trusted by Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Trusted by 150+ Creators
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               Join the community of creators who are already using AR to boost their marketing results
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">50+</div>
-              <p className="text-lg text-gray-600">AR Experiences per month</p>
+              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">50+</div>
+              <p className="text-lg text-black opacity-80">AR Experiences per month</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">10 min</div>
-              <p className="text-lg text-gray-600">Average creation time</p>
+              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">10 min</div>
+              <p className="text-lg text-black opacity-80">Average creation time</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">300%</div>
-              <p className="text-lg text-gray-600">Increase in engagement</p>
+              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">300%</div>
+              <p className="text-lg text-black opacity-80">Increase in engagement</p>
             </div>
           </div>
         </div>
@@ -145,26 +145,26 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Loved by Creators Worldwide
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               See what creators are saying about their AR marketing success
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 rounded-2xl p-8">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center text-white font-bold text-xl">J</div>
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">J</div>
                 <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-gray-900">John Smith</h4>
-                  <p className="text-gray-600">Marketing Director</p>
+                  <h4 className="text-xl font-semibold text-black">John Smith</h4>
+                  <p className="text-black opacity-80">Marketing Director</p>
                 </div>
               </div>
-              <p className="text-gray-600 mb-6 text-lg">
+              <p className="text-black opacity-80 mb-6 text-lg">
                 "QuickScanAR transformed our trade show experience. We saw a 300% increase in booth engagement!"
               </p>
-              <div className="flex text-yellow-400">
+              <div className="flex text-red-600">
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
@@ -172,18 +172,18 @@ function HomePage() {
                 <Star className="h-5 w-5 fill-current" />
               </div>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center text-white font-bold text-xl">S</div>
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">S</div>
                 <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-gray-900">Sarah Johnson</h4>
-                  <p className="text-gray-600">Brand Manager</p>
+                  <h4 className="text-xl font-semibold text-black">Sarah Johnson</h4>
+                  <p className="text-black opacity-80">Brand Manager</p>
                 </div>
               </div>
-              <p className="text-gray-600 mb-6 text-lg">
+              <p className="text-black opacity-80 mb-6 text-lg">
                 "The AR experiences we created drove 45% higher conversion rates than our traditional campaigns."
               </p>
-              <div className="flex text-yellow-400">
+              <div className="flex text-red-600">
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
@@ -191,18 +191,18 @@ function HomePage() {
                 <Star className="h-5 w-5 fill-current" />
               </div>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-dark-blue rounded-full flex items-center justify-center text-white font-bold text-xl">M</div>
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">M</div>
                 <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-gray-900">Mike Chen</h4>
-                  <p className="text-gray-600">Creative Director</p>
+                  <h4 className="text-xl font-semibold text-black">Mike Chen</h4>
+                  <p className="text-black opacity-80">Creative Director</p>
                 </div>
               </div>
-              <p className="text-gray-600 mb-6 text-lg">
+              <p className="text-black opacity-80 mb-6 text-lg">
                 "Our customers spend 2.5x longer with AR content. It's a game-changer for engagement!"
               </p>
-              <div className="flex text-yellow-400">
+              <div className="flex text-red-600">
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
                 <Star className="h-5 w-5 fill-current" />
@@ -215,55 +215,55 @@ function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               Start free and scale as you grow. No hidden fees, no surprises.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Free Plan */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
+            <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                <div className="text-4xl font-bold text-dark-blue mb-2">$0</div>
-                <p className="text-gray-600">Forever</p>
+                <h3 className="text-2xl font-bold text-black mb-2">Free</h3>
+                <div className="text-4xl font-bold text-red-600 mb-2">$0</div>
+                <p className="text-black opacity-80">Forever</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">1 AR Experience</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">1 AR Experience</span>
                 </li>
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Basic Analytics</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Basic Analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Community Support</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Community Support</span>
                 </li>
               </ul>
               <Link
                 href="/compiler"
-                className="w-full bg-dark-blue text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-800 transition-colors text-center block"
+                className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Get Started Free
               </Link>
             </div>
 
             {/* Monthly Plan */}
-            <div className="bg-dark-blue rounded-2xl p-8 border-2 border-dark-blue relative">
+            <div className="bg-red-600 rounded-2xl p-8 border-2 border-black relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold">Most Popular</span>
+                <span className="bg-white text-red-600 px-4 py-2 rounded-full text-sm font-semibold border-2 border-black">Most Popular</span>
               </div>
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-white mb-2">Monthly</h3>
                 <div className="text-4xl font-bold text-white mb-2">$49</div>
-                <p className="text-blue-100">per month</p>
+                <p className="text-white opacity-90">per month</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
@@ -285,43 +285,43 @@ function HomePage() {
               </ul>
               <Link
                 href="/auth/signup"
-                className="w-full bg-white text-dark-blue py-4 px-6 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-center block"
+                className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
                 Start Monthly Plan
               </Link>
             </div>
 
             {/* Annual Plan */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
+            <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold mb-4 inline-block">
+                <div className="bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-semibold mb-4 inline-block border border-red-600">
                   Save $89/year
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Annual</h3>
-                <div className="text-4xl font-bold text-dark-blue mb-2">$499</div>
-                <p className="text-gray-600">per year</p>
+                <h3 className="text-2xl font-bold text-black mb-2">Annual</h3>
+                <div className="text-4xl font-bold text-red-600 mb-2">$499</div>
+                <p className="text-black opacity-80">per year</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Unlimited AR Campaigns</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Unlimited AR Campaigns</span>
                 </li>
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Premium Analytics</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Premium Analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">24/7 Support</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">24/7 Support</span>
                 </li>
                 <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">White-label Solutions</span>
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">White-label Solutions</span>
                 </li>
               </ul>
               <Link
                 href="/auth/signup"
-                className="w-full bg-dark-blue text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-800 transition-colors text-center block"
+                className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Start Annual Plan
               </Link>
@@ -334,99 +334,99 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Why Use QuickScanAR?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               Discover the advantages that make us the preferred choice for AR marketing
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Smartphone className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Lightning Fast</h3>
-              <p className="text-gray-600">Create AR experiences in minutes, not hours</p>
+              <h3 className="text-xl font-bold text-black mb-4">Lightning Fast</h3>
+              <p className="text-black opacity-80">Create AR experiences in minutes, not hours</p>
             </div>
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">High Converting</h3>
-              <p className="text-gray-600">Proven to increase engagement and conversions</p>
+              <h3 className="text-xl font-bold text-black mb-4">High Converting</h3>
+              <p className="text-black opacity-80">Proven to increase engagement and conversions</p>
             </div>
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Users className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">User Friendly</h3>
-              <p className="text-gray-600">No technical skills required</p>
+              <h3 className="text-xl font-bold text-black mb-4">User Friendly</h3>
+              <p className="text-black opacity-80">No technical skills required</p>
             </div>
             <div className="text-center">
-              <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Scalable</h3>
-              <p className="text-gray-600">Grow from 1 to 1000+ AR experiences</p>
+              <h3 className="text-xl font-bold text-black mb-4">Scalable</h3>
+              <p className="text-black opacity-80">Grow from 1 to 1000+ AR experiences</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Use Cases Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Perfect For Every Business
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               From startups to enterprise, AR marketing works for every industry and business size
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Camera className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Product Launches</h3>
-              <p className="text-gray-600">Create buzz with interactive product demos and virtual try-ons</p>
+              <h3 className="text-xl font-bold text-black mb-4">Product Launches</h3>
+              <p className="text-black opacity-80">Create buzz with interactive product demos and virtual try-ons</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Users className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Trade Shows</h3>
-              <p className="text-gray-600">Stand out with immersive booth experiences that capture attention</p>
+              <h3 className="text-xl font-bold text-black mb-4">Trade Shows</h3>
+              <p className="text-black opacity-80">Stand out with immersive booth experiences that capture attention</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Retail Marketing</h3>
-              <p className="text-gray-600">Drive in-store traffic and boost sales with AR-powered campaigns</p>
+              <h3 className="text-xl font-bold text-black mb-4">Retail Marketing</h3>
+              <p className="text-black opacity-80">Drive in-store traffic and boost sales with AR-powered campaigns</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Smartphone className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Social Media</h3>
-              <p className="text-gray-600">Create viral content that drives engagement and brand awareness</p>
+              <h3 className="text-xl font-bold text-black mb-4">Social Media</h3>
+              <p className="text-black opacity-80">Create viral content that drives engagement and brand awareness</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Lead Generation</h3>
-              <p className="text-gray-600">Capture qualified leads with interactive AR experiences</p>
+              <h3 className="text-xl font-bold text-black mb-4">Lead Generation</h3>
+              <p className="text-black opacity-80">Capture qualified leads with interactive AR experiences</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 text-center">
-              <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Star className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Brand Activation</h3>
-              <p className="text-gray-600">Build memorable brand experiences that customers love</p>
+              <h3 className="text-xl font-bold text-black mb-4">Brand Activation</h3>
+              <p className="text-black opacity-80">Build memorable brand experiences that customers love</p>
             </div>
           </div>
         </div>
@@ -436,47 +436,47 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
               Frequently Asked Questions
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-black opacity-80">
               Everything you need to know about QuickScanAR
             </p>
           </div>
           <div className="space-y-8">
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">What is AR marketing?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">What is AR marketing?</h3>
+              <p className="text-black opacity-80 text-lg">
                 AR marketing uses augmented reality technology to create interactive, immersive experiences that engage customers and drive conversions. It overlays digital content onto the real world through smartphones and other devices.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Do I need technical skills to use QuickScanAR?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">Do I need technical skills to use QuickScanAR?</h3>
+              <p className="text-black opacity-80 text-lg">
                 No technical skills required! Our platform is designed to be user-friendly. Simply upload your images, use our AR compiler, and create experiences with our drag-and-drop interface.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">How long does it take to create an AR experience?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">How long does it take to create an AR experience?</h3>
+              <p className="text-black opacity-80 text-lg">
                 Most users create their first AR experience in under 10 minutes. The process involves uploading an image, compiling it for AR, and adding your video content.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">What types of images work best for AR?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">What types of images work best for AR?</h3>
+              <p className="text-black opacity-80 text-lg">
                 High-contrast images with distinct features work best. Logos, product packaging, business cards, and printed materials are ideal. Avoid images with too many similar colors or patterns.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Can I track the performance of my AR campaigns?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">Can I track the performance of my AR campaigns?</h3>
+              <p className="text-black opacity-80 text-lg">
                 Yes! Our analytics dashboard provides detailed insights into engagement, views, interactions, and conversion metrics to help you measure ROI and optimize your campaigns.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Is there a limit to how many AR experiences I can create?</h3>
-              <p className="text-gray-600 text-lg">
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">Is there a limit to how many AR experiences I can create?</h3>
+              <p className="text-black opacity-80 text-lg">
                 Free users can create 1 AR experience. Monthly subscribers get 3 campaigns, and annual subscribers enjoy unlimited AR experiences with premium features.
               </p>
             </div>
@@ -485,17 +485,17 @@ function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-dark-blue">
+      <section className="py-20 bg-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
             Ready to Generate More Leads?
           </h2>
-          <p className="text-xl text-white/90 mb-8">
+          <p className="text-xl text-white opacity-90 mb-8">
             Start your first campaign in minutes.
           </p>
           <Link
             href="/compiler"
-            className="bg-white text-dark-blue px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
+            className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-block border-2 border-white"
           >
             Start Creating Free
           </Link>
@@ -503,21 +503,21 @@ function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+      <footer className="bg-black text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center mb-6">
-                <Camera className="h-8 w-8 text-dark-blue" />
+                <Camera className="h-8 w-8 text-red-600" />
                 <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
               </div>
-              <p className="text-gray-400 text-lg">
+              <p className="text-white opacity-80 text-lg">
                 Transform your marketing with immersive AR experiences that drive engagement and ROI.
               </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-6">Product</h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-3 text-white opacity-80">
                 <li><Link href="/compiler" className="hover:text-white transition-colors">AR Compiler</Link></li>
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
                 <li><Link href="/debug" className="hover:text-white transition-colors">Debug Tools</Link></li>
@@ -525,7 +525,7 @@ function HomePage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-6">Company</h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-3 text-white opacity-80">
                 <li><a href="#" className="hover:text-white transition-colors">About</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
@@ -533,14 +533,14 @@ function HomePage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-6">Connect</h3>
-              <ul className="space-y-3 text-gray-400">
+              <ul className="space-y-3 text-white opacity-80">
                 <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">LinkedIn</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">GitHub</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+          <div className="border-t border-white opacity-20 mt-12 pt-8 text-center text-white opacity-80">
             <p className="text-lg">&copy; 2024 QuickScanAR. All rights reserved.</p>
           </div>
         </div>

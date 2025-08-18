@@ -97,7 +97,7 @@ export default function Dashboard() {
   if (loading || loadingExperiences) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
       </div>
     )
   }
@@ -130,20 +130,20 @@ export default function Dashboard() {
         </div>
 
         {/* Step 1: Create AR Format */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <Upload className="h-5 w-5 mr-2 text-dark-blue" />
+                <Upload className="h-5 w-5 mr-2 text-red-600" />
                 Step 1: Create AR Format
               </h3>
-              <p className="text-gray-600">
+              <p className="text-black opacity-80">
                 First, create AR-ready targets using our MindAR compiler
               </p>
             </div>
             <Link
               href="/compiler"
-              className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
             >
               <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">Create AR</span>
@@ -154,20 +154,20 @@ export default function Dashboard() {
         </div>
 
         {/* Create New Experience */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <Video className="h-5 w-5 mr-2 text-dark-blue" />
+                <Video className="h-5 w-5 mr-2 text-red-600" />
                 Step 2: Create New AR Experience
               </h3>
-              <p className="text-gray-600">
+              <p className="text-black opacity-80">
                 Build your AR experience with videos and converted .mind files
               </p>
             </div>
             <Link
               href="/dashboard/create"
-              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
             >
               <Video className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">Create Experience</span>
@@ -178,20 +178,20 @@ export default function Dashboard() {
         </div>
 
         {/* Analytics */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-dark-blue" />
+                <BarChart3 className="h-5 w-5 mr-2 text-red-600" />
                 Step 3: Track Performance
               </h3>
-              <p className="text-gray-600">
+              <p className="text-black opacity-80">
                 Monitor engagement, conversions, and user behavior with detailed analytics
               </p>
             </div>
             <Link
               href="/analytics"
-              className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
             >
               <BarChart3 className="h-5 w-5 mr-2 hidden sm:inline" />
               <span className="hidden sm:inline">View Analytics</span>
@@ -202,23 +202,23 @@ export default function Dashboard() {
         </div>
 
         {/* Existing Experiences */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 shadow-lg">
           <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
-            <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+            <Camera className="h-5 w-5 mr-2 text-red-600" />
             Your AR Experiences
           </h3>
           
           {experiences.length === 0 ? (
             <div className="text-center py-12">
-              <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No experiences yet</h4>
-              <p className="text-gray-600 mb-6">
+              <Camera className="h-16 w-16 text-black mx-auto mb-4" />
+              <h4 className="text-lg font-medium text-black mb-2">No experiences yet</h4>
+              <p className="text-black opacity-80 mb-6">
                 Start by creating AR format, then create your first experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/compiler"
-                  className="bg-gradient-to-r from-dark-blue to-blue-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-dark-blue transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none"
+                  className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none border-2 border-black"
                 >
                   <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
                   <span className="hidden sm:inline">Create AR First</span>
@@ -232,17 +232,17 @@ export default function Dashboard() {
               {experiences.map((experience) => (
                 <div
                   key={experience.id}
-                  className="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                  className="bg-cream border-2 border-black rounded-xl p-6 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-black mb-2">
                         {experience.title || 'Untitled Experience'}
                       </h4>
-                      <p className="text-sm text-gray-600 mb-3">
+                      <p className="text-sm text-black opacity-80 mb-3">
                         {experience.description || 'No description'}
                       </p>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-black opacity-60">
                         Created: {new Date(experience.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -251,19 +251,19 @@ export default function Dashboard() {
                   <div className="flex space-x-2">
                     <Link
                       href={`/experience/${experience.id}`}
-                      className="flex-1 bg-dark-blue text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-800 transition-colors"
+                      className="flex-1 bg-red-600 text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors border border-black"
                     >
                       View
                     </Link>
                     <button
                       onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
-                      className="bg-white text-dark-blue border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
                     >
                       Share
                     </button>
                     <button
                       onClick={() => deleteExperience(experience.id)}
-                      className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                      className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center border border-black"
                       title="Delete experience"
                     >
                       <Trash2 className="h-4 w-4" />
