@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthProvider'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { 
   CheckCircle, 
@@ -24,7 +24,7 @@ interface SubscriptionSuccess {
   current_period_end: string
 }
 
-export default function SubscriptionSuccessPage() {
+function SubscriptionSuccessContent() {
   const { user, loading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -237,5 +237,13 @@ export default function SubscriptionSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SubscriptionSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SubscriptionSuccessContent />
+    </Suspense>
   )
 }
