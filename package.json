@@ -23,6 +23,7 @@
     "@vercel/blob": "^1.1.1",
     "autoprefixer": "^10.0.1",
     "canvas": "^3.1.2",
+    "dotenv": "^17.2.1",
     "eslint": "^8",
     "eslint-config-next": "^14.2.0",
     "formidable": "^3.5.1",

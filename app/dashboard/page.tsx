@@ -94,6 +94,76 @@ export default function Dashboard() {
     }
   }
 
+  const clearAllStorage = async () => {
+    if (!confirm('⚠️  WARNING: This will delete ALL files from ALL storage buckets. This action cannot be undone. Are you sure?')) {
+      return
+    }
+
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+
+    try {
+      toast.loading('Clearing all storage...', { id: 'storage-clear' })
+      
+      // List all buckets
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
+      
+      if (bucketsError) throw bucketsError
+      
+      let totalDeleted = 0
+      
+      // Clear each bucket
+      for (const bucket of buckets) {
+        // List all files in bucket (including subdirectories)
+        const { data: files, error: listError } = await supabase.storage
+          .from(bucket.name)
+          .list('', { limit: 1000, offset: 0 })
+        
+        if (listError) {
+          console.error(`Failed to list files in ${bucket.name}:`, listError)
+          continue
+        }
+        
+        if (files && files.length > 0) {
+          // Delete all files
+          const filePaths = files.map(file => file.name)
+          const { error: deleteError } = await supabase.storage
+            .from(bucket.name)
+            .remove(filePaths)
+          
+          if (deleteError) {
+            console.error(`Failed to delete files in ${bucket.name}:`, deleteError)
+          } else {
+            totalDeleted += filePaths.length
+            console.log(`Deleted ${filePaths.length} files from ${bucket.name}`)
+          }
+        }
+      }
+      
+      toast.success(`Storage cleared! Deleted ${totalDeleted} files from ${buckets.length} buckets.`, { id: 'storage-clear' })
+      
+      // Also clear database records
+      if (user) {
+        const { error: dbError } = await supabase
+          .from('ar_experiences')
+          .delete()
+          .eq('user_id', user.id)
+        
+        if (dbError) {
+          console.error('Failed to clear database records:', dbError)
+        } else {
+          setExperiences([])
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Storage cleanup error:', error)
+      toast.error(`Failed to clear storage: ${error.message}`, { id: 'storage-clear' })
+    }
+  }
+
   if (loading || loadingExperiences) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -127,6 +197,20 @@ export default function Dashboard() {
           <p className="text-lg sm:text-xl opacity-80 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
             Create and manage your augmented reality experiences
           </p>
+          
+          {/* Storage Cleanup Button */}
+          <div className="mt-6">
+            <button
+              onClick={clearAllStorage}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center mx-auto shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none border-2 border-black"
+            >
+              <Trash2 className="h-5 w-5 mr-2" />
+              Clear All Storage
+            </button>
+            <p className="text-sm text-black opacity-60 mt-2">
+              ⚠️ This will delete ALL files and database records
+            </p>
+          </div>
         </div>
 
         {/* Step 1: Create AR Format */}
