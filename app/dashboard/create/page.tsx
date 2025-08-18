@@ -105,7 +105,8 @@ export default function CreateExperience() {
       })
 
       if (!videoResponse.ok) {
-        throw new Error('Failed to upload video')
+        const err = await videoResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Failed to upload video')
       }
 
       const videoData = await videoResponse.json()
@@ -124,7 +125,8 @@ export default function CreateExperience() {
         })
 
         if (!mindResponse.ok) {
-          throw new Error('Failed to upload mind file')
+          const err = await mindResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to upload mind file')
         }
 
         const mindData = await mindResponse.json()
