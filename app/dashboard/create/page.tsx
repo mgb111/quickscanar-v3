@@ -92,13 +92,13 @@ export default function CreateExperience() {
 
     try {
 
-      // Upload video file
+      // Upload video file to R2
       const videoFormData = new FormData()
       videoFormData.append('file', videoFile)
-      videoFormData.append('userId', user!.id)
+      videoFormData.append('fileType', 'video')
       
-      const videoResponse = await fetch('/api/upload/video', {
-              method: 'POST',
+      const videoResponse = await fetch('/api/upload/r2', {
+        method: 'POST',
         body: videoFormData
       })
 
@@ -110,14 +110,14 @@ export default function CreateExperience() {
       const videoData = await videoResponse.json()
       const videoUrl = videoData.url
 
-      // Upload mind file if provided
+      // Upload mind file to R2
       let mindUrl = ''
       if (mindFile) {
         const mindFormData = new FormData()
         mindFormData.append('file', mindFile)
-        mindFormData.append('userId', user!.id)
+        mindFormData.append('fileType', 'mind')
         
-        const mindResponse = await fetch('/api/upload/mind', {
+        const mindResponse = await fetch('/api/upload/r2', {
           method: 'POST',
           body: mindFormData
         })
