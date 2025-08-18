@@ -24,7 +24,7 @@ export default function CreateExperience() {
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
-  const [useCustomMind, setUseCustomMind] = useState(false)
+
   const [submitting, setSubmitting] = useState(false)
   const [compilationProgress, setCompilationProgress] = useState(0)
 
@@ -74,8 +74,8 @@ export default function CreateExperience() {
       return
     }
 
-    if (!mindFile && !useCustomMind) {
-      toast.error('Please upload a mind file or use a custom one')
+    if (!mindFile) {
+      toast.error('Please upload a mind file')
       return
     }
 
@@ -233,7 +233,7 @@ export default function CreateExperience() {
               className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
           >
               Go to Compiler
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <ArrowLeft className="h-5 w-5 ml-2" />
           </Link>
         </div>
         
@@ -329,56 +329,39 @@ export default function CreateExperience() {
               {/* Mind File Upload */}
               <div>
                 <label className="block text-lg font-medium text-black mb-3">
-                  Mind File (.mind)
+                  Mind File (.mind) *
                 </label>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="use-custom-mind"
-                      checked={useCustomMind}
-                      onChange={(e) => setUseCustomMind(e.target.checked)}
-                      className="h-5 w-5 text-red-600 focus:ring-red-600 border-black rounded"
-                    />
-                    <label htmlFor="use-custom-mind" className="ml-3 text-base text-black font-medium">
-                      Use custom mind file
-                    </label>
-            </div>
-
-                  {!useCustomMind && (
-                    <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
-                      {mindFile ? (
-                        <div className="space-y-3">
-                          <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
-                          <p className="text-base text-black font-medium">{mindFile.name}</p>
-                          <button
-                            type="button"
-                            onClick={() => removeFile('mind')}
-                            className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Remove
-                          </button>
-                        </div>
-                      ) : (
-            <div>
-                          <Upload className="h-10 w-10 text-black mx-auto mb-3" />
-                          <p className="text-base text-black">
-                            <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
-                              Upload .mind file
-              </label>
-              </p>
-                          <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
-                <input
-                            id="mind-upload"
-                  type="file"
-                            accept=".mind"
-                            onChange={handleMindUpload}
-                  className="hidden"
-                />
-                        </div>
-                      )}
-              </div>
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                  {mindFile ? (
+                    <div className="space-y-3">
+                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                      <p className="text-base text-black font-medium">{mindFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => removeFile('mind')}
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                      <p className="text-base text-black">
+                        <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                          Upload .mind file
+                        </label>
+                      </p>
+                      <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
+                      <input
+                        id="mind-upload"
+                        type="file"
+                        accept=".mind"
+                        onChange={handleMindUpload}
+                        className="hidden"
+                      />
+                    </div>
                   )}
                 </div>
               </div>

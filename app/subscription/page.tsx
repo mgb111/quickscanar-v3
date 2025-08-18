@@ -14,6 +14,7 @@ import {
   Crown
 } from 'lucide-react'
 import PricingCard from '@/components/subscription/PricingCard'
+import Header from '@/components/Header'
 import toast from 'react-hot-toast'
 
 interface SubscriptionPlan {
@@ -46,8 +47,46 @@ export default function SubscriptionPage() {
   const [isSubscribing, setIsSubscribing] = useState(false)
 
   useEffect(() => {
+    // Set plans immediately - only the 3 plans that actually exist
+    const actualPlans = [
+      {
+        id: 'price_free',
+        name: 'Free Plan',
+        description: 'Get started with AR experiences',
+        amount: 0,
+        currency: 'USD',
+        interval: 'month',
+        features: ['1 AR Experience', 'Basic Analytics', 'Community Support'],
+        polarCheckoutUrl: undefined
+      },
+      {
+        id: 'price_monthly',
+        name: 'Monthly Plan',
+        description: 'Perfect for growing creators',
+        amount: 9.99,
+        currency: 'USD',
+        interval: 'month',
+        features: ['10 AR Experiences', 'Standard Analytics', 'Email Support', 'Custom Branding'],
+        recommended: true,
+        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
+      },
+      {
+        id: 'price_yearly',
+        name: 'Yearly Plan',
+        description: 'Save 20% with annual billing',
+        amount: 99.99,
+        currency: 'USD',
+        interval: 'year',
+        features: ['10 AR Experiences', 'Standard Analytics', 'Email Support', 'Custom Branding', 'Advanced Templates'],
+        popular: true,
+        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3JBFrWiJY3CTYZ0vkr2Mwj9d'
+      }
+    ]
+    console.log('🔍 Setting actual plans:', actualPlans)
+    setPlans(actualPlans)
+    setIsLoading(false)
+    
     if (user) {
-      fetchPlans()
       fetchCurrentSubscription()
     }
   }, [user])
@@ -68,37 +107,6 @@ export default function SubscriptionPage() {
       }
     }
   }, [])
-
-  const fetchPlans = async () => {
-    try {
-      const response = await fetch('/api/polar?action=prices')
-      
-      if (response.ok) {
-        const data = await response.json()
-        const formattedPlans = data.prices.map((price: any) => ({
-          id: price.id,
-          name: price.name,
-          description: price.description,
-          amount: price.amount,
-          currency: price.currency,
-          interval: price.recurring.interval,
-          features: price.features,
-          popular: price.amount >= 4999 && price.recurring.interval === 'month',
-          recommended: price.amount >= 999 && price.amount < 4999 && price.recurring.interval === 'month',
-          polarCheckoutUrl: price.checkout_url || `https://buy.polar.sh/${price.id}`
-        }))
-        setPlans(formattedPlans)
-      } else {
-        // Fallback to default plans with actual Polar.sh checkout URL
-        setPlans(getDefaultPlans())
-      }
-    } catch (error) {
-      console.error('Error fetching plans:', error)
-      // Fallback to default plans with actual Polar.sh checkout URL
-      setPlans(getDefaultPlans())
-    }
-    setIsLoading(false)
-  }
 
   const fetchCurrentSubscription = async () => {
     if (!user) return
@@ -122,98 +130,6 @@ export default function SubscriptionPage() {
       console.error('Failed to fetch subscription:', error)
     }
   }
-
-  const getDefaultPlans = (): SubscriptionPlan[] => [
-    {
-      id: 'price_free',
-      name: 'Free Plan',
-      description: 'Get started with AR experiences',
-      amount: 0,
-      currency: 'USD',
-      interval: 'month',
-      features: [
-        '1 AR Experience',
-        'Basic Analytics',
-        'Community Support',
-        'Standard Templates'
-      ]
-    },
-    {
-      id: 'price_starter_monthly',
-      name: 'Starter Plan (Monthly)',
-      description: 'Perfect for growing creators',
-      amount: 9.99,
-      currency: 'USD',
-      interval: 'month',
-      features: [
-        '10 AR Experiences',
-        'Standard Analytics',
-        'Email Support',
-        'Custom Branding',
-        'Advanced Templates',
-        'Export Options'
-      ],
-      recommended: true,
-      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
-    },
-    {
-      id: 'price_starter_yearly',
-      name: 'Starter Plan (Yearly)',
-      description: 'Save 20% with annual billing',
-      amount: 99.99,
-      currency: 'USD',
-      interval: 'year',
-      features: [
-        '10 AR Experiences',
-        'Standard Analytics',
-        'Email Support',
-        'Custom Branding',
-        'Advanced Templates',
-        'Export Options'
-      ],
-      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'
-    },
-    {
-      id: 'price_pro_monthly',
-      name: 'Professional Plan (Monthly)',
-      description: 'For businesses and agencies',
-      amount: 49.99,
-      currency: 'USD',
-      interval: 'month',
-      features: [
-        'Unlimited AR Experiences',
-        'Advanced Analytics',
-        'Priority Support',
-        'Custom Branding',
-        'API Access',
-        'White-label Options',
-        'Team Collaboration',
-        'Custom Integrations'
-      ],
-      popular: true,
-      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
-    },
-    {
-      id: 'price_pro_yearly',
-      name: 'Professional Plan (Yearly)',
-      description: 'Save 20% with annual billing',
-      amount: 499.99,
-      currency: 'USD',
-      interval: 'year',
-      features: [
-        'Unlimited AR Experiences',
-        'Advanced Analytics',
-        'Priority Support',
-        'Custom Branding',
-        'API Access',
-        'White-label Options',
-        'Team Collaboration',
-        'Custom Integrations'
-      ],
-      popular: true,
-      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'
-    }
-  ]
 
   const handleSubscribe = async (planId: string, polarCheckoutUrl?: string) => {
     if (!user) {
@@ -324,24 +240,17 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Header */}
-      <div className="bg-white shadow-lg border-b-2 border-black">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-black">Subscription Management</h1>
-              <p className="text-black opacity-80 mt-1">Choose the perfect plan for your AR creation needs</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="bg-cream text-black px-4 py-2 rounded-lg font-medium hover:bg-white border-2 border-black transition-colors">
-                Back to Dashboard
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-black mb-4">Subscription Management</h1>
+          <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
+            Choose the perfect plan for your AR creation needs
+          </p>
+        </div>
+
         {/* Current Subscription Status */}
         {currentSubscription && (
           <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-black mb-8">
@@ -400,16 +309,22 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
-          {plans.map((plan) => (
-            <PricingCard
-              key={plan.id}
-              plan={plan}
-              onSubscribe={() => handleSubscribe(plan.id, plan.polarCheckoutUrl)}
-              currentPlan={currentSubscription?.id}
-              isLoading={isSubscribing}
-            />
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {plans.length === 0 ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-black opacity-80">Loading plans...</p>
+            </div>
+          ) : (
+            plans.map((plan) => (
+              <PricingCard
+                key={plan.id}
+                plan={plan}
+                onSubscribe={() => handleSubscribe(plan.id, plan.polarCheckoutUrl)}
+                currentPlan={currentSubscription?.id}
+                isLoading={isSubscribing}
+              />
+            ))
+          )}
         </div>
 
         {/* Polar.sh Checkout Info */}
