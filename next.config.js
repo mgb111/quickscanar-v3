@@ -8,9 +8,8 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
   },
-  // Increase body size limit for file uploads
-  serverRuntimeConfig: {
-    bodySizeLimit: '100mb'
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
   },
   webpack: (config) => {
     config.resolve.fallback = {

@@ -11,17 +11,33 @@ const supabase = createClient(supabaseUrl, serviceKey, {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🎬 Video upload request received')
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
-    // Check file size (limit to 100MB)
-    const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+    console.log('📁 File details:', {
+      name: file.name,
+      size: file.size,
+      sizeMB: (file.size / 1024 / 1024).toFixed(2),
+      type: file.type
+    })
+
+    // Check file size (limit from environment or default to 100MB)
+    const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '100')
+    const maxSizeInBytes = maxSizeMB * 1024 * 1024
+    console.log('📏 Size check:', {
+      fileSize: file.size,
+      maxSize: maxSizeInBytes,
+      isOverLimit: file.size > maxSizeInBytes
+    })
+    
     if (file.size > maxSizeInBytes) {
       return NextResponse.json({ 
-        error: `Video file too large. Maximum size is 100MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
+        error: `Video file too large. Maximum size is ${maxSizeMB}MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
       }, { status: 413 })
     }
 
