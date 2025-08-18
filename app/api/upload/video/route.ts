@@ -17,11 +17,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
-    // Check file size (limit to 50MB)
-    const maxSizeInBytes = 50 * 1024 * 1024 // 50MB
+    // Check file size (limit to 100MB)
+    const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
     if (file.size > maxSizeInBytes) {
       return NextResponse.json({ 
-        error: `Video file too large. Maximum size is 50MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
+        error: `Video file too large. Maximum size is 100MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
       }, { status: 413 })
     }
 

@@ -10,7 +10,7 @@ const nextConfig = {
   },
   // Increase body size limit for file uploads
   serverRuntimeConfig: {
-    bodySizeLimit: '50mb'
+    bodySizeLimit: '100mb'
   },
   webpack: (config) => {
     config.resolve.fallback = {

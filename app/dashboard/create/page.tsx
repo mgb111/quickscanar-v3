@@ -31,10 +31,10 @@ export default function CreateExperience() {
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (50MB limit to match server)
-      const maxSizeInBytes = 50 * 1024 * 1024 // 50MB
+      // Check file size (100MB limit to match server)
+      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 50MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 100MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
         return
       }
 
@@ -301,7 +301,7 @@ export default function CreateExperience() {
               {/* Video Upload */}
                         <div>
               <label className="block text-lg font-medium text-black mb-3">
-                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 50MB)</span>
+                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
             </label>
               <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
