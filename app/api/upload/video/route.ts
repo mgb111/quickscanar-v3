@@ -17,6 +17,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    // Check file size (limit to 50MB)
+    const maxSizeInBytes = 50 * 1024 * 1024 // 50MB
+    if (file.size > maxSizeInBytes) {
+      return NextResponse.json({ 
+        error: `Video file too large. Maximum size is 50MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
+      }, { status: 413 })
+    }
+
+    // Check file type
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}` 
+      }, { status: 400 })
+    }
+
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)

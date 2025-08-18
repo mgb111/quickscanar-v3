@@ -31,10 +31,20 @@ export default function CreateExperience() {
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      if (file.size > 100 * 1024 * 1024) { // 100MB limit
-        toast.error('Video file must be smaller than 100MB')
+      // Check file size (50MB limit to match server)
+      const maxSizeInBytes = 50 * 1024 * 1024 // 50MB
+      if (file.size > maxSizeInBytes) {
+        toast.error(`Video file too large. Maximum size is 50MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
         return
       }
+
+      // Check file type
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
+        return
+      }
+
       setVideoFile(file)
       toast.success('Video uploaded successfully!')
     }
@@ -289,11 +299,11 @@ export default function CreateExperience() {
             {/* File Uploads */}
             <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload */}
-            <div>
-                <label className="block text-lg font-medium text-black mb-3">
-                  Video File *
-              </label>
-                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                        <div>
+              <label className="block text-lg font-medium text-black mb-3">
+                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 50MB)</span>
+            </label>
+              <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
                     <div className="space-y-3">
                       <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
@@ -316,17 +326,17 @@ export default function CreateExperience() {
               </label>
               </p>
                       <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
-                <input
-                        id="video-upload"
-                  type="file"
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                  className="hidden"
-                />
+                                        <input
+                          id="video-upload"
+                          type="file"
+                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
+                          onChange={handleVideoUpload}
+                          className="hidden"
+                        />
               </div>
                   )}
                 </div>
-              </div>
+            </div>
 
               {/* Mind File Upload */}
               <div>
@@ -348,22 +358,22 @@ export default function CreateExperience() {
                       </button>
                     </div>
                   ) : (
-                    <div>
+            <div>
                       <Upload className="h-10 w-10 text-black mx-auto mb-3" />
                       <p className="text-base text-black">
                         <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
                           Upload .mind file
-                        </label>
-                      </p>
+              </label>
+              </p>
                       <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
-                      <input
+                <input
                         id="mind-upload"
-                        type="file"
+                  type="file"
                         accept=".mind"
                         onChange={handleMindUpload}
-                        className="hidden"
-                      />
-                    </div>
+                  className="hidden"
+                />
+              </div>
                   )}
                 </div>
               </div>
