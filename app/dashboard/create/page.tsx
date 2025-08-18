@@ -26,7 +26,6 @@ export default function CreateExperience() {
   const [mindFile, setMindFile] = useState<File | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
-  const [compilationProgress, setCompilationProgress] = useState(0)
 
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -90,19 +89,8 @@ export default function CreateExperience() {
     }
 
     setSubmitting(true)
-    setCompilationProgress(0)
 
     try {
-      // Simulate compilation progress
-      const progressInterval = setInterval(() => {
-        setCompilationProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 200)
 
       // Upload video file
       const videoFormData = new FormData()
@@ -164,9 +152,6 @@ export default function CreateExperience() {
       }
 
       const experience = await experienceResponse.json()
-      
-      clearInterval(progressInterval)
-      setCompilationProgress(100)
 
       toast.success('AR experience created successfully!')
       
@@ -180,8 +165,7 @@ export default function CreateExperience() {
       toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
           } finally {
         setSubmitting(false)
-      setCompilationProgress(0)
-    }
+      }
       }
 
   if (loading) {
@@ -389,7 +373,7 @@ export default function CreateExperience() {
                 {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                    Creating Experience...
+                    Uploading Files...
                   </>
                 ) : (
                   <>
@@ -400,21 +384,7 @@ export default function CreateExperience() {
               </button>
             </div>
 
-            {/* Progress Bar */}
-            {submitting && compilationProgress > 0 && (
-              <div className="mt-6">
-                <div className="flex justify-between text-base text-black mb-3 font-medium">
-                  <span>Compiling...</span>
-                  <span>{compilationProgress}%</span>
-                </div>
-                <div className="w-full bg-cream border-2 border-black rounded-full h-3">
-                  <div
-                    className="bg-red-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${compilationProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
+
           </form>
         </div>
         
