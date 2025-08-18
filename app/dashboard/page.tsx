@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode.react'
+import Header from '@/components/Header'
 
 type ARExperience = {
   id: string
@@ -101,28 +102,20 @@ export default function Dashboard() {
     )
   }
 
+  if (!user) {
+    router.push('/auth/signin')
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Navigation */}
-      <nav className="bg-dark-blue shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Camera className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
-            </div>
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <span className="text-sm text-white">{user?.email}</span>
-              <button
-                onClick={() => router.push('/auth/signout')}
-                className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header
+        showDashboard={false}
+        showSignOut={true}
+        userEmail={user?.email}
+        onSignOut={() => router.push('/auth/signout')}
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

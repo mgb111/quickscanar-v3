@@ -1,12 +1,18 @@
 'use client'
 
-import { useAuth } from '@/components/AuthProvider'
-import { isSupabaseConfigured } from '@/lib/supabase'
 import Link from 'next/link'
-import { Camera, Video, Upload, ArrowRight, Star, Users, TrendingUp, Target, Zap, Check } from 'lucide-react'
+import { Camera, Upload, ArrowRight, BarChart3, Video, Users, Globe, Smartphone, CheckCircle, Star, ArrowLeft } from 'lucide-react'
+import { AuthProvider, useAuth } from '@/components/AuthProvider'
+import Header from '@/components/Header'
 
-export default function Home() {
-  const { user, loading, supabaseError } = useAuth()
+function HomePage() {
+  const { user, loading } = useAuth()
+
+  const isSupabaseConfigured = () => {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  }
+
+  const supabaseError = false // You can implement actual error checking here
 
   if (loading) {
     return (
@@ -19,68 +25,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-dark-blue shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-                <Camera className="h-8 w-8 text-white" />
-                <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              {/* Create AR button - hidden on mobile, visible on desktop */}
-              <Link
-                href="/compiler"
-                className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 flex items-center ml-2 sm:ml-0 hidden sm:flex"
-              >
-                <Upload className="h-4 w-4 mr-2 hidden sm:inline" />
-                Create AR
-              </Link>
-              {isSupabaseConfigured() && !supabaseError ? (
-                user ? (
-                  <>
-                    <Link
-                      href="/dashboard"
-                      className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/auth/signout"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign Out
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/auth/signin"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/auth/signup"
-                      className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )
-              ) : (
-                <Link
-                  href="/compiler"
-                  className="bg-white text-dark-blue px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 hidden sm:inline-flex"
-                >
-                  Try Demo
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header
+        showCreateAR={true}
+        showDashboard={Boolean(isSupabaseConfigured() && !supabaseError && user)}
+        showSignOut={Boolean(isSupabaseConfigured() && !supabaseError && user)}
+        showSignIn={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
+        showSignUp={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
+      />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-50 to-indigo-100 py-20 lg:py-32">
@@ -122,14 +73,14 @@ export default function Home() {
       {/* Features Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                     <div className="text-center mb-16">
-             <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
-               Everything You Need to Create AR Experiences
-             </h2>
-             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-               Powerful AR tools designed to capture attention and convert visitors into customers
-             </p>
-           </div>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Everything You Need to Create AR Experiences
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Powerful AR tools designed to capture attention and convert visitors into customers
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
@@ -151,7 +102,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="h-10 w-10 text-white" />
+                <BarChart3 className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Analytics Dashboard</h3>
               <p className="text-gray-600 text-lg">
@@ -162,33 +113,33 @@ export default function Home() {
         </div>
       </section>
 
-             {/* Trusted by Section */}
-       <section className="py-20 bg-gray-50">
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="text-center mb-16">
-             <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
-               Trusted by 150+ Creators
-             </h2>
-             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-               Join the community of creators who are already using AR to boost their marketing results
-             </p>
-           </div>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-             <div className="text-center">
-               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">50+</div>
-               <p className="text-lg text-gray-600">AR Experiences per month</p>
-             </div>
-             <div className="text-center">
-               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">10 min</div>
-               <p className="text-lg text-gray-600">Average creation time</p>
-             </div>
-             <div className="text-center">
-               <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">300%</div>
-               <p className="text-lg text-gray-600">Increase in engagement</p>
-             </div>
-           </div>
-         </div>
-       </section>
+      {/* Trusted by Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Trusted by 150+ Creators
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Join the community of creators who are already using AR to boost their marketing results
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">50+</div>
+              <p className="text-lg text-gray-600">AR Experiences per month</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">10 min</div>
+              <p className="text-lg text-gray-600">Average creation time</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold text-dark-blue mb-2">300%</div>
+              <p className="text-lg text-gray-600">Increase in engagement</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
@@ -284,15 +235,15 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">1 AR Experience</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">Basic Analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">Community Support</span>
                 </li>
               </ul>
@@ -316,19 +267,19 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-white mr-3" />
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
                   <span className="text-white">3 AR Campaigns</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-white mr-3" />
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
                   <span className="text-white">Advanced Analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-white mr-3" />
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
                   <span className="text-white">Priority Support</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-white mr-3" />
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
                   <span className="text-white">Custom Branding</span>
                 </li>
               </ul>
@@ -352,19 +303,19 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">Unlimited AR Campaigns</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">Premium Analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">24/7 Support</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                   <span className="text-gray-700">White-label Solutions</span>
                 </li>
               </ul>
@@ -393,14 +344,14 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <Zap className="h-10 w-10 text-white" />
+                <Smartphone className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Lightning Fast</h3>
               <p className="text-gray-600">Create AR experiences in minutes, not hours</p>
             </div>
             <div className="text-center">
               <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <Target className="h-10 w-10 text-white" />
+                <Globe className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">High Converting</h3>
               <p className="text-gray-600">Proven to increase engagement and conversions</p>
@@ -414,7 +365,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <div className="bg-dark-blue rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="h-10 w-10 text-white" />
+                <BarChart3 className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Scalable</h3>
               <p className="text-gray-600">Grow from 1 to 1000+ AR experiences</p>
@@ -451,21 +402,21 @@ export default function Home() {
             </div>
             <div className="bg-white rounded-2xl p-8 text-center">
               <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <Target className="h-8 w-8 text-white" />
+                <Globe className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Retail Marketing</h3>
               <p className="text-gray-600">Drive in-store traffic and boost sales with AR-powered campaigns</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center">
               <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <Zap className="h-8 w-8 text-white" />
+                <Smartphone className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Social Media</h3>
               <p className="text-gray-600">Create viral content that drives engagement and brand awareness</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center">
               <div className="bg-dark-blue rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="h-8 w-8 text-white" />
+                <BarChart3 className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Lead Generation</h3>
               <p className="text-gray-600">Capture qualified leads with interactive AR experiences</p>
@@ -595,5 +546,13 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <HomePage />
+    </AuthProvider>
   )
 } 

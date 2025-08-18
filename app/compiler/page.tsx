@@ -1,34 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Camera, Upload, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Upload, ArrowLeft, Camera } from 'lucide-react'
+import Header from '@/components/Header'
 
-export default function CompilerPage() {
+export default function Compiler() {
   const [iframeLoaded, setIframeLoaded] = useState(false)
 
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <nav className="bg-dark-blue shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Camera className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/dashboard/create"
-                className="bg-white text-dark-blue px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center"
-              >
-                Skip to Create Experience
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header showSkipToCreate={true} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -132,7 +115,7 @@ export default function CompilerPage() {
               className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors inline-flex items-center"
             >
               Create AR Experience
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowLeft className="h-4 w-4 ml-2" />
             </Link>
           </div>
         </div>

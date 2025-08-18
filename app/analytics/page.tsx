@@ -23,6 +23,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import Header from '@/components/Header'
 
 interface AnalyticsData {
   overview: {
@@ -49,7 +50,7 @@ interface AnalyticsData {
   }
   geographic: {
     topCountries: Array<{country: string, views: number, percentage: number}>
-    topCities: Array<city: string, views: number, percentage: number}>
+    topCities: Array<{city: string, views: number, percentage: number}>
   }
   devices: {
     mobile: number
@@ -165,6 +166,14 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <Header
+        showDashboard={true}
+        showSignOut={true}
+        userEmail={user?.email}
+        onSignOut={() => window.location.href = '/auth/signout'}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
