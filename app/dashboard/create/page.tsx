@@ -224,7 +224,7 @@ export default function CreateExperience() {
                 <Camera className="h-6 w-6 mr-3 text-red-600" />
                 Step 1: Compile Image to AR Format
             </h3>
-              <p className="text-gray-600 text-lg">
+              <p className="text-black opacity-80 text-lg">
                 First, convert your image to AR-ready format using our compiler
             </p>
           </div>
@@ -313,7 +313,7 @@ export default function CreateExperience() {
                           Click to upload video
               </label>
               </p>
-                      <p className="text-sm text-gray-600 mt-2">MP4, WebM, or other common formats</p>
+                      <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
                 <input
                         id="video-upload"
                   type="file"
@@ -368,7 +368,7 @@ export default function CreateExperience() {
                               Upload .mind file
               </label>
               </p>
-                          <p className="text-sm text-gray-600 mt-2">From Step 1 compiler</p>
+                          <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
                 <input
                             id="mind-upload"
                   type="file"
