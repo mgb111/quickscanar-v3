@@ -35,7 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('  URL:', supabaseUrl)
     console.log('  Key (first 20 chars):', supabaseKey.substring(0, 20) + '...')
     
-    const client = createClient(supabaseUrl, supabaseKey)
+    const client = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'quickscanar-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
     
     // Test the client configuration
     console.log('  Client created successfully')
@@ -65,9 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error('Supabase connection error:', err)
       setSupabaseError(`Connection error: ${err.message}`)
-    } finally {
-      setLoading(false)
     }
+    // Don't set loading to false here - let the auth state change handler manage it
   }, [supabase])
 
   useEffect(() => {
@@ -95,14 +101,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Error getting session:', error)
           setSupabaseError(`Session error: ${error.message}`)
         } else if (session) {
+          console.log('🔐 Initial session found:', session.user.email)
           setUser(session.user)
+        } else {
+          console.log('🔐 No initial session found')
         }
 
         // Listen for auth changes
         const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!mounted) return
-            setUser(session?.user ?? null)
+            
+            console.log('🔐 Auth state change:', event, session?.user?.email)
+            
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              setUser(session?.user ?? null)
+              setSupabaseError(null)
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null)
+              setSupabaseError(null)
+            } else if (event === 'USER_UPDATED') {
+              setUser(session?.user ?? null)
+            }
+            
             setLoading(false)
           }
         )
