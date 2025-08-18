@@ -18,7 +18,7 @@ interface PricingPlan {
 
 interface PricingCardProps {
   plan: PricingPlan
-  onSubscribe: (planId: string) => void
+  onSubscribe: () => void
   currentPlan?: string
   isLoading?: boolean
 }
@@ -131,7 +131,7 @@ export default function PricingCard({
           </button>
         ) : (
           <button
-            onClick={() => onSubscribe(plan.id)}
+            onClick={onSubscribe}
             disabled={isLoading || !user}
             className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
               isPopular || isRecommended

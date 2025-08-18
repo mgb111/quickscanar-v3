@@ -9,6 +9,8 @@ const supabase = createClient(
 // Polar.sh API configuration
 const POLAR_API_URL = process.env.POLAR_API_URL || 'https://api.polar.sh/api/v1'
 const POLAR_WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET
+const POLAR_SUCCESS_URL = process.env.POLAR_SUCCESS_URL || 'https://yourdomain.com/subscription/success?checkout_id={CHECKOUT_ID}'
+const POLAR_CANCEL_URL = process.env.POLAR_CANCEL_URL || 'https://yourdomain.com/subscription/cancel'
 
 interface PolarSubscription {
   id: string
@@ -243,7 +245,9 @@ async function createSubscription(userId: string, priceId: string) {
         items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent']
+        expand: ['latest_invoice.payment_intent'],
+        success_url: POLAR_SUCCESS_URL,
+        cancel_url: POLAR_CANCEL_URL
       })
     })
 

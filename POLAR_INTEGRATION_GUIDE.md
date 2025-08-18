@@ -8,11 +8,12 @@ This guide will walk you through setting up Polar.sh payments and subscriptions 
 2. [Polar.sh Setup](#polarsh-setup)
 3. [Database Setup](#database-setup)
 4. [Environment Configuration](#environment-configuration)
-5. [API Integration](#api-integration)
-6. [Webhook Configuration](#webhook-configuration)
-7. [Testing](#testing)
-8. [Production Deployment](#production-deployment)
-9. [Troubleshooting](#troubleshooting)
+5. [Success URL Configuration](#success-url-configuration)
+6. [API Integration](#api-integration)
+7. [Webhook Configuration](#webhook-configuration)
+8. [Testing](#testing)
+9. [Production Deployment](#production-deployment)
+10. [Troubleshooting](#troubleshooting)
 
 ## 🎯 Prerequisites
 
@@ -110,6 +111,10 @@ POLAR_PROJECT_ID=your_project_id
 
 # Your webhook endpoint
 POLAR_WEBHOOK_URL=https://yourdomain.com/api/polar
+
+# Success and Cancel URLs (REQUIRED for Polar.sh)
+POLAR_SUCCESS_URL=https://yourdomain.com/subscription/success?checkout_id={CHECKOUT_ID}
+POLAR_CANCEL_URL=https://yourdomain.com/subscription/cancel
 ```
 
 ### 3. Restart Your Application
@@ -119,6 +124,45 @@ npm run dev
 # or
 yarn dev
 ```
+
+## 🔗 Success URL Configuration
+
+### ⚠️ IMPORTANT: Polar.sh Success URL Requirement
+
+Polar.sh **requires** you to configure a success URL that includes the `{CHECKOUT_ID}` parameter. This allows Polar.sh to pass the checkout ID to your application when a payment is successful.
+
+### 1. Configure in Polar.sh Dashboard
+
+1. Go to your **Polar.sh Dashboard** → **Settings** → **Payment Settings**
+2. Set the **Success URL** to: `https://yourdomain.com/subscription/success?checkout_id={CHECKOUT_ID}`
+3. Set the **Cancel URL** to: `https://yourdomain.com/subscription/cancel`
+4. **Save** your changes
+
+### 2. URL Format Requirements
+
+- **Success URL**: Must include `{CHECKOUT_ID}` exactly as shown
+- **Cancel URL**: Can be any URL where users land after cancellation
+- **Domain**: Must match your actual domain (no localhost for production)
+
+### 3. Example URLs
+
+```env
+# Development (if using ngrok or similar)
+POLAR_SUCCESS_URL=https://abc123.ngrok.io/subscription/success?checkout_id={CHECKOUT_ID}
+POLAR_CANCEL_URL=https://abc123.ngrok.io/subscription/cancel
+
+# Production
+POLAR_SUCCESS_URL=https://quickscanar.com/subscription/success?checkout_id={CHECKOUT_ID}
+POLAR_CANCEL_URL=https://quickscanar.com/subscription/cancel
+```
+
+### 4. What Happens When Payment Succeeds
+
+1. User completes payment on Polar.sh
+2. Polar.sh redirects to: `https://yourdomain.com/subscription/success?checkout_id=ch_1234567890`
+3. Your success page receives the `checkout_id` parameter
+4. Page displays subscription details and confirmation
+5. User can access premium features immediately
 
 ## 🔌 API Integration
 
@@ -193,7 +237,26 @@ function verifyWebhookSignature(event: any): boolean {
 
 ## 🧪 Testing
 
-### 1. Test Subscription Creation
+### 1. Test Success URL Configuration
+
+**⚠️ CRITICAL:** Before testing subscriptions, verify your success URL is working:
+
+1. **Check URL Accessibility:**
+   ```bash
+   # Test if your success page is accessible
+   curl https://yourdomain.com/subscription/success?checkout_id=test123
+   ```
+
+2. **Verify Parameter Handling:**
+   - Visit: `/subscription/success?checkout_id=test123`
+   - Ensure the page loads without errors
+   - Check that `test123` appears in the checkout ID field
+
+3. **Test Cancel URL:**
+   - Visit: `/subscription/cancel`
+   - Ensure the page loads properly
+
+### 2. Test Subscription Creation
 
 1. Sign in to your app
 2. Go to `/subscription`
@@ -282,7 +345,27 @@ Set up monitoring for:
 
 ### Common Issues
 
-#### 1. Webhook Not Receiving Events
+#### 1. Success URL Not Working
+
+**Symptoms:**
+- Users not redirected after payment
+- "Page not found" errors on success
+- Checkout ID not received
+
+**Solutions:**
+- Verify success URL is set in Polar.sh dashboard
+- Ensure `{CHECKOUT_ID}` is included exactly as shown
+- Check that your domain is accessible
+- Test success page manually with a test checkout ID
+- Verify environment variables are set correctly
+
+**Common Mistakes:**
+- Missing `{CHECKOUT_ID}` parameter
+- Using `localhost` instead of public domain
+- Incorrect URL format
+- Environment variables not loaded
+
+#### 2. Webhook Not Receiving Events
 
 **Symptoms:**
 - No webhook events in logs
@@ -372,9 +455,13 @@ SELECT * FROM user_subscriptions ORDER BY updated_at DESC LIMIT 10;
 - [ ] Polar.sh account created and configured
 - [ ] Subscription plans set up with correct pricing
 - [ ] API key and webhook secret configured
+- [ ] **Success URL configured with {CHECKOUT_ID} parameter**
+- [ ] **Cancel URL configured**
+- [ ] **Success and cancel pages accessible**
 - [ ] Database schema executed successfully
 - [ ] Environment variables set correctly
 - [ ] Webhook endpoint accessible and secure
+- [ ] **Success URL tested with test checkout ID**
 - [ ] Test subscriptions working
 - [ ] Plan limits enforced correctly
 - [ ] Payment processing working

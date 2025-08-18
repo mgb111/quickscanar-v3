@@ -26,6 +26,7 @@ interface SubscriptionPlan {
   features: string[]
   popular?: boolean
   recommended?: boolean
+  polarCheckoutUrl?: string
 }
 
 interface UserSubscription {
@@ -51,6 +52,23 @@ export default function SubscriptionPage() {
     }
   }, [user])
 
+  // Add Polar.sh checkout script when component mounts
+  useEffect(() => {
+    // Load Polar.sh checkout script
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js'
+    script.defer = true
+    script.setAttribute('data-auto-init', '')
+    document.head.appendChild(script)
+
+    return () => {
+      // Cleanup script when component unmounts
+      if (document.head.contains(script)) {
+        document.head.removeChild(script)
+      }
+    }
+  }, [])
+
   const fetchPlans = async () => {
     try {
       const response = await fetch('/api/polar?action=prices')
@@ -62,16 +80,17 @@ export default function SubscriptionPage() {
           description: price.description,
           amount: price.amount,
           currency: price.currency,
-          interval: price.interval,
+          interval: price.recurring.interval,
           features: price.features,
-          popular: price.amount >= 4999 && price.interval === 'month',
-          recommended: price.amount >= 999 && price.amount < 4999 && price.interval === 'month'
+          popular: price.amount >= 4999 && price.recurring.interval === 'month',
+          recommended: price.amount >= 999 && price.amount < 4999 && price.recurring.interval === 'month',
+          polarCheckoutUrl: price.checkout_url || `https://buy.polar.sh/${price.id}`
         }))
         setPlans(formattedPlans)
       }
     } catch (error) {
       console.error('Failed to fetch plans:', error)
-      // Fallback to default plans
+      // Fallback to default plans with actual Polar.sh checkout URL
       setPlans(getDefaultPlans())
     }
     setIsLoading(false)
@@ -130,7 +149,8 @@ export default function SubscriptionPage() {
         'Advanced Templates',
         'Export Options'
       ],
-      recommended: true
+      recommended: true,
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
     },
     {
       id: 'price_pro',
@@ -149,7 +169,8 @@ export default function SubscriptionPage() {
         'Team Collaboration',
         'Custom Integrations'
       ],
-      popular: true
+      popular: true,
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
     },
     {
       id: 'price_starter_yearly',
@@ -165,7 +186,8 @@ export default function SubscriptionPage() {
         'Custom Branding',
         'Advanced Templates',
         'Export Options'
-      ]
+      ],
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
     },
     {
       id: 'price_pro_yearly',
@@ -183,50 +205,63 @@ export default function SubscriptionPage() {
         'White-label Options',
         'Team Collaboration',
         'Custom Integrations'
-      ]
+      ],
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
     }
   ]
 
-  const handleSubscribe = async (planId: string) => {
+  const handleSubscribe = async (planId: string, polarCheckoutUrl?: string) => {
     if (!user) {
       toast.error('Please sign in to subscribe')
       return
     }
 
-    setIsSubscribing(true)
-    try {
-      const response = await fetch('/api/polar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'create_subscription',
-          userId: user.id,
-          priceId: planId
-        })
-      })
+    if (planId === 'price_free') {
+      toast.success('Free plan activated!')
+      return
+    }
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.client_secret) {
-          // Redirect to payment page or handle payment flow
-          toast.success('Redirecting to payment...')
-          // In a real implementation, you would redirect to a payment page
-          // or integrate with a payment processor like Stripe
-        } else {
-          toast.success('Subscription created successfully!')
-          fetchCurrentSubscription()
-        }
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to create subscription')
+    if (polarCheckoutUrl) {
+      // Open Polar.sh checkout in new window/tab
+      const checkoutWindow = window.open(polarCheckoutUrl, '_blank')
+      if (checkoutWindow) {
+        checkoutWindow.focus()
       }
-    } catch (error) {
-      console.error('Subscription error:', error)
-      toast.error('Failed to create subscription')
-    } finally {
-      setIsSubscribing(false)
+      toast.success('Opening Polar.sh checkout...')
+    } else {
+      // Fallback to old subscription method
+      setIsSubscribing(true)
+      try {
+        const response = await fetch('/api/polar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create_subscription',
+            userId: user.id,
+            priceId: planId
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.client_secret) {
+            toast.success('Redirecting to payment...')
+          } else {
+            toast.success('Subscription created successfully!')
+            fetchCurrentSubscription()
+          }
+        } else {
+          const error = await response.json()
+          toast.error(error.error || 'Failed to create subscription')
+        }
+      } catch (error) {
+        console.error('Subscription error:', error)
+        toast.error('Failed to create subscription')
+      } finally {
+        setIsSubscribing(false)
+      }
     }
   }
 
@@ -365,11 +400,26 @@ export default function SubscriptionPage() {
             <PricingCard
               key={plan.id}
               plan={plan}
-              onSubscribe={handleSubscribe}
+              onSubscribe={() => handleSubscribe(plan.id, plan.polarCheckoutUrl)}
               currentPlan={currentSubscription?.id}
               isLoading={isSubscribing}
             />
           ))}
+        </div>
+
+        {/* Polar.sh Checkout Info */}
+        <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 mb-8">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">Secure Payment Processing</h3>
+          <p className="text-blue-800 mb-4">
+            All payments are processed securely through Polar.sh. You'll be redirected to their secure checkout page 
+            and then back to our success page upon completion.
+          </p>
+          <div className="text-sm text-blue-700">
+            <p>✅ Secure SSL encryption</p>
+            <p>✅ Multiple payment methods</p>
+            <p>✅ Instant access to features</p>
+            <p>✅ Automatic subscription management</p>
+          </div>
         </div>
 
         {/* FAQ Section */}
@@ -390,7 +440,7 @@ export default function SubscriptionPage() {
             </div>
             <div>
               <h4 className="font-semibold text-gray-900 mb-2">What payment methods do you accept?</h4>
-              <p className="text-gray-600">We accept all major credit cards, debit cards, and digital wallets through our secure payment processor.</p>
+              <p className="text-gray-600">We accept all major credit cards, debit cards, and digital wallets through our secure payment processor, Polar.sh.</p>
             </div>
           </div>
         </div>
