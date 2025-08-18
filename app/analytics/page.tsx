@@ -183,7 +183,7 @@ export default function Analytics() {
               <p className="text-gray-600 mt-1">Track your AR experience performance and engagement</p>
               {subscriptionStatus && (
                 <div className="flex items-center mt-2">
-                  <Crown className="h-4 w-4 text-yellow-500 mr-2" />
+                  <Crown className="h-4 w-4 text-red-600 mr-2" />
                   <span className="text-sm text-gray-600">
                     {subscriptionStatus.planName} Plan
                   </span>
@@ -212,20 +212,20 @@ export default function Analytics() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Subscription Upgrade Banner for Free Users */}
         {isFreeUser && (
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-8">
+          <div className="bg-cream border-2 border-black rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Lock className="h-6 w-6 text-yellow-600 mr-3" />
+                <Lock className="h-6 w-6 text-red-600 mr-3" />
                 <div>
-                  <h3 className="text-lg font-semibold text-yellow-800">Upgrade to Premium Analytics</h3>
-                  <p className="text-yellow-700">
+                  <h3 className="text-lg font-semibold text-red-800">Upgrade to Premium Analytics</h3>
+                  <p className="text-red-700">
                     Free users see limited analytics. Upgrade to unlock full insights, unlimited data, and advanced metrics.
                   </p>
                 </div>
               </div>
               <Link
                 href="/subscription"
-                className="bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700 transition-colors"
+                className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors border-2 border-black"
               >
                 Upgrade Now
               </Link>
@@ -247,14 +247,14 @@ export default function Analytics() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/compiler"
-                className="bg-dark-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors border-2 border-black"
               >
                 Create AR Experience
               </Link>
               {isFreeUser && (
                 <Link
                   href="/subscription"
-                  className="border-2 border-dark-blue text-dark-blue px-6 py-3 rounded-lg font-semibold hover:bg-dark-blue hover:text-white transition-colors"
+                  className="border-2 border-red-600 text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-600 hover:text-white transition-colors"
                 >
                   Upgrade for Full Analytics
                 </Link>
@@ -271,14 +271,14 @@ export default function Analytics() {
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Eye className="h-8 w-8 text-blue-600" />
+                    <Eye className="h-8 w-8 text-red-600" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Views</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {analyticsData?.overview.totalViews.toLocaleString()}
                       {isFreeUser && analyticsData?.overview.totalViews > 1000 && (
-                        <span className="text-xs text-yellow-600 ml-2">(Limited)</span>
+                        <span className="text-xs text-red-600 ml-2">(Limited)</span>
                       )}
                     </p>
                   </div>
@@ -288,14 +288,14 @@ export default function Analytics() {
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Users className="h-8 w-8 text-green-600" />
+                    <Users className="h-8 w-8 text-black" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Unique Viewers</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {analyticsData?.overview.uniqueViewers.toLocaleString()}
                       {isFreeUser && analyticsData?.overview.uniqueViewers > 500 && (
-                        <span className="text-xs text-yellow-600 ml-2">(Limited)</span>
+                        <span className="text-xs text-red-600 ml-2">(Limited)</span>
                       )}
                     </p>
                   </div>
@@ -305,7 +305,7 @@ export default function Analytics() {
               <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Clock className="h-8 w-8 text-purple-600" />
+                    <Clock className="h-8 w-8 text-black" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Avg Session</p>
@@ -334,11 +334,11 @@ export default function Analytics() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Interaction Rate</span>
-                    <span className="font-semibold text-green-600">{analyticsData?.engagement.interactionRate}%</span>
+                    <span className="font-semibold text-black">{analyticsData?.engagement.interactionRate}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Completion Rate</span>
-                    <span className="font-semibold text-blue-600">{analyticsData?.engagement.completionRate}%</span>
+                    <span className="font-semibold text-red-600">{analyticsData?.engagement.completionRate}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Drop-off Rate</span>
@@ -352,15 +352,15 @@ export default function Analytics() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Target Recognition</span>
-                    <span className="font-semibold text-green-600">{analyticsData?.performance.targetRecognitionRate}%</span>
+                    <span className="font-semibold text-black">{analyticsData?.performance.targetRecognitionRate}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Avg Loading Time</span>
-                    <span className="font-semibold text-blue-600">{analyticsData?.performance.avgLoadingTime}s</span>
+                    <span className="font-semibold text-red-600">{analyticsData?.performance.avgLoadingTime}s</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Error Rate</span>
-                    <span className="font-semibold text-yellow-600">{analyticsData?.performance.errorRate}%</span>
+                    <span className="font-semibold text-red-600">{analyticsData?.performance.errorRate}%</span>
                   </div>
                 </div>
               </div>
@@ -373,7 +373,7 @@ export default function Analytics() {
                   <Globe className="h-5 w-5 mr-2" />
                   Top Countries
                   {isFreeUser && (
-                    <span className="text-xs text-yellow-600 ml-2">(Limited)</span>
+                    <span className="text-xs text-red-600 ml-2">(Limited)</span>
                   )}
                 </h3>
                 <div className="space-y-3">
@@ -387,7 +387,7 @@ export default function Analytics() {
                     </div>
                   ))}
                   {isFreeUser && analyticsData?.geographic.topCountries.length === 3 && (
-                    <div className="text-xs text-yellow-600 text-center pt-2">
+                    <div className="text-xs text-red-600 text-center pt-2">
                       Upgrade to see all countries
                     </div>
                   )}
@@ -399,7 +399,7 @@ export default function Analytics() {
                   <MapPin className="h-5 w-5 mr-2" />
                   Top Cities
                   {isFreeUser && (
-                    <span className="text-xs text-yellow-600 ml-2">(Limited)</span>
+                    <span className="text-xs text-red-600 ml-2">(Limited)</span>
                   )}
                 </h3>
                 <div className="space-y-3">
@@ -413,7 +413,7 @@ export default function Analytics() {
                     </div>
                   ))}
                   {isFreeUser && analyticsData?.geographic.topCities.length === 3 && (
-                    <div className="text-xs text-yellow-600 text-center pt-2">
+                    <div className="text-xs text-red-600 text-center pt-2">
                       Upgrade to see all cities
                     </div>
                   )}
@@ -428,15 +428,15 @@ export default function Analytics() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Mobile</span>
-                    <span className="font-semibold text-blue-600">{analyticsData?.devices.mobile}%</span>
+                    <span className="font-semibold text-red-600">{analyticsData?.devices.mobile}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Tablet</span>
-                    <span className="font-semibold text-green-600">{analyticsData?.devices.tablet}%</span>
+                    <span className="font-semibold text-black">{analyticsData?.devices.tablet}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Desktop</span>
-                    <span className="font-semibold text-purple-600">{analyticsData?.devices.desktop}%</span>
+                    <span className="font-semibold text-black">{analyticsData?.devices.desktop}%</span>
                   </div>
                 </div>
               </div>
@@ -448,7 +448,7 @@ export default function Analytics() {
                 <BarChart3 className="h-5 w-5 mr-2" />
                 Campaign Performance
                 {isFreeUser && (
-                  <span className="text-xs text-yellow-600 ml-2">(Limited)</span>
+                  <span className="text-xs text-red-600 ml-2">(Limited)</span>
                 )}
               </h3>
               <div className="overflow-x-auto">
@@ -466,14 +466,14 @@ export default function Analytics() {
                     {analyticsData?.campaigns.map((campaign) => (
                       <tr key={campaign.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4">
-                          <Link href={`/analytics/campaign/${campaign.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
+                          <Link href={`/analytics/campaign/${campaign.id}`} className="text-red-600 hover:text-red-800 font-medium">
                             {campaign.name}
                           </Link>
                         </td>
                         <td className="py-3 px-4">{campaign.views.toLocaleString()}</td>
                         <td className="py-3 px-4">{campaign.conversions}</td>
                         <td className="py-3 px-4">
-                          <span className="text-green-600 font-semibold">{campaign.ctr}%</span>
+                          <span className="text-black font-semibold">{campaign.ctr}%</span>
                         </td>
                         <td className="py-3 px-4 text-gray-500">{new Date(campaign.created).toLocaleDateString()}</td>
                       </tr>
@@ -481,7 +481,7 @@ export default function Analytics() {
                   </tbody>
                 </table>
                 {isFreeUser && analyticsData?.campaigns.length === 2 && (
-                  <div className="text-xs text-yellow-600 text-center pt-4">
+                  <div className="text-xs text-red-600 text-center pt-4">
                     Upgrade to see all campaigns and detailed performance metrics
                   </div>
                 )}
@@ -492,23 +492,23 @@ export default function Analytics() {
 
         {/* Upgrade CTA for Free Users */}
         {isFreeUser && (
-          <div className="bg-gradient-to-r from-dark-blue to-blue-600 rounded-2xl p-8 text-white text-center mt-12">
-            <Crown className="h-16 w-16 mx-auto mb-4 text-yellow-300" />
+          <div className="bg-red-600 rounded-2xl p-8 text-white text-center mt-12 border-2 border-black">
+            <Crown className="h-16 w-16 mx-auto mb-4 text-white" />
             <h3 className="text-2xl font-bold mb-4">Unlock Premium Analytics</h3>
-            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+            <p className="text-white opacity-90 mb-6 max-w-2xl mx-auto">
               Get unlimited data, advanced insights, real-time metrics, and comprehensive reporting. 
               Perfect for businesses and serious creators.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/subscription"
-                className="bg-white text-dark-blue px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-cream transition-colors border-2 border-white"
               >
                 View Plans & Pricing
               </Link>
               <Link
                 href="/compiler"
-                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-dark-blue transition-colors"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-600 transition-colors"
               >
                 Create More Experiences
               </Link>
