@@ -106,15 +106,15 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
     // Fetch analytics events for the date range
     const { data: events } = await supabase
       .from('ar_analytics_events')
-      .select('*')
+    .select('*')
       .in('experience_id', experienceIds)
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString())
 
     // Fetch daily aggregates
     const { data: aggregates } = await supabase
       .from('ar_analytics_daily_aggregates')
-      .select('*')
+    .select('*')
       .in('experience_id', experienceIds)
       .gte('date', startDate.toISOString().split('T')[0])
       .lte('date', endDate.toISOString().split('T')[0])
@@ -124,16 +124,16 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
       .from('ar_analytics_geographic')
       .select('country, city, country_code')
       .in('experience_id', experienceIds)
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString())
 
     // Fetch performance data
     const { data: performanceData } = await supabase
       .from('ar_analytics_performance')
-      .select('*')
+    .select('*')
       .in('experience_id', experienceIds)
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString())
 
     // Process and aggregate the data
     const processedData = processAnalyticsData(
@@ -378,8 +378,8 @@ export async function POST(request: NextRequest) {
 async function trackAnalyticsEvent(eventData: any) {
   try {
     // Insert analytics event
-    const { error } = await supabase
-      .from('ar_analytics_events')
+  const { error } = await supabase
+    .from('ar_analytics_events')
       .insert([{
         experience_id: eventData.experienceId,
         user_id: eventData.userId,
@@ -391,8 +391,8 @@ async function trackAnalyticsEvent(eventData: any) {
         metadata: eventData.metadata,
         created_at: eventData.timestamp
       }])
-
-    if (error) {
+  
+  if (error) {
       console.error('Error inserting analytics event:', error)
       throw error
     }

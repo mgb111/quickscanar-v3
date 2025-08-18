@@ -73,14 +73,14 @@ function HomePage() {
       {/* Features Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+                     <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Everything You Need to Create AR Experiences
-            </h2>
+               Everything You Need to Create AR Experiences
+             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Powerful AR tools designed to capture attention and convert visitors into customers
-            </p>
-          </div>
+               Powerful AR tools designed to capture attention and convert visitors into customers
+             </p>
+           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
@@ -113,33 +113,33 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Trusted by Section */}
+             {/* Trusted by Section */}
       <section className="py-20 bg-cream">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Trusted by 150+ Creators
-            </h2>
+               Trusted by 150+ Creators
+             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Join the community of creators who are already using AR to boost their marketing results
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
+               Join the community of creators who are already using AR to boost their marketing results
+             </p>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             <div className="text-center">
               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">50+</div>
               <p className="text-lg text-black opacity-80">AR Experiences per month</p>
-            </div>
-            <div className="text-center">
+             </div>
+             <div className="text-center">
               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">10 min</div>
               <p className="text-lg text-black opacity-80">Average creation time</p>
-            </div>
-            <div className="text-center">
+             </div>
+             <div className="text-center">
               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">300%</div>
               <p className="text-lg text-black opacity-80">Increase in engagement</p>
-            </div>
-          </div>
-        </div>
-      </section>
+             </div>
+           </div>
+         </div>
+       </section>
 
       {/* Testimonials Section */}
       <section className="py-20 bg-white">
@@ -287,6 +287,7 @@ function HomePage() {
                 href="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
+                data-customer-id={user?.id}
                 className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
                 Start Monthly Plan
@@ -325,6 +326,7 @@ function HomePage() {
                 href="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
+                data-customer-id={user?.id}
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Start Annual Plan

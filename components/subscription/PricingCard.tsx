@@ -156,11 +156,12 @@ export default function PricingCard({
             href={plan.polarCheckoutUrl}
             data-polar-checkout
             data-polar-checkout-theme="dark"
+            data-customer-id={user?.id}
             className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 inline-block ${
               isPopular || isRecommended
                 ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
                 : 'bg-black text-white hover:bg-red-600'
-            } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
+            } ${isLoading || !user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
           >
             {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : 'Subscribe Now'}
           </a>

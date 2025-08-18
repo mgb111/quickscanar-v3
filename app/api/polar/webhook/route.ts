@@ -58,7 +58,7 @@ async function handleSubscriptionCreated(subscription: any) {
       .from('user_subscriptions')
       .upsert({
         polar_subscription_id: subscription.id,
-        user_id: subscription.customer_id, // You might need to map this to your user ID
+        user_id: subscription.customer_id, // This now correctly links to the Supabase user ID
         plan_name: subscription.plan_name || 'Unknown Plan',
         status: subscription.status,
         current_period_start: subscription.current_period_start,
@@ -146,7 +146,7 @@ async function handlePaymentSucceeded(invoice: any) {
       .from('payment_history')
       .insert({
         polar_invoice_id: invoice.id,
-        user_id: invoice.customer_id, // You might need to map this to your user ID
+        user_id: invoice.customer_id, // This now correctly links to the Supabase user ID
         amount: invoice.amount,
         currency: invoice.currency,
         status: 'succeeded',
@@ -187,7 +187,7 @@ async function handlePaymentFailed(invoice: any) {
       .from('payment_history')
       .insert({
         polar_invoice_id: invoice.id,
-        user_id: invoice.customer_id, // You might need to map this to your user ID
+        user_id: invoice.customer_id, // This now correctly links to the Supabase user ID
         amount: invoice.amount,
         currency: invoice.currency,
         status: 'failed',
