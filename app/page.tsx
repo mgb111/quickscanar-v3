@@ -283,12 +283,14 @@ function HomePage() {
                   <span className="text-white">Custom Branding</span>
                 </li>
               </ul>
-              <Link
-                href="/auth/signup"
+              <a
+                href="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
+                data-polar-checkout
+                data-polar-checkout-theme="dark"
                 className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
                 Start Monthly Plan
-              </Link>
+              </a>
             </div>
 
             {/* Annual Plan */}
@@ -319,12 +321,14 @@ function HomePage() {
                   <span className="text-black">White-label Solutions</span>
                 </li>
               </ul>
-              <Link
-                href="/auth/signup"
+              <a
+                href="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
+                data-polar-checkout
+                data-polar-checkout-theme="dark"
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Start Annual Plan
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -545,6 +549,13 @@ function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Polar.sh Checkout Script */}
+      <script 
+        src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js" 
+        defer 
+        data-auto-init
+      />
     </div>
   )
 }

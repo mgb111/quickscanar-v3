@@ -14,6 +14,7 @@ interface PricingPlan {
   features: string[]
   popular?: boolean
   recommended?: boolean
+  polarCheckoutUrl?: string
 }
 
 interface PricingCardProps {
@@ -58,12 +59,25 @@ export default function PricingCard({
 
   const Icon = getPlanIcon(plan.name)
 
+  const handleSubscribe = () => {
+    if (plan.polarCheckoutUrl && plan.amount > 0) {
+      // Open Polar.sh checkout in new window/tab
+      const checkoutWindow = window.open(plan.polarCheckoutUrl, '_blank')
+      if (checkoutWindow) {
+        checkoutWindow.focus()
+      }
+    } else {
+      // Call the parent onSubscribe for free plans or fallback
+      onSubscribe()
+    }
+  }
+
   return (
     <div
       className={`relative bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-300 ${
         isPopular || isRecommended
-          ? 'border-dark-blue shadow-xl scale-105'
-          : 'border-gray-200 hover:border-gray-300'
+          ? 'border-red-600 shadow-xl scale-105'
+          : 'border-black hover:border-red-600'
       } ${isHovered ? 'transform -translate-y-2' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -71,7 +85,7 @@ export default function PricingCard({
       {/* Popular/Recommended Badge */}
       {(isPopular || isRecommended) && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-          <div className="bg-gradient-to-r from-dark-blue to-blue-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+          <div className="bg-red-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg border-2 border-black">
             {isPopular ? 'Most Popular' : 'Recommended'}
           </div>
         </div>
@@ -80,29 +94,29 @@ export default function PricingCard({
       {/* Plan Header */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
-          <div className={`p-3 rounded-full ${
+          <div className={`p-3 rounded-full border-2 border-black ${
             isPopular || isRecommended 
-              ? 'bg-gradient-to-r from-dark-blue to-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-600'
+              ? 'bg-red-600 text-white' 
+              : 'bg-cream text-black'
           }`}>
             <Icon className="h-8 w-8" />
           </div>
         </div>
         
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-        <p className="text-gray-600 mb-6">{plan.description}</p>
+        <h3 className="text-2xl font-bold text-black mb-2">{plan.name}</h3>
+        <p className="text-black opacity-80 mb-6">{plan.description}</p>
         
         <div className="mb-2">
-          <span className="text-4xl font-bold text-gray-900">
+          <span className="text-4xl font-bold text-black">
             {formatPrice(plan.amount, plan.currency)}
           </span>
           {plan.amount > 0 && (
-            <span className="text-gray-600 ml-2">/{getIntervalText(plan.interval)}</span>
+            <span className="text-black opacity-80 ml-2">/{getIntervalText(plan.interval)}</span>
           )}
         </div>
         
         {plan.interval === 'year' && plan.amount > 0 && (
-          <div className="text-sm text-green-600 font-medium">
+          <div className="text-sm text-red-600 font-medium">
             Save 20% with annual billing
           </div>
         )}
@@ -113,8 +127,8 @@ export default function PricingCard({
         <ul className="space-y-4">
           {plan.features.map((feature, index) => (
             <li key={index} className="flex items-start">
-              <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">{feature}</span>
+              <Check className="h-5 w-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+              <span className="text-black">{feature}</span>
             </li>
           ))}
         </ul>
@@ -125,29 +139,38 @@ export default function PricingCard({
         {isCurrentPlan ? (
           <button
             disabled
-            className="w-full bg-gray-100 text-gray-500 py-3 px-6 rounded-lg font-semibold cursor-not-allowed"
+            className="w-full bg-cream text-black py-3 px-6 rounded-lg font-semibold cursor-not-allowed border-2 border-black"
           >
             Current Plan
           </button>
-        ) : (
+        ) : plan.amount === 0 ? (
           <button
-            onClick={onSubscribe}
+            onClick={handleSubscribe}
             disabled={isLoading || !user}
-            className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
+            className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 hover:bg-red-700 shadow-lg hover:shadow-xl border-2 border-black"
+          >
+            {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : 'Get Started Free'}
+          </button>
+        ) : (
+          <a
+            href={plan.polarCheckoutUrl}
+            data-polar-checkout
+            data-polar-checkout-theme="dark"
+            className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 inline-block ${
               isPopular || isRecommended
-                ? 'bg-gradient-to-r from-dark-blue to-blue-600 text-white hover:from-blue-700 hover:to-dark-blue shadow-lg hover:shadow-xl'
-                : 'bg-gray-900 text-white hover:bg-gray-800'
-            } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+                : 'bg-black text-white hover:bg-red-600'
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
           >
             {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : 'Subscribe Now'}
-          </button>
+          </a>
         )}
       </div>
 
       {/* Additional Info */}
       {plan.amount === 0 && (
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-black opacity-60">
             No credit card required • Cancel anytime
           </p>
         </div>

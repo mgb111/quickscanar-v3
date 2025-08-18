@@ -139,8 +139,8 @@ export default function SubscriptionPage() {
       ]
     },
     {
-      id: 'price_starter',
-      name: 'Starter Plan',
+      id: 'price_starter_monthly',
+      name: 'Starter Plan (Monthly)',
       description: 'Perfect for growing creators',
       amount: 9.99,
       currency: 'USD',
@@ -157,8 +157,25 @@ export default function SubscriptionPage() {
       polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
     },
     {
-      id: 'price_pro',
-      name: 'Professional Plan',
+      id: 'price_starter_yearly',
+      name: 'Starter Plan (Yearly)',
+      description: 'Save 20% with annual billing',
+      amount: 99.99,
+      currency: 'USD',
+      interval: 'year',
+      features: [
+        '10 AR Experiences',
+        'Standard Analytics',
+        'Email Support',
+        'Custom Branding',
+        'Advanced Templates',
+        'Export Options'
+      ],
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'
+    },
+    {
+      id: 'price_pro_monthly',
+      name: 'Professional Plan (Monthly)',
       description: 'For businesses and agencies',
       amount: 49.99,
       currency: 'USD',
@@ -175,6 +192,26 @@ export default function SubscriptionPage() {
       ],
       popular: true,
       polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
+    },
+    {
+      id: 'price_pro_yearly',
+      name: 'Professional Plan (Yearly)',
+      description: 'Save 20% with annual billing',
+      amount: 499.99,
+      currency: 'USD',
+      interval: 'year',
+      features: [
+        'Unlimited AR Experiences',
+        'Advanced Analytics',
+        'Priority Support',
+        'Custom Branding',
+        'API Access',
+        'White-label Options',
+        'Team Collaboration',
+        'Custom Integrations'
+      ],
+      popular: true,
+      polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'
     }
   ]
 
@@ -363,7 +400,7 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
           {plans.map((plan) => (
             <PricingCard
               key={plan.id}
