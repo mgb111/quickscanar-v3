@@ -17,9 +17,7 @@ const nextConfig = {
   },
   // Configure server to handle larger requests
   experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
-    // Increase body size limit for API routes
-    bodySizeLimit: '100mb',
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
   },
 }
 

@@ -102,63 +102,109 @@ export default function CreateExperience() {
 
     try {
 
-      // Upload video file to R2
-      const videoFormData = new FormData()
-      videoFormData.append('file', videoFile)
-      videoFormData.append('fileType', 'video')
-      
-      console.log('📤 Uploading video file:', {
+      // Get presigned URL for video upload
+      console.log('📤 Getting presigned URL for video:', {
         name: videoFile.name,
         size: videoFile.size,
         sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
         type: videoFile.type
       })
       
-      const videoResponse = await fetch('/api/upload/r2', {
+      const presignResponse = await fetch('/api/upload/r2/', {
         method: 'POST',
-        body: videoFormData,
-        // Don't set Content-Type header - let the browser set it with boundary
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: videoFile.name,
+          fileType: 'video',
+          contentType: videoFile.type
+        })
       })
 
-      if (!videoResponse.ok) {
-        console.error('❌ Video upload failed:', {
-          status: videoResponse.status,
-          statusText: videoResponse.statusText,
-          headers: Object.fromEntries(videoResponse.headers.entries())
+      if (!presignResponse.ok) {
+        console.error('❌ Failed to get presigned URL:', {
+          status: presignResponse.status,
+          statusText: presignResponse.statusText
         })
         
-        const err = await videoResponse.json().catch(() => null)
+        const err = await presignResponse.json().catch(() => null)
         console.error('❌ Error details:', err)
         
-        if (videoResponse.status === 413) {
-          throw new Error(`Video file too large. Maximum size is 100MB. Your file is ${(videoFile.size / 1024 / 1024).toFixed(1)}MB`)
-        }
-        
-        throw new Error(err?.error || `Failed to upload video (${videoResponse.status})`)
+        throw new Error(err?.error || `Failed to get presigned URL (${presignResponse.status})`)
       }
 
-      const videoData = await videoResponse.json()
-      const videoUrl = videoData.url
+      const presignData = await presignResponse.json()
+      console.log('✅ Got presigned URL for video upload')
+      
+      // Upload video directly to R2 using presigned URL
+      const videoUploadResponse = await fetch(presignData.presignedUrl, {
+        method: 'PUT',
+        body: videoFile,
+        headers: {
+          'Content-Type': videoFile.type
+        }
+      })
+      
+      if (!videoUploadResponse.ok) {
+        console.error('❌ Video upload to R2 failed:', {
+          status: videoUploadResponse.status,
+          statusText: videoUploadResponse.statusText
+        })
+        throw new Error('Failed to upload video to R2')
+      }
+      
+      console.log('✅ Video uploaded successfully to R2')
+      const videoUrl = presignData.publicUrl
 
-      // Upload mind file to R2
+      // Get presigned URL for mind file upload
       let mindUrl = ''
       if (mindFile) {
-        const mindFormData = new FormData()
-        mindFormData.append('file', mindFile)
-        mindFormData.append('fileType', 'mind')
+        console.log('📤 Getting presigned URL for mind file:', {
+          name: mindFile.name,
+          size: mindFile.size,
+          type: mindFile.type
+        })
         
-        const mindResponse = await fetch('/api/upload/r2', {
+        const mindPresignResponse = await fetch('/api/upload/r2/', {
           method: 'POST',
-          body: mindFormData
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileName: mindFile.name,
+            fileType: 'mind',
+            contentType: mindFile.type
+          })
         })
 
-        if (!mindResponse.ok) {
-          const err = await mindResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to upload mind file')
+        if (!mindPresignResponse.ok) {
+          const err = await mindPresignResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get presigned URL for mind file')
         }
 
-        const mindData = await mindResponse.json()
-        mindUrl = mindData.url
+        const mindPresignData = await mindPresignResponse.json()
+        console.log('✅ Got presigned URL for mind file upload')
+        
+        // Upload mind file directly to R2 using presigned URL
+        const mindUploadResponse = await fetch(mindPresignData.presignedUrl, {
+          method: 'PUT',
+          body: mindFile,
+          headers: {
+            'Content-Type': mindFile.type
+          }
+        })
+        
+        if (!mindUploadResponse.ok) {
+          console.error('❌ Mind file upload to R2 failed:', {
+            status: mindUploadResponse.status,
+            statusText: mindUploadResponse.statusText
+          })
+          throw new Error('Failed to upload mind file to R2')
+        }
+        
+        console.log('✅ Mind file uploaded successfully to R2')
+        mindUrl = mindPresignData.publicUrl
       }
 
       // Create AR experience record
