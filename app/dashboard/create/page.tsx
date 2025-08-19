@@ -124,20 +124,19 @@ export default function CreateExperience() {
         type: videoFile.type
       })
       
-      // Convert file to base64
-      const videoBase64 = await fileToBase64(videoFile)
-      
-      const videoResponse = await fetch('/api/upload/r2-base64/', {
+      // Use streaming upload for video (multipart/form-data)
+      const maxVideoMB = 100;
+      if (videoFile.size > maxVideoMB * 1024 * 1024) {
+        throw new Error(`Video file too large. Maximum size is ${maxVideoMB}MB.`);
+      }
+      const videoForm = new FormData();
+      videoForm.append('file', videoFile);
+      videoForm.append('fileType', 'video');
+      videoForm.append('fileName', videoFile.name);
+      videoForm.append('contentType', videoFile.type);
+      const videoResponse = await fetch('/api/upload/r2-streaming/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileName: videoFile.name,
-          fileType: 'video',
-          contentType: videoFile.type,
-          base64Data: videoBase64
-        })
+        body: videoForm
       })
 
       if (!videoResponse.ok) {
