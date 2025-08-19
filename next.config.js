@@ -15,9 +15,9 @@ const nextConfig = {
     };
     return config;
   },
-  // Configure server to handle larger requests
-  experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
+  // Configure server to handle larger requests for proxy uploads
+  serverRuntimeConfig: {
+    maxBodySize: '500mb',
   },
 }
 

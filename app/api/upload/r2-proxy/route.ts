@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
       fileType
     })
 
-    // Check file size (limit to 100MB)
-    const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+    // Check file size (limit to 500MB for proxy uploads)
+    const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
     if (file.size > maxSizeInBytes) {
       return NextResponse.json({ 
-        error: `File too large. Maximum size is 100MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
+        error: `File too large. Maximum size is 500MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
       }, { status: 413 })
     }
 
@@ -81,30 +81,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Convert File to Buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
     // Generate unique filename
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2, 15)
     const fileExtension = file.name.split('.').pop()
     const fileName = `${fileType}-${timestamp}-${randomId}.${fileExtension}`
 
-    // Upload to R2
-    const uploadCommand = new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
-      Key: fileName,
-      Body: buffer,
-      ContentType: file.type,
-      Metadata: {
-        originalName: file.name,
-        fileType: fileType,
-        uploadedAt: new Date().toISOString(),
-      }
-    })
+    // For large files, use streaming upload
+    if (file.size > 50 * 1024 * 1024) { // 50MB threshold
+      console.log('📤 Using streaming upload for large file')
+      
+      // Convert File to Buffer in chunks for large files
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      
+      const uploadCommand = new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: file.type,
+        Metadata: {
+          originalName: file.name,
+          fileType: fileType,
+          uploadedAt: new Date().toISOString(),
+          uploadMethod: 'streaming'
+        }
+      })
 
-    await r2Client.send(uploadCommand)
+      await r2Client.send(uploadCommand)
+    } else {
+      // For smaller files, use regular upload
+      console.log('📤 Using regular upload for smaller file')
+      
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      
+      const uploadCommand = new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: file.type,
+        Metadata: {
+          originalName: file.name,
+          fileType: fileType,
+          uploadedAt: new Date().toISOString(),
+          uploadMethod: 'regular'
+        }
+      })
+
+      await r2Client.send(uploadCommand)
+    }
 
     // Generate public URL (R2 public bucket)
     const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
@@ -129,6 +155,14 @@ export async function POST(request: NextRequest) {
       console.error('Error name:', error.name)
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
+    }
+    
+    // Check if it's a size-related error
+    if (error instanceof Error && error.message.includes('413')) {
+      return NextResponse.json(
+        { error: `File too large for proxy upload. Please try a smaller file or contact support.` },
+        { status: 413 }
+      )
     }
     
     return NextResponse.json(
