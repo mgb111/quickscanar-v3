@@ -3,8 +3,9 @@ const nextConfig = {
   trailingSlash: true,
   api: {
     bodyParser: {
-      sizeLimit: '100mb',
+      sizeLimit: '500mb',
     },
+    responseLimit: '500mb',
   },
   images: {
     unoptimized: true,

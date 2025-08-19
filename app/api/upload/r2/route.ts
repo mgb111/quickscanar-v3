@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Force Next.js to handle larger request bodies for this route
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes timeout
-
-
+export const runtime = 'nodejs'
 
 // Cloudflare R2 configuration
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
@@ -23,14 +21,6 @@ if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
 }
 
 // Initialize R2 client
-console.log('🔧 Initializing R2 client with:', {
-  accountId: R2_ACCOUNT_ID,
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  hasAccessKey: !!R2_ACCESS_KEY_ID,
-  hasSecretKey: !!R2_SECRET_ACCESS_KEY,
-  bucketName: R2_BUCKET_NAME
-})
-
 const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -54,34 +44,50 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('☁️  R2 presigned URL request received')
+    console.log('☁️  R2 upload request received')
     
-    // Parse JSON body for presigned URL request
-    const body = await request.json()
-    const { fileName, fileType, contentType } = body
+    // Check if this is a multipart form data request
+    const contentType = request.headers.get('content-type')
+    console.log('📋 Content-Type:', contentType)
     
-    if (!fileName || !fileType) {
-      return NextResponse.json({ 
-        error: 'Missing fileName or fileType' 
-      }, { status: 400 })
+    if (!contentType || !contentType.includes('multipart/form-data')) {
+      return NextResponse.json({ error: 'Invalid content type. Expected multipart/form data' }, { status: 400 })
+    }
+    
+    const formData = await request.formData()
+    const file = formData.get('file') as File
+    const fileType = formData.get('fileType') as string // 'video' or 'mind'
+    
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
-    console.log('📁 Presigned URL request:', {
-      fileName,
-      fileType,
-      contentType
+    console.log('📁 File details:', {
+      name: file.name,
+      size: file.size,
+      sizeMB: (file.size / 1024 / 1024).toFixed(2),
+      type: file.type,
+      fileType
     })
 
-    // // Validate file types based on fileType
+    // Check file size (limit to 500MB)
+    const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
+    if (file.size > maxSizeInBytes) {
+      return NextResponse.json({ 
+        error: `File too large. Maximum size is 500MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
+      }, { status: 413 })
+    }
+
+    // Validate file types based on fileType
     if (fileType === 'video') {
       const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
-      if (contentType && !allowedVideoTypes.includes(contentType)) {
+      if (!allowedVideoTypes.includes(file.type)) {
         return NextResponse.json({ 
-          error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}` 
+          error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}` 
         }, { status: 400 })
       }
     } else if (fileType === 'mind') {
-      if (!fileName.endsWith('.mind')) {
+      if (!file.name.endsWith('.mind')) {
         return NextResponse.json({ 
           error: 'Please upload a .mind file' 
         }, { status: 400 })
@@ -91,40 +97,44 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2, 15)
-    const fileExtension = fileName.split('.').pop()
-    const uniqueFileName = `${fileType}-${timestamp}-${randomId}.${fileExtension}`
+    const fileExtension = file.name.split('.').pop()
+    const fileName = `${fileType}-${timestamp}-${randomId}.${fileExtension}`
 
-    // putObjectCommand for PUT operation
-    const putObjectCommand = new PutObjectCommand({
+    console.log('📤 Starting file upload to R2...')
+    
+    // Convert File to Buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    
+    const uploadCommand = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
-      Key: uniqueFileName,
-      ContentType: contentType,
+      Key: fileName,
+      Body: buffer,
+      ContentType: file.type,
       Metadata: {
-        originalName: fileName,
+        originalName: file.name,
         fileType: fileType,
         uploadedAt: new Date().toISOString(),
+        uploadMethod: 'direct'
       }
     })
 
-    // Generate presigned URL (expires in 5 minutes)
-    const presignedUrl = await getSignedUrl(r2Client, putObjectCommand, { expiresIn: 300 })
+    await r2Client.send(uploadCommand)
 
-    // Generate final public URL
-    const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${uniqueFileName}`
+    // Generate public URL (R2 public bucket)
+    const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
 
-    console.log('✅ Presigned URL generated:', {
-      uniqueFileName,
-      presignedUrl: presignedUrl.substring(0, 100) + '...',
+    console.log('✅ File uploaded to R2 successfully:', {
+      fileName,
       publicUrl,
-      expiresIn: '5 minutes'
+      size: file.size
     })
 
     return NextResponse.json({
       success: true,
-      presignedUrl,
-      publicUrl,
-      fileName: uniqueFileName,
-      uploadMethod: 'PUT'
+      url: publicUrl,
+      fileName: fileName,
+      size: file.size
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -134,7 +144,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ R2 presigned URL error:', error)
+    console.error('❌ R2 upload error:', error)
     
     if (error instanceof Error) {
       console.error('Error name:', error.name)
@@ -142,8 +152,16 @@ export async function POST(request: NextRequest) {
       console.error('Error stack:', error.stack)
     }
     
+    // Check if it's a size-related error
+    if (error instanceof Error && error.message.includes('413')) {
+      return NextResponse.json(
+        { error: `File too large. Please try a smaller file or contact support.` },
+        { status: 413 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: `Failed to generate presigned URL: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
   }

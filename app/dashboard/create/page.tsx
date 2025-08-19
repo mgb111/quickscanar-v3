@@ -30,20 +30,20 @@ export default function CreateExperience() {
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (100MB limit to match server)
-      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+      // Check file size (500MB limit to match server)
+      const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
       const fileSizeMB = file.size / 1024 / 1024
       
       console.log('📁 File validation:', {
         name: file.name,
         size: file.size,
         sizeMB: fileSizeMB.toFixed(2),
-        maxSizeMB: 100,
+        maxSizeMB: 500,
         isUnderLimit: file.size <= maxSizeInBytes
       })
       
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 500MB, your file is ${fileSizeMB.toFixed(1)}MB`)
         return
       }
 
@@ -101,189 +101,95 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-
-      // Get presigned URL for video upload
-      console.log('📤 Getting presigned URL for video:', {
+      // Upload video file
+      console.log('📤 Uploading video file:', {
         name: videoFile.name,
         size: videoFile.size,
         sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
         type: videoFile.type
       })
       
-      const presignResponse = await fetch('/api/upload/r2/', {
+      const videoFormData = new FormData()
+      videoFormData.append('file', videoFile)
+      videoFormData.append('fileType', 'video')
+      
+      const videoResponse = await fetch('/api/upload/r2/', {
+        method: 'POST',
+        body: videoFormData
+      })
+
+      if (!videoResponse.ok) {
+        const err = await videoResponse.json().catch(() => null)
+        throw new Error(err?.error || `Video upload failed (${videoResponse.status})`)
+      }
+
+      const videoData = await videoResponse.json()
+      console.log('✅ Video uploaded successfully:', videoData.url)
+
+      // Upload mind file
+      console.log('📤 Uploading mind file:', {
+        name: mindFile.name,
+        size: mindFile.size,
+        type: mindFile.type
+      })
+      
+      const mindFormData = new FormData()
+      mindFormData.append('file', mindFile)
+      mindFormData.append('fileType', 'mind')
+      
+      const mindResponse = await fetch('/api/upload/r2/', {
+        method: 'POST',
+        body: mindFormData
+      })
+
+      if (!mindResponse.ok) {
+        const err = await mindResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Mind file upload failed')
+      }
+
+      const mindData = await mindResponse.json()
+      console.log('✅ Mind file uploaded successfully:', mindData.url)
+
+      // Create AR experience in database
+      console.log('💾 Creating AR experience in database...')
+      
+      const createResponse = await fetch('/api/ar-experiences/', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fileName: videoFile.name,
-          fileType: 'video',
-          contentType: videoFile.type
-        })
+          title: title.trim(),
+          video_file_url: videoData.url,
+          mind_file_url: mindData.url,
+        }),
       })
 
-      if (!presignResponse.ok) {
-        console.error('❌ Failed to get presigned URL:', {
-          status: presignResponse.status,
-          statusText: presignResponse.statusText
-        })
-        
-        const err = await presignResponse.json().catch(() => null)
-        console.error('❌ Error details:', err)
-        
-        throw new Error(err?.error || `Failed to get presigned URL (${presignResponse.status})`)
+      if (!createResponse.ok) {
+        const err = await createResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Failed to create AR experience')
       }
 
-      const presignData = await presignResponse.json()
-      console.log('✅ Got presigned URL for video upload')
-      
-      // Try presigned upload first, fallback to proxy if CORS fails
-      let videoUrl = ''
-      try {
-        console.log('🔄 Attempting presigned upload...')
-        const videoUploadResponse = await fetch(presignData.presignedUrl, {
-          method: 'PUT',
-          body: videoFile,
-          headers: {
-            'Content-Type': videoFile.type
-          }
-        })
-        
-        if (videoUploadResponse.ok) {
-          console.log('✅ Video uploaded successfully via presigned URL')
-          videoUrl = presignData.publicUrl
-        } else {
-          throw new Error(`Presigned upload failed: ${videoUploadResponse.status}`)
-        }
-      } catch (error) {
-        console.log('⚠️ Presigned upload failed, trying proxy upload...', error)
-        
-        // Fallback to proxy upload
-        const videoFormData = new FormData()
-        videoFormData.append('file', videoFile)
-        videoFormData.append('fileType', 'video')
-        
-        const proxyResponse = await fetch('/api/upload/r2-proxy/', {
-              method: 'POST',
-          body: videoFormData
-        })
-        
-        if (!proxyResponse.ok) {
-          const err = await proxyResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Proxy upload also failed')
-        }
-        
-        const proxyData = await proxyResponse.json()
-        console.log('✅ Video uploaded successfully via proxy')
-        videoUrl = proxyData.url
-      }
-
-      // Get presigned URL for mind file upload
-      let mindUrl = ''
-      if (mindFile) {
-        console.log('📤 Getting presigned URL for mind file:', {
-          name: mindFile.name,
-          size: mindFile.size,
-          type: mindFile.type
-        })
-        
-        const mindPresignResponse = await fetch('/api/upload/r2/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            fileName: mindFile.name,
-            fileType: 'mind',
-            contentType: mindFile.type
-          })
-        })
-
-        if (!mindPresignResponse.ok) {
-          const err = await mindPresignResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to get presigned URL for mind file')
-        }
-
-        const mindPresignData = await mindPresignResponse.json()
-        console.log('✅ Got presigned URL for mind file upload')
-        
-        // Try presigned upload first, fallback to proxy if CORS fails
-        try {
-          console.log('🔄 Attempting presigned mind file upload...')
-          const mindUploadResponse = await fetch(mindPresignData.presignedUrl, {
-            method: 'PUT',
-            body: mindFile,
-            headers: {
-              'Content-Type': mindFile.type
-            }
-          })
-          
-          if (mindUploadResponse.ok) {
-            console.log('✅ Mind file uploaded successfully via presigned URL')
-            mindUrl = mindPresignData.publicUrl
-                    } else {
-            throw new Error(`Presigned mind upload failed: ${mindUploadResponse.status}`)
-          }
-        } catch (error) {
-          console.log('⚠️ Presigned mind upload failed, trying proxy upload...', error)
-          
-          // Fallback to proxy upload
-          const mindFormData = new FormData()
-          mindFormData.append('file', mindFile)
-          mindFormData.append('fileType', 'mind')
-          
-          const proxyResponse = await fetch('/api/upload/r2-proxy/', {
-            method: 'POST',
-            body: mindFormData
-          })
-          
-          if (!proxyResponse.ok) {
-            const err = await proxyResponse.json().catch(() => null)
-            throw new Error(err?.error || 'Proxy mind upload also failed')
-          }
-          
-          const proxyData = await proxyResponse.json()
-          console.log('✅ Mind file uploaded successfully via proxy')
-          mindUrl = proxyData.url
-        }
-      }
-
-      // Create AR experience record
-      const experienceData = {
-        title: title.trim(),
-        video_file_url: videoUrl,
-        mind_file_url: mindUrl || null,
-        user_id: user!.id
-      }
-
-      const experienceResponse = await fetch('/api/ar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(experienceData)
-      })
-
-      if (!experienceResponse.ok) {
-        throw new Error('Failed to create AR experience')
-      }
-
-      const experience = await experienceResponse.json()
+      const newExperience = await createResponse.json()
+      console.log('✅ AR experience created successfully:', newExperience)
 
       toast.success('AR experience created successfully!')
       
       // Redirect to the new experience
-      setTimeout(() => {
-        router.push(`/experience/${experience.id}`)
-      }, 1000)
+      router.push(`/dashboard/experiences/${newExperience.id}`)
 
     } catch (error) {
-      console.error('Error creating AR experience:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
-          } finally {
-        setSubmitting(false)
+      console.error('❌ Error creating AR experience:', error)
+      
+      if (error instanceof Error) {
+        toast.error(error.message)
+      } else {
+        toast.error('An unexpected error occurred')
       }
-      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (loading) {
     return (
