@@ -32,8 +32,18 @@ export default function CreateExperience() {
     if (file) {
       // Check file size (100MB limit to match server)
       const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+      const fileSizeMB = file.size / 1024 / 1024
+      
+      console.log('📁 File validation:', {
+        name: file.name,
+        size: file.size,
+        sizeMB: fileSizeMB.toFixed(2),
+        maxSizeMB: 100,
+        isUnderLimit: file.size <= maxSizeInBytes
+      })
+      
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 100MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
         return
       }
 

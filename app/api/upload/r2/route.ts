@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
+// Force Next.js to handle larger request bodies for this route
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes timeout
+
 
 
 // Cloudflare R2 configuration
@@ -30,6 +34,8 @@ const r2Client = new S3Client({
 export async function POST(request: NextRequest) {
   try {
     console.log('☁️  R2 upload request received')
+    console.log('📋 Request method:', request.method)
+    console.log('📋 Request URL:', request.url)
     
     // Check if this is a multipart form data request
     const contentType = request.headers.get('content-type')
