@@ -5,10 +5,14 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const R2_ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID
 const R2_SECRET_ACCESS_KEY = process.env.CLOUDFLARE_SECRET_ACCESS_KEY
-const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME
+const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'quickscanar'
 
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.error('❌ Missing Cloudflare R2 environment variables')
+  console.error('Account ID:', R2_ACCOUNT_ID ? '✅ Set' : '❌ Missing')
+  console.error('Access Key:', R2_ACCESS_KEY_ID ? '✅ Set' : '❌ Missing')
+  console.error('Secret Key:', R2_SECRET_ACCESS_KEY ? '✅ Set' : '❌ Missing')
+  console.error('Bucket Name:', R2_BUCKET_NAME)
 }
 
 // Initialize R2 client
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
     await r2Client.send(uploadCommand)
 
     // Generate public URL (R2 public bucket)
-    const publicUrl = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
+    const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
 
     console.log('✅ File uploaded to R2:', {
       fileName,
