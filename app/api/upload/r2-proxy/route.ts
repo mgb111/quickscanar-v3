@@ -5,6 +5,9 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes timeout
 
+// Configure this route to handle larger requests
+export const runtime = 'nodejs'
+
 // Cloudflare R2 configuration
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const R2_ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID

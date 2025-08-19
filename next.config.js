@@ -15,10 +15,6 @@ const nextConfig = {
     };
     return config;
   },
-  // Configure server to handle larger requests for proxy uploads
-  serverRuntimeConfig: {
-    maxBodySize: '500mb',
-  },
 }
 
 module.exports = nextConfig 

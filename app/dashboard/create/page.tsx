@@ -102,62 +102,150 @@ export default function CreateExperience() {
 
     try {
 
-            // Upload video to Supabase Storage (direct upload - no CORS issues)
-      console.log('📤 Uploading video to Supabase Storage:', {
+      // Get presigned URL for video upload
+      console.log('📤 Getting presigned URL for video:', {
         name: videoFile.name,
         size: videoFile.size,
         sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
         type: videoFile.type
       })
       
-      const videoFileName = `${user?.id}/${Date.now()}-video.${videoFile.name.split('.').pop()}`
-      
-      const videoFormData = new FormData()
-      videoFormData.append('file', videoFile)
-      videoFormData.append('fileType', 'video')
-
-      const videoResponse = await fetch('/api/upload/video/', {
+      const presignResponse = await fetch('/api/upload/r2/', {
         method: 'POST',
-        body: videoFormData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: videoFile.name,
+          fileType: 'video',
+          contentType: videoFile.type
+        })
       })
 
-      if (!videoResponse.ok) {
-        const err = await videoResponse.json().catch(() => null)
-        console.error('❌ Video upload failed:', err)
-        throw new Error(err?.error || 'Failed to upload video')
+      if (!presignResponse.ok) {
+        console.error('❌ Failed to get presigned URL:', {
+          status: presignResponse.status,
+          statusText: presignResponse.statusText
+        })
+        
+        const err = await presignResponse.json().catch(() => null)
+        console.error('❌ Error details:', err)
+        
+        throw new Error(err?.error || `Failed to get presigned URL (${presignResponse.status})`)
       }
 
-      const videoData = await videoResponse.json()
-      const videoUrl = videoData.url
-      console.log('✅ Video uploaded successfully to Supabase')
+      const presignData = await presignResponse.json()
+      console.log('✅ Got presigned URL for video upload')
+      
+      // Try presigned upload first, fallback to proxy if CORS fails
+      let videoUrl = ''
+      try {
+        console.log('🔄 Attempting presigned upload...')
+        const videoUploadResponse = await fetch(presignData.presignedUrl, {
+          method: 'PUT',
+          body: videoFile,
+          headers: {
+            'Content-Type': videoFile.type
+          }
+        })
+        
+        if (videoUploadResponse.ok) {
+          console.log('✅ Video uploaded successfully via presigned URL')
+          videoUrl = presignData.publicUrl
+        } else {
+          throw new Error(`Presigned upload failed: ${videoUploadResponse.status}`)
+        }
+      } catch (error) {
+        console.log('⚠️ Presigned upload failed, trying proxy upload...', error)
+        
+        // Fallback to proxy upload
+        const videoFormData = new FormData()
+        videoFormData.append('file', videoFile)
+        videoFormData.append('fileType', 'video')
+        
+        const proxyResponse = await fetch('/api/upload/r2-proxy/', {
+              method: 'POST',
+          body: videoFormData
+        })
+        
+        if (!proxyResponse.ok) {
+          const err = await proxyResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Proxy upload also failed')
+        }
+        
+        const proxyData = await proxyResponse.json()
+        console.log('✅ Video uploaded successfully via proxy')
+        videoUrl = proxyData.url
+      }
 
-            // Upload mind file to Supabase Storage (direct upload - no CORS issues)
+      // Get presigned URL for mind file upload
       let mindUrl = ''
       if (mindFile) {
-        console.log('📤 Uploading mind file to Supabase Storage:', {
+        console.log('📤 Getting presigned URL for mind file:', {
           name: mindFile.name,
           size: mindFile.size,
           type: mindFile.type
         })
         
-        const mindFormData = new FormData()
-        mindFormData.append('file', mindFile)
-        mindFormData.append('fileType', 'mind')
-
-        const mindResponse = await fetch('/api/upload/marker/', {
+        const mindPresignResponse = await fetch('/api/upload/r2/', {
           method: 'POST',
-          body: mindFormData
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileName: mindFile.name,
+            fileType: 'mind',
+            contentType: mindFile.type
+          })
         })
 
-        if (!mindResponse.ok) {
-          const err = await mindResponse.json().catch(() => null)
-          console.error('❌ Mind file upload failed:', err)
-          throw new Error(err?.error || 'Failed to upload mind file')
+        if (!mindPresignResponse.ok) {
+          const err = await mindPresignResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get presigned URL for mind file')
         }
 
-        const mindData = await mindResponse.json()
-        mindUrl = mindData.url
-        console.log('✅ Mind file uploaded successfully to Supabase')
+        const mindPresignData = await mindPresignResponse.json()
+        console.log('✅ Got presigned URL for mind file upload')
+        
+        // Try presigned upload first, fallback to proxy if CORS fails
+        try {
+          console.log('🔄 Attempting presigned mind file upload...')
+          const mindUploadResponse = await fetch(mindPresignData.presignedUrl, {
+            method: 'PUT',
+            body: mindFile,
+            headers: {
+              'Content-Type': mindFile.type
+            }
+          })
+          
+          if (mindUploadResponse.ok) {
+            console.log('✅ Mind file uploaded successfully via presigned URL')
+            mindUrl = mindPresignData.publicUrl
+                    } else {
+            throw new Error(`Presigned mind upload failed: ${mindUploadResponse.status}`)
+          }
+        } catch (error) {
+          console.log('⚠️ Presigned mind upload failed, trying proxy upload...', error)
+          
+          // Fallback to proxy upload
+          const mindFormData = new FormData()
+          mindFormData.append('file', mindFile)
+          mindFormData.append('fileType', 'mind')
+          
+          const proxyResponse = await fetch('/api/upload/r2-proxy/', {
+            method: 'POST',
+            body: mindFormData
+          })
+          
+          if (!proxyResponse.ok) {
+            const err = await proxyResponse.json().catch(() => null)
+            throw new Error(err?.error || 'Proxy mind upload also failed')
+          }
+          
+          const proxyData = await proxyResponse.json()
+          console.log('✅ Mind file uploaded successfully via proxy')
+          mindUrl = proxyData.url
+        }
       }
 
       // Create AR experience record
