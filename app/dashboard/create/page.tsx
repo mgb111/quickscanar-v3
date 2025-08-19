@@ -27,6 +27,21 @@ export default function CreateExperience() {
 
   const [submitting, setSubmitting] = useState(false)
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        const result = reader.result as string
+        // Remove the data:image/jpeg;base64, prefix
+        const base64 = result.split(',')[1]
+        resolve(base64)
+      }
+      reader.onerror = error => reject(error)
+    })
+  }
+
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -101,7 +116,7 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-      // Upload video file
+      // Upload video file using base64
       console.log('📤 Uploading video file:', {
         name: videoFile.name,
         size: videoFile.size,
@@ -109,13 +124,20 @@ export default function CreateExperience() {
         type: videoFile.type
       })
       
-      const videoFormData = new FormData()
-      videoFormData.append('file', videoFile)
-      videoFormData.append('fileType', 'video')
+      // Convert file to base64
+      const videoBase64 = await fileToBase64(videoFile)
       
-      const videoResponse = await fetch('/api/upload/r2/', {
+      const videoResponse = await fetch('/api/upload/r2-base64/', {
         method: 'POST',
-        body: videoFormData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: videoFile.name,
+          fileType: 'video',
+          contentType: videoFile.type,
+          base64Data: videoBase64
+        })
       })
 
       if (!videoResponse.ok) {
@@ -126,20 +148,27 @@ export default function CreateExperience() {
       const videoData = await videoResponse.json()
       console.log('✅ Video uploaded successfully:', videoData.url)
 
-      // Upload mind file
+      // Upload mind file using base64
       console.log('📤 Uploading mind file:', {
         name: mindFile.name,
         size: mindFile.size,
         type: mindFile.type
       })
       
-      const mindFormData = new FormData()
-      mindFormData.append('file', mindFile)
-      mindFormData.append('fileType', 'mind')
+      // Convert file to base64
+      const mindBase64 = await fileToBase64(mindFile)
       
-      const mindResponse = await fetch('/api/upload/r2/', {
+      const mindResponse = await fetch('/api/upload/r2-base64/', {
         method: 'POST',
-        body: mindFormData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: mindFile.name,
+          fileType: 'mind',
+          contentType: mindFile.type,
+          base64Data: mindBase64
+        })
       })
 
       if (!mindResponse.ok) {

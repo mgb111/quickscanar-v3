@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
-  api: {
-    bodyParser: {
-      sizeLimit: '500mb',
-    },
-    responseLimit: '500mb',
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
+    serverActions: {
+      bodySizeLimit: '500mb'
+    }
   },
   images: {
     unoptimized: true,
@@ -24,9 +24,6 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/marker_images/**',
       },
     ],
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
   },
   webpack: (config) => {
     config.resolve.fallback = {
