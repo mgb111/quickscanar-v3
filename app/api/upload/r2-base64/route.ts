@@ -6,6 +6,16 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes timeout
 export const runtime = 'nodejs'
 
+// Allow large base64 uploads (default is 1MB, increase to 50MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+}
+
+
 // Cloudflare R2 configuration
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const R2_ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID
