@@ -30,20 +30,20 @@ export default function CreateExperience() {
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (500MB limit to match R2 proxy server)
-      const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
+      // Check file size (100MB limit to match server)
+      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
       const fileSizeMB = file.size / 1024 / 1024
       
       console.log('📁 File validation:', {
         name: file.name,
         size: file.size,
         sizeMB: fileSizeMB.toFixed(2),
-        maxSizeMB: 500,
+        maxSizeMB: 100,
         isUnderLimit: file.size <= maxSizeInBytes
       })
       
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 500MB, your file is ${fileSizeMB.toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
         return
       }
 
@@ -102,150 +102,62 @@ export default function CreateExperience() {
 
     try {
 
-      // Get presigned URL for video upload
-      console.log('📤 Getting presigned URL for video:', {
+            // Upload video to Supabase Storage (direct upload - no CORS issues)
+      console.log('📤 Uploading video to Supabase Storage:', {
         name: videoFile.name,
         size: videoFile.size,
         sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
         type: videoFile.type
       })
       
-      const presignResponse = await fetch('/api/upload/r2/', {
+      const videoFileName = `${user?.id}/${Date.now()}-video.${videoFile.name.split('.').pop()}`
+      
+      const videoFormData = new FormData()
+      videoFormData.append('file', videoFile)
+      videoFormData.append('fileType', 'video')
+
+      const videoResponse = await fetch('/api/upload/video/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileName: videoFile.name,
-          fileType: 'video',
-          contentType: videoFile.type
-        })
+        body: videoFormData
       })
 
-      if (!presignResponse.ok) {
-        console.error('❌ Failed to get presigned URL:', {
-          status: presignResponse.status,
-          statusText: presignResponse.statusText
-        })
-        
-        const err = await presignResponse.json().catch(() => null)
-        console.error('❌ Error details:', err)
-        
-        throw new Error(err?.error || `Failed to get presigned URL (${presignResponse.status})`)
+      if (!videoResponse.ok) {
+        const err = await videoResponse.json().catch(() => null)
+        console.error('❌ Video upload failed:', err)
+        throw new Error(err?.error || 'Failed to upload video')
       }
 
-      const presignData = await presignResponse.json()
-      console.log('✅ Got presigned URL for video upload')
-      
-      // Try presigned upload first, fallback to proxy if CORS fails
-      let videoUrl = ''
-      try {
-        console.log('🔄 Attempting presigned upload...')
-        const videoUploadResponse = await fetch(presignData.presignedUrl, {
-          method: 'PUT',
-          body: videoFile,
-          headers: {
-            'Content-Type': videoFile.type
-          }
-        })
-        
-        if (videoUploadResponse.ok) {
-          console.log('✅ Video uploaded successfully via presigned URL')
-          videoUrl = presignData.publicUrl
-        } else {
-          throw new Error(`Presigned upload failed: ${videoUploadResponse.status}`)
-        }
-      } catch (error) {
-        console.log('⚠️ Presigned upload failed, trying proxy upload...', error)
-        
-        // Fallback to proxy upload
-        const videoFormData = new FormData()
-        videoFormData.append('file', videoFile)
-        videoFormData.append('fileType', 'video')
-        
-        const proxyResponse = await fetch('/api/upload/r2-proxy/', {
-          method: 'POST',
-          body: videoFormData
-        })
-        
-        if (!proxyResponse.ok) {
-          const err = await proxyResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Proxy upload also failed')
-        }
-        
-        const proxyData = await proxyResponse.json()
-        console.log('✅ Video uploaded successfully via proxy')
-        videoUrl = proxyData.url
-      }
+      const videoData = await videoResponse.json()
+      const videoUrl = videoData.url
+      console.log('✅ Video uploaded successfully to Supabase')
 
-      // Get presigned URL for mind file upload
+            // Upload mind file to Supabase Storage (direct upload - no CORS issues)
       let mindUrl = ''
       if (mindFile) {
-        console.log('📤 Getting presigned URL for mind file:', {
+        console.log('📤 Uploading mind file to Supabase Storage:', {
           name: mindFile.name,
           size: mindFile.size,
           type: mindFile.type
         })
         
-        const mindPresignResponse = await fetch('/api/upload/r2/', {
+        const mindFormData = new FormData()
+        mindFormData.append('file', mindFile)
+        mindFormData.append('fileType', 'mind')
+
+        const mindResponse = await fetch('/api/upload/marker/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            fileName: mindFile.name,
-            fileType: 'mind',
-            contentType: mindFile.type
-          })
+          body: mindFormData
         })
 
-        if (!mindPresignResponse.ok) {
-          const err = await mindPresignResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to get presigned URL for mind file')
+        if (!mindResponse.ok) {
+          const err = await mindResponse.json().catch(() => null)
+          console.error('❌ Mind file upload failed:', err)
+          throw new Error(err?.error || 'Failed to upload mind file')
         }
 
-        const mindPresignData = await mindPresignResponse.json()
-        console.log('✅ Got presigned URL for mind file upload')
-        
-        // Try presigned upload first, fallback to proxy if CORS fails
-        try {
-          console.log('🔄 Attempting presigned mind file upload...')
-          const mindUploadResponse = await fetch(mindPresignData.presignedUrl, {
-            method: 'PUT',
-            body: mindFile,
-            headers: {
-              'Content-Type': mindFile.type
-            }
-          })
-          
-          if (mindUploadResponse.ok) {
-            console.log('✅ Mind file uploaded successfully via presigned URL')
-            mindUrl = mindPresignData.publicUrl
-          } else {
-            throw new Error(`Presigned mind upload failed: ${mindUploadResponse.status}`)
-          }
-        } catch (error) {
-          console.log('⚠️ Presigned mind upload failed, trying proxy upload...', error)
-          
-          // Fallback to proxy upload
-          const mindFormData = new FormData()
-          mindFormData.append('file', mindFile)
-          mindFormData.append('fileType', 'mind')
-          
-          const proxyResponse = await fetch('/api/upload/r2-proxy/', {
-            method: 'POST',
-            body: mindFormData
-          })
-          
-          if (!proxyResponse.ok) {
-            const err = await proxyResponse.json().catch(() => null)
-            throw new Error(err?.error || 'Proxy mind upload also failed')
-          }
-          
-          const proxyData = await proxyResponse.json()
-          console.log('✅ Mind file uploaded successfully via proxy')
-          mindUrl = proxyData.url
-        }
+        const mindData = await mindResponse.json()
+        mindUrl = mindData.url
+        console.log('✅ Mind file uploaded successfully to Supabase')
       }
 
       // Create AR experience record
@@ -280,10 +192,10 @@ export default function CreateExperience() {
     } catch (error) {
       console.error('Error creating AR experience:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+          } finally {
+        setSubmitting(false)
+      }
+      }
 
   if (loading) {
     return (
@@ -346,7 +258,7 @@ export default function CreateExperience() {
               className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
           >
               Go to Compiler
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <ArrowLeft className="h-5 w-5 ml-2" />
           </Link>
         </div>
         
@@ -400,10 +312,10 @@ export default function CreateExperience() {
             {/* File Uploads */}
             <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload */}
-                        <div>
+            <div>
               <label className="block text-lg font-medium text-black mb-3">
-                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 500MB)</span>
-            </label>
+                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
+              </label>
               <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
                     <div className="space-y-3">
@@ -427,13 +339,13 @@ export default function CreateExperience() {
               </label>
               </p>
                       <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
-                                        <input
+                <input
                           id="video-upload"
-                          type="file"
+                  type="file"
                           accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
                           onChange={handleVideoUpload}
-                          className="hidden"
-                        />
+                  className="hidden"
+                />
               </div>
                   )}
                 </div>
