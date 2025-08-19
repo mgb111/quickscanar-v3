@@ -40,6 +40,18 @@ const r2Client = new S3Client({
   },
 })
 
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('☁️  R2 presigned URL request received')
@@ -113,6 +125,12 @@ export async function POST(request: NextRequest) {
       publicUrl,
       fileName: uniqueFileName,
       uploadMethod: 'PUT'
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
     })
 
   } catch (error) {
