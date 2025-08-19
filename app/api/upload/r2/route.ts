@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
+
+
 // Cloudflare R2 configuration
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const R2_ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID
@@ -28,6 +30,14 @@ const r2Client = new S3Client({
 export async function POST(request: NextRequest) {
   try {
     console.log('☁️  R2 upload request received')
+    
+    // Check if this is a multipart form data request
+    const contentType = request.headers.get('content-type')
+    console.log('📋 Content-Type:', contentType)
+    
+    if (!contentType || !contentType.includes('multipart/form-data')) {
+      return NextResponse.json({ error: 'Invalid content type. Expected multipart/form data' }, { status: 400 })
+    }
     
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -112,6 +122,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ R2 upload error:', error)
+    
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error name:', error.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    
+    // Check if it's a size-related error
+    if (error instanceof Error && error.message.includes('413')) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 100MB' },
+        { status: 413 }
+      )
+    }
+    
     return NextResponse.json(
       { error: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }

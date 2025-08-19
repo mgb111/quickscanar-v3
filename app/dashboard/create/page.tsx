@@ -97,14 +97,34 @@ export default function CreateExperience() {
       videoFormData.append('file', videoFile)
       videoFormData.append('fileType', 'video')
       
+      console.log('📤 Uploading video file:', {
+        name: videoFile.name,
+        size: videoFile.size,
+        sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
+        type: videoFile.type
+      })
+      
       const videoResponse = await fetch('/api/upload/r2', {
         method: 'POST',
-        body: videoFormData
+        body: videoFormData,
+        // Don't set Content-Type header - let the browser set it with boundary
       })
 
       if (!videoResponse.ok) {
+        console.error('❌ Video upload failed:', {
+          status: videoResponse.status,
+          statusText: videoResponse.statusText,
+          headers: Object.fromEntries(videoResponse.headers.entries())
+        })
+        
         const err = await videoResponse.json().catch(() => null)
-        throw new Error(err?.error || 'Failed to upload video')
+        console.error('❌ Error details:', err)
+        
+        if (videoResponse.status === 413) {
+          throw new Error(`Video file too large. Maximum size is 100MB. Your file is ${(videoFile.size / 1024 / 1024).toFixed(1)}MB`)
+        }
+        
+        throw new Error(err?.error || `Failed to upload video (${videoResponse.status})`)
       }
 
       const videoData = await videoResponse.json()
