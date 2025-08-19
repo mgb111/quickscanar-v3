@@ -30,20 +30,20 @@ export default function CreateExperience() {
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (100MB limit to match server)
-      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
+      // Check file size (500MB limit to match R2 proxy server)
+      const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
       const fileSizeMB = file.size / 1024 / 1024
       
       console.log('📁 File validation:', {
         name: file.name,
         size: file.size,
         sizeMB: fileSizeMB.toFixed(2),
-        maxSizeMB: 100,
+        maxSizeMB: 500,
         isUnderLimit: file.size <= maxSizeInBytes
       })
       
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 500MB, your file is ${fileSizeMB.toFixed(1)}MB`)
         return
       }
 
@@ -280,10 +280,10 @@ export default function CreateExperience() {
     } catch (error) {
       console.error('Error creating AR experience:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
-          } finally {
-        setSubmitting(false)
-      }
-      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -346,7 +346,7 @@ export default function CreateExperience() {
               className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
           >
               Go to Compiler
-              <ArrowLeft className="h-5 w-5 ml-2" />
+              <ArrowRight className="h-5 w-5 ml-2" />
           </Link>
         </div>
         
@@ -402,7 +402,7 @@ export default function CreateExperience() {
               {/* Video Upload */}
                         <div>
               <label className="block text-lg font-medium text-black mb-3">
-                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
+                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 500MB)</span>
             </label>
               <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
