@@ -1,9 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
   images: {
     unoptimized: true,
     domains: ['localhost', 'your-project.supabase.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/a/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pmsqoujpagfebrsrzdpl.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/marker_images/**',
+      },
+    ],
   },
   experimental: {
     serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
@@ -17,4 +36,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig
