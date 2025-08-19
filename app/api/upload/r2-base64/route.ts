@@ -6,14 +6,6 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes timeout
 export const runtime = 'nodejs'
 
-// Allow large base64 uploads (default is 1MB, increase to 50MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-}
 
 
 // Cloudflare R2 configuration
@@ -57,20 +49,39 @@ export async function POST(request: NextRequest) {
     console.log('☁️  R2 base64 upload request received')
     
     // Parse JSON body
-    const body = await request.json()
+    let body: any
+    try {
+      body = await request.json()
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+    }
     const { fileName, fileType, contentType, base64Data } = body
-    
+
     if (!fileName || !fileType || !base64Data) {
       return NextResponse.json({ 
         error: 'Missing required fields: fileName, fileType, or base64Data' 
       }, { status: 400 })
     }
 
+    // Validate base64 string
+    const base64Pattern = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
+    if (!base64Pattern.test(base64Data.replace(/\s/g, ''))) {
+      return NextResponse.json({ error: 'Invalid base64 data.' }, { status: 400 })
+    }
+
+    // Check file size (base64 expands size by ~33%)
+    const fileSizeBytes = Math.floor((base64Data.length * 3) / 4) // rough estimate
+    const maxBytes = 50 * 1024 * 1024 // 50MB
+    if (fileSizeBytes > maxBytes) {
+      return NextResponse.json({ error: `File too large. Max allowed is 50MB.` }, { status: 413 })
+    }
+
     console.log('📁 File details:', {
       name: fileName,
       type: contentType,
       fileType,
-      base64Length: base64Data.length
+      base64Length: base64Data.length,
+      fileSizeBytes,
     })
 
     // Validate file types based on fileType
