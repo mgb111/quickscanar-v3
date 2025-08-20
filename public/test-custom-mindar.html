@@ -84,7 +84,7 @@
         <div id="arScene" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000;">
             <a-scene
                 id="testScene"
-                mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;"
+                mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind; filterBeta: 0.05; filterMinCF: 0.02; warmupTolerance: 10; missTolerance: 10"
                 color-space="sRGB"
                 renderer="colorManagement: true, physicallyCorrectLights"
                 vr-mode-ui="enabled: false"
@@ -164,7 +164,7 @@
                 const target = document.getElementById('testTarget');
                 
                 // Update the scene with custom files
-                scene.setAttribute('mindar-image', `imageTargetSrc: ${mindarUrl};`);
+                scene.setAttribute('mindar-image', `imageTargetSrc: ${mindarUrl}; filterBeta: 0.05; filterMinCF: 0.02; warmupTolerance: 10; missTolerance: 10`);
                 
                 // Update marker image
                 const markerImg = document.getElementById('testMarker');
