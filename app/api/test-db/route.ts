@@ -27,18 +27,12 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Check table structure
-    const { data: tableInfo, error: tableError } = await supabase
-      .rpc('get_table_info', { table_name: 'ar_experiences' })
-      .catch(() => ({ data: null, error: { message: 'RPC function not available' } }))
-    
     console.log('✅ Database connection successful')
     
     return NextResponse.json({
       success: true,
       message: 'Database connection successful',
-      tableExists: true,
-      tableInfo: tableInfo || 'RPC function not available'
+      tableExists: true
     })
     
   } catch (error) {
