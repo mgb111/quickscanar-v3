@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         description: null,
         marker_image_url: '', // Will be set later if needed
         mind_file_url: mind_file_url || null,
-        video_url: video_file_url,
+        video_file_url: video_file_url,
         preview_image_url: null,
         plane_width: 1.0,
         plane_height: 1.0,

@@ -15,7 +15,7 @@ type ARExperience = {
   description: string | null
   marker_image_url: string | null
   mind_file_url: string
-  video_url: string
+  video_file_url: string
   preview_image_url: string | null
   plane_width: number
   plane_height: number

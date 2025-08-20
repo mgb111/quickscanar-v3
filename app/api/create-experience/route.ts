@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: experienceId,
         mind_file_url: mindFileUrl,
-        video_url: videoUrl,
+        video_file_url: videoUrl,
         plane_width: 1,
         plane_height: 0.5625,
         video_rotation: 0
