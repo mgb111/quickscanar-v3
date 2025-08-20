@@ -19,8 +19,17 @@ export async function GET(
     console.log('🔍 Path received:', path)
     console.log('🔍 Filename:', filename)
     
+    // Get R2 configuration from environment variables
+    const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
+    const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'quickscanar'
+    
+    if (!R2_ACCOUNT_ID) {
+      console.error('❌ Missing CLOUDFLARE_ACCOUNT_ID environment variable')
+      return NextResponse.json({ error: 'R2 configuration missing' }, { status: 500 })
+    }
+    
     // Construct the full R2 URL from the filename
-    const r2Url = `https://quickscanar.0217fd4ca4bd0849046b2ce08c1371e7.r2.cloudflarestorage.com/${filename}`
+    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${filename}`
     
     console.log('🔍 Full R2 URL:', r2Url)
 
@@ -79,4 +88,72 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+export async function HEAD(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  try {
+    const { path } = params
+    
+    if (!path || path.length === 0) {
+      return NextResponse.json({ error: 'Path parameter is required' }, { status: 400 })
+    }
+
+    const filename = path.join('/')
+    
+    // Get R2 configuration
+    const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
+    const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'quickscanar'
+    
+    if (!R2_ACCOUNT_ID) {
+      return NextResponse.json({ error: 'R2 configuration missing' }, { status: 500 })
+    }
+    
+    // Construct the R2 URL
+    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${filename}`
+    
+    // Fetch headers only from R2
+    const response = await fetch(r2Url, { method: 'HEAD' })
+    
+    if (!response.ok) {
+      return NextResponse.json({ 
+        error: 'File not found on R2',
+        status: response.status 
+      }, { status: response.status })
+    }
+
+    // Return headers with CORS
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Content-Length': response.headers.get('content-length') || '0',
+        'Content-Type': response.headers.get('content-type') || 'application/octet-stream',
+        'Last-Modified': response.headers.get('last-modified') || new Date().toUTCString(),
+      },
+    })
+
+  } catch (error) {
+    console.error('❌ HEAD proxy error:', error)
+    return NextResponse.json(
+      { error: `HEAD proxy failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { status: 500 }
+    )
+  }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
 }
