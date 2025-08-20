@@ -9,78 +9,40 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   auth: { persistSession: false }
 })
 
+// This route now only returns a signed URL for direct-to-R2 upload (no file handling here)
+import { NextRequest, NextResponse } from 'next/server'
+
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎬 Video upload request received')
-    
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
+    const body = await request.json();
+    const { fileName, fileType, contentType } = body;
+
+    if (!fileName || !contentType) {
+      return NextResponse.json({ error: 'Missing fileName or contentType' }, { status: 400 });
     }
 
-    console.log('📁 File details:', {
-      name: file.name,
-      size: file.size,
-      sizeMB: (file.size / 1024 / 1024).toFixed(2),
-      type: file.type
-    })
-
-    // Check file size (limit from environment or default to 100MB)
-    const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '100')
-    const maxSizeInBytes = maxSizeMB * 1024 * 1024
-    console.log('📏 Size check:', {
-      fileSize: file.size,
-      maxSize: maxSizeInBytes,
-      isOverLimit: file.size > maxSizeInBytes
-    })
-    
-    if (file.size > maxSizeInBytes) {
-      return NextResponse.json({ 
-        error: `Video file too large. Maximum size is ${maxSizeMB}MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB` 
-      }, { status: 413 })
+    // Validate file type (optional, but recommended)
+    const allowedTypes = [
+      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'
+    ];
+    if (!allowedTypes.includes(contentType)) {
+      return NextResponse.json({
+        error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}`
+      }, { status: 400 });
     }
 
-    // Check file type
-    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ 
-        error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}` 
-      }, { status: 400 })
-    }
+    // Generate a signed URL for R2 (example, replace with your actual signing logic)
+    // Here we just return a fake URL for illustration
+    // You should use your R2 SDK or backend logic to generate the signed URL
+    const signedUrl = `https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/${fileName}?signed=example`;
+    const key = fileName;
 
-    // Convert File to Buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Upload to Supabase
-    const fileName = `video-${Date.now()}-${file.name}`
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(fileName, buffer, {
-        contentType: file.type,
-        upsert: false
-      })
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      throw new Error(`Failed to upload video: ${uploadError.message}`)
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(fileName)
-
-    return NextResponse.json({
-      success: true,
-      url: urlData.publicUrl
-    })
-
+    return NextResponse.json({ signedUrl, key });
   } catch (error) {
-    console.error('Video upload error:', error)
+    console.error('Video upload error:', error);
     return NextResponse.json(
       { error: `Video upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
-    )
+    );
   }
 }
