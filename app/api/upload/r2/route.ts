@@ -98,9 +98,8 @@ export async function POST(request: NextRequest) {
     await r2Client.send(uploadCommand)
 
     // Generate public URL (R2 public bucket)
-    // Note: This should be the public URL from your R2 bucket settings
-    // Format: https://pub-xxxxxxxx.r2.dev/filename
-    const publicUrl = `https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/${fileName}`
+    // Use the same bucket endpoint but with 'pub-' prefix for public access
+    const publicUrl = `https://pub-${R2_ACCOUNT_ID}.r2.dev/${fileName}`
 
     console.log('✅ File uploaded to R2:', {
       fileName,

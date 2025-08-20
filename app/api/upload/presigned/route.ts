@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
     const signedUrl = await getSignedUrl(r2Client, putObjectCommand, { expiresIn: 900 })
 
     // Generate public URL for after upload
-    const publicUrl = `https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/${finalFileName}`
+    // Use the same bucket endpoint but with 'pub-' prefix for public access
+    const publicUrl = `https://pub-${R2_ACCOUNT_ID}.r2.dev/${finalFileName}`
 
     console.log('✅ Presigned URL generated:', {
       fileName: finalFileName,

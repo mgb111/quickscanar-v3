@@ -96,6 +96,18 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 4. **Frontend uploads directly to R2** → File bypasses Vercel completely
 5. **File available at public URL** → Ready for use in AR experiences
 
+## Recent Updates
+
+### Fixed R2 URL Configuration
+- **Issue**: Hardcoded R2 public URL was incorrect
+- **Solution**: Now dynamically generates public URLs using `https://pub-${CLOUDFLARE_ACCOUNT_ID}.r2.dev`
+- **Result**: Presigned URLs and public URLs now match your actual R2 bucket configuration
+
+### Added Debug Tools
+- **New Endpoint**: `/api/upload/debug` - Shows R2 configuration and expected URLs
+- **Enhanced Test Page**: `/test-upload` now includes R2 configuration checker
+- **Better Logging**: Console logs show presigned URL data and upload responses
+
 ## Troubleshooting
 
 ### If you still get 413 errors:
@@ -112,6 +124,12 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 - Check CORS settings on R2 bucket
 - Verify presigned URL hasn't expired (15 minutes)
 - Check file size limits on R2 bucket
+
+### If presigned URLs point to wrong domain:
+- **Use the debug endpoint**: Visit `/api/upload/debug` to check your R2 configuration
+- **Verify environment variables**: Ensure `CLOUDFLARE_ACCOUNT_ID` is set correctly
+- **Check R2 bucket settings**: Make sure your bucket is configured for public access
+- **Expected format**: Public URLs should be `https://pub-{ACCOUNT_ID}.r2.dev/{filename}`
 
 ## Next Steps
 

@@ -9,6 +9,7 @@ export default function TestUpload() {
   const [uploadStatus, setUploadStatus] = useState('')
   const [uploadedUrl, setUploadedUrl] = useState('')
   const [error, setError] = useState('')
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -49,6 +50,8 @@ export default function TestUpload() {
 
       const presignedData = await presignedResponse.json()
       
+      console.log('Presigned URL data:', presignedData)
+      
       // Step 2: Upload directly to R2
       setUploadStatus('Uploading file directly to R2...')
       
@@ -61,11 +64,14 @@ export default function TestUpload() {
       })
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file directly to R2')
+        console.error('Upload response:', uploadResponse.status, uploadResponse.statusText)
+        throw new Error(`Failed to upload file directly to R2: ${uploadResponse.status} ${uploadResponse.statusText}`)
       }
 
       setUploadStatus('Upload successful!')
       setUploadedUrl(presignedData.publicUrl)
+      
+      console.log('Upload successful! File available at:', presignedData.publicUrl)
       
     } catch (err) {
       console.error('Upload error:', err)
@@ -82,6 +88,22 @@ export default function TestUpload() {
     setUploadedUrl('')
   }
 
+  const checkR2Config = async () => {
+    try {
+      const response = await fetch('/api/upload/debug')
+      if (response.ok) {
+        const data = await response.json()
+        setDebugInfo(data)
+        console.log('R2 Configuration:', data)
+      } else {
+        throw new Error('Failed to get debug info')
+      }
+    } catch (err) {
+      console.error('Debug check failed:', err)
+      setError('Failed to check R2 configuration')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
@@ -89,6 +111,16 @@ export default function TestUpload() {
           <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             Test Direct Upload to R2
           </h1>
+          
+          {/* Debug Button */}
+          <div className="text-center mb-6">
+            <button
+              onClick={checkR2Config}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+            >
+              Check R2 Configuration
+            </button>
+          </div>
           
           <div className="space-y-6">
             {/* File Selection */}
@@ -184,6 +216,24 @@ export default function TestUpload() {
                 <p className="text-sm text-green-600 mt-2 break-all">
                   File URL: {uploadedUrl}
                 </p>
+              </div>
+            )}
+
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">R2 Configuration:</h3>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <div><strong>Environment:</strong></div>
+                  <div>Account ID: {debugInfo.environment.CLOUDFLARE_ACCOUNT_ID}</div>
+                  <div>Access Key: {debugInfo.environment.CLOUDFLARE_ACCESS_KEY_ID}</div>
+                  <div>Secret Key: {debugInfo.environment.CLOUDFLARE_SECRET_ACCESS_KEY}</div>
+                  <div>Bucket Name: {debugInfo.environment.CLOUDFLARE_R2_BUCKET_NAME}</div>
+                  <div className="mt-2"><strong>Expected URLs:</strong></div>
+                  <div>R2 Endpoint: {debugInfo.expectedUrls.r2Endpoint}</div>
+                  <div>Public URL: {debugInfo.expectedUrls.publicUrl}</div>
+                  <div>Bucket URL: {debugInfo.expectedUrls.bucketUrl}</div>
+                </div>
               </div>
             )}
 
