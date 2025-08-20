@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { Camera, Upload, Video, ArrowLeft, ArrowRight, Plus, X, CheckCircle } from 'lucide-react'
+import { Camera, Upload, Video, ArrowLeft, Plus, X, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import toast from 'react-hot-toast'
 
@@ -24,28 +24,25 @@ export default function CreateExperience() {
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
-
   const [submitting, setSubmitting] = useState(false)
-
-
 
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (500MB limit to match server)
-      const maxSizeInBytes = 500 * 1024 * 1024 // 500MB
+      // Check file size (100MB limit)
+      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
       const fileSizeMB = file.size / 1024 / 1024
       
       console.log('📁 File validation:', {
         name: file.name,
         size: file.size,
         sizeMB: fileSizeMB.toFixed(2),
-        maxSizeMB: 500,
+        maxSizeMB: 100,
         isUnderLimit: file.size <= maxSizeInBytes
       })
       
       if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 500MB, your file is ${fileSizeMB.toFixed(1)}MB`)
+        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
         return
       }
 
@@ -103,19 +100,13 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-      // Upload video file using base64
+      // Upload video file
       console.log('📤 Uploading video file:', {
         name: videoFile.name,
         size: videoFile.size,
         sizeMB: (videoFile.size / 1024 / 1024).toFixed(2),
         type: videoFile.type
       })
-      
-      // Upload video file
-      const maxVideoMB = 100;
-      if (videoFile.size > maxVideoMB * 1024 * 1024) {
-        throw new Error(`Video file too large. Maximum size is ${maxVideoMB}MB.`);
-      }
       
       const videoFormData = new FormData()
       videoFormData.append('file', videoFile)
@@ -181,8 +172,8 @@ export default function CreateExperience() {
 
       toast.success('AR experience created successfully!')
       
-      // Redirect to the home page
-      router.push('/')
+      // Redirect to dashboard
+      router.push('/dashboard')
 
     } catch (error) {
       console.error('❌ Error creating AR experience:', error)
@@ -214,7 +205,7 @@ export default function CreateExperience() {
     <div className="min-h-screen bg-cream">
       {/* Navigation */}
       <Header
-        showDashboard={false}
+        showDashboard={true}
         showSignOut={true}
         userEmail={user?.email}
         onSignOut={() => router.push('/auth/signout')}
@@ -224,6 +215,15 @@ export default function CreateExperience() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="text-center text-black mb-12">
+          <div className="flex justify-center mb-6">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center text-red-600 hover:text-red-800 text-sm font-medium"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
             Create AR Experience
           </h1>
@@ -235,24 +235,24 @@ export default function CreateExperience() {
         {/* Step 1: Compile Image to AR Format */}
         <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
           <div className="flex items-center justify-between mb-6">
-          <div>
+            <div>
               <h3 className="text-2xl font-semibold mb-3 text-black flex items-center">
                 <Camera className="h-6 w-6 mr-3 text-red-600" />
                 Step 1: Compile Image to AR Format
-            </h3>
+              </h3>
               <p className="text-black opacity-80 text-lg">
                 First, convert your image to AR-ready format using our compiler
-            </p>
-          </div>
-          <Link
-            href="/compiler"
+              </p>
+            </div>
+            <Link
+              href="/compiler"
               className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
-          >
+            >
               Go to Compiler
               <ArrowLeft className="h-5 w-5 ml-2" />
-          </Link>
-        </div>
-        
+            </Link>
+          </div>
+          
           <div className="bg-cream border border-black rounded-xl p-6">
             <h4 className="font-semibold text-black mb-4 text-lg">What happens in the compiler:</h4>
             <ul className="text-black space-y-2 text-base">
@@ -260,28 +260,28 @@ export default function CreateExperience() {
                 <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
                 Upload your image (JPG, PNG, etc.)
               </li>
-            <li className="flex items-center">
+              <li className="flex items-center">
                 <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
                 Our AI processes it to create a .mind file
-            </li>
-            <li className="flex items-center">
+              </li>
+              <li className="flex items-center">
                 <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
                 The .mind file contains the image recognition data
-            </li>
-            <li className="flex items-center">
+              </li>
+              <li className="flex items-center">
                 <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
                 Download the .mind file to use in your AR experience
-            </li>
-          </ul>
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
 
         {/* Step 2: Create AR Experience Form */}
         <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
           <h3 className="text-2xl font-semibold mb-6 text-black flex items-center">
             <Upload className="h-6 w-6 mr-3 text-red-600" />
             Step 2: Create New AR Experience
-        </h3>
+          </h3>
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Title Input */}
@@ -303,11 +303,11 @@ export default function CreateExperience() {
             {/* File Uploads */}
             <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload */}
-            <div>
-              <label className="block text-lg font-medium text-black mb-3">
-                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
-              </label>
-              <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+              <div>
+                <label className="block text-lg font-medium text-black mb-3">
+                  Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
+                </label>
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
                     <div className="space-y-3">
                       <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
@@ -320,27 +320,27 @@ export default function CreateExperience() {
                         <X className="h-4 w-4 mr-1" />
                         Remove
                       </button>
-            </div>
+                    </div>
                   ) : (
-            <div>
+                    <div>
                       <Video className="h-10 w-10 text-black mx-auto mb-3" />
                       <p className="text-base text-black">
                         <label htmlFor="video-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
                           Click to upload video
-              </label>
-              </p>
+                        </label>
+                      </p>
                       <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
-                <input
-                          id="video-upload"
-                  type="file"
-                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
-                          onChange={handleVideoUpload}
-                  className="hidden"
-                />
-              </div>
+                      <input
+                        id="video-upload"
+                        type="file"
+                        accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
+                        onChange={handleVideoUpload}
+                        className="hidden"
+                      />
+                    </div>
                   )}
                 </div>
-            </div>
+              </div>
 
               {/* Mind File Upload */}
               <div>
@@ -362,22 +362,22 @@ export default function CreateExperience() {
                       </button>
                     </div>
                   ) : (
-            <div>
+                    <div>
                       <Upload className="h-10 w-10 text-black mx-auto mb-3" />
                       <p className="text-base text-black">
                         <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
                           Upload .mind file
-              </label>
-              </p>
+                        </label>
+                      </p>
                       <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
-                <input
+                      <input
                         id="mind-upload"
-                  type="file"
+                        type="file"
                         accept=".mind"
                         onChange={handleMindUpload}
-                  className="hidden"
-                />
-              </div>
+                        className="hidden"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
@@ -403,8 +403,6 @@ export default function CreateExperience() {
                 )}
               </button>
             </div>
-
-
           </form>
         </div>
         
