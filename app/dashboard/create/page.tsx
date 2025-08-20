@@ -148,7 +148,8 @@ export default function CreateExperience() {
       })
 
       if (!experienceResponse.ok) {
-        throw new Error('Failed to create AR experience')
+        const errorData = await experienceResponse.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to create AR experience')
       }
 
       const experience = await experienceResponse.json()

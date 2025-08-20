@@ -12,6 +12,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { title, video_file_url, mind_file_url, user_id } = body
+    
+    console.log('📝 Creating AR experience with data:', {
+      title,
+      video_file_url,
+      mind_file_url,
+      user_id,
+      hasTitle: !!title,
+      hasVideo: !!video_file_url,
+      hasMind: !!mind_file_url,
+      hasUserId: !!user_id
+    })
 
     // Validate required fields
     if (!title || !video_file_url || !user_id) {
@@ -26,12 +37,12 @@ export async function POST(request: NextRequest) {
       .insert({
         title: title.trim(),
         description: null,
-        marker_image_url: '', // Will be set later if needed
+
         mind_file_url: mind_file_url || null,
         video_url: video_file_url,
         preview_image_url: null,
         plane_width: 1.0,
-        plane_height: 1.0,
+        plane_height: 0.5625, // Match the schema default
         video_rotation: 0,
         user_id: user_id
       })
@@ -39,7 +50,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Database error creating AR experience:', error)
+      console.error('❌ Database error creating AR experience:', error)
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
       return NextResponse.json({ 
         error: `Failed to create AR experience: ${error.message}` 
       }, { status: 500 })

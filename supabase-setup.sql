@@ -7,7 +7,7 @@ CREATE TABLE ar_experiences (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
-  marker_image_url TEXT NOT NULL,
+
   mind_file_url TEXT NOT NULL,
   video_url TEXT NOT NULL,
   preview_image_url TEXT,
@@ -62,7 +62,6 @@ SELECT
   id,
   title,
   description,
-  marker_image_url,
   mind_file_url,
   video_url,
   plane_width,
@@ -83,34 +82,7 @@ FROM ar_experiences;
 -- STORAGE POLICIES SETUP
 -- ========================================
 
--- Markers bucket policies
--- Run these after creating the 'markers' bucket in Storage
 
--- Allow authenticated users to upload marker images
-CREATE POLICY "Users can upload markers" ON storage.objects
-FOR INSERT WITH CHECK (
-  bucket_id = 'markers' 
-  AND auth.role() = 'authenticated'
-  AND (storage.extension(name))::text IN ('jpg', 'jpeg', 'png', 'gif', 'webp')
-);
-
--- Allow public read access to marker images
-CREATE POLICY "Public can view markers" ON storage.objects
-FOR SELECT USING (bucket_id = 'markers');
-
--- Allow users to update their own marker images
-CREATE POLICY "Users can update their own markers" ON storage.objects
-FOR UPDATE USING (
-  bucket_id = 'markers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
--- Allow users to delete their own marker images
-CREATE POLICY "Users can delete their own markers" ON storage.objects
-FOR DELETE USING (
-  bucket_id = 'markers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
 
 -- ========================================
 

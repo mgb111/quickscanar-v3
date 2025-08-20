@@ -17,7 +17,7 @@ BEGIN
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
           title TEXT NOT NULL,
           description TEXT,
-          marker_image_url TEXT NOT NULL,
+        
           mind_file_url TEXT NOT NULL,
           video_url TEXT NOT NULL,
           preview_image_url TEXT,
