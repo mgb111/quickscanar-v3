@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, video_file_url, mind_file_url, user_id } = body
+    const { title, video_file_url, mind_file_url, user_id, link_url } = body
     
     console.log('📝 Creating AR experience with data:', {
       title,
@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
       hasTitle: !!title,
       hasVideo: !!video_file_url,
       hasMind: !!mind_file_url,
-      hasUserId: !!user_id
+      hasUserId: !!user_id,
+      hasLink: !!link_url
     })
 
     // Validate required fields
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
 
         mind_file_url: mind_file_url || null,
         video_url: video_file_url,
+        link_url: link_url ? String(link_url).trim() : null,
         preview_image_url: null,
         plane_width: 1.0,
         plane_height: 0.5625, // Match the schema default

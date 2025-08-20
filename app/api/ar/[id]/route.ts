@@ -307,6 +307,37 @@ export async function GET(
         left: -9999px !important;
         top: -9999px !important;
       }
+
+      /* Optional external link button */
+      #externalLinkBtn {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 1004;
+        display: none; /* shown dynamically if link exists */
+      }
+      #externalLinkBtn a {
+        text-decoration: none;
+        background: #1f2937; /* dark-blue-ish to match site */
+        color: #ffffff;
+        border: 2px solid #000000;
+        border-radius: 9999px;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        opacity: 0.9;
+        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+      }
+      #externalLinkBtn a:hover {
+        transform: translateY(-1px);
+        opacity: 1;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      }
+      @media (max-width: 768px) { 
+        #externalLinkBtn a { padding: 9px 12px; font-size: 12px; }
+        #externalLinkBtn { right: 12px; bottom: 12px; }
+      }
     </style>
   </head>
   <body>
@@ -384,6 +415,14 @@ export async function GET(
         ></a-plane>
       </a-entity>
     </a-scene>
+
+    ${experience.link_url ? `
+    <div id="externalLinkBtn">
+      <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
+        Open Link
+      </a>
+    </div>
+    ` : ''}
 
     <script>
       async function preflightMind(url) {
@@ -463,6 +502,7 @@ export async function GET(
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
         const backgroundPlane = document.querySelector('#backgroundPlane');
+        const externalLinkBtn = document.getElementById('externalLinkBtn');
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -681,6 +721,10 @@ export async function GET(
               overlay.style.display = 'none';
               showStatus('Initializing...', 'Starting camera and tracker');
               setTimeout(hideStatus, 1000);
+              // Show external link button if exists
+              if (externalLinkBtn) {
+                externalLinkBtn.style.display = 'block';
+              }
             }, 500);
             
           }, { once: true });

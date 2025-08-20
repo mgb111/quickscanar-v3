@@ -52,6 +52,20 @@ BEGIN
     END IF;
 END $$;
 
+-- Add link_url column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'ar_experiences' AND column_name = 'link_url'
+    ) THEN
+        ALTER TABLE ar_experiences ADD COLUMN link_url TEXT;
+        RAISE NOTICE 'Added link_url column';
+    ELSE
+        RAISE NOTICE 'link_url column already exists';
+    END IF;
+END $$;
+
 -- Add user_id column if it doesn't exist
 DO $$ 
 BEGIN

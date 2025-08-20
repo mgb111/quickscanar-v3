@@ -24,6 +24,7 @@ export default function CreateExperience() {
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
+  const [linkUrl, setLinkUrl] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -168,7 +169,8 @@ export default function CreateExperience() {
         title: title.trim(),
         video_file_url: videoUrl,
         mind_file_url: mindUrl || null,
-        user_id: user!.id
+        user_id: user!.id,
+        link_url: linkUrl.trim() ? linkUrl.trim() : null
       }
 
       const experienceResponse = await fetch('/api/ar', {
@@ -311,6 +313,23 @@ export default function CreateExperience() {
                 placeholder="Enter a descriptive title"
                 required
               />
+            </div>
+
+            {/* Optional Link URL */}
+            <div>
+              <label htmlFor="link_url" className="block text-lg font-medium text-black mb-3">
+                Optional Link (opens from AR)
+              </label>
+              <input
+                type="url"
+                id="link_url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                className="w-full px-6 py-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-red-600 focus:border-transparent text-lg"
+                placeholder="https://example.com"
+                inputMode="url"
+              />
+              <p className="text-sm text-black opacity-70 mt-2">If provided, a small button will appear in the AR experience.</p>
             </div>
 
             {/* File Uploads */}
