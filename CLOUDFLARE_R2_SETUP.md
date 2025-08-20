@@ -19,9 +19,10 @@ This guide will help you set up Cloudflare R2 object storage to replace Supabase
 4. **Important**: Check ✅ **"Public bucket"** option
 5. Click **Create bucket**
 
-## **🎯 Step 4: Configure CORS for AR Files**
-**CRITICAL**: You must set CORS rules for your R2 bucket to allow AR files to load properly.
+## **🎯 Step 4: CORS Solution (Optional)**
+**Note**: We've implemented a proxy API route that handles CORS automatically, so you don't need to configure CORS in R2.
 
+However, if you prefer to configure CORS directly in R2:
 1. In your R2 bucket, go to **Settings** → **CORS**
 2. Click **Add CORS rule**
 3. Add this CORS rule:
@@ -67,10 +68,11 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 4. Check the console for R2 upload logs
 
 ## **🔧 How It Works**
-- **Video files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/video-{timestamp}-{id}.mp4`
-- **Mind files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/mind-{timestamp}-{id}.mind`
+- **Files uploaded to R2**: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/`
+- **Files served via proxy**: `https://quickscanar.com/api/ar-assets/{filename}`
 - **File size limit**: 100MB per file
 - **Supported video formats**: MP4, WebM, OGG, AVI, MOV, QuickTime
+- **CORS handled automatically** by the proxy API route
 
 ## **✅ Benefits of R2**
 - **10GB free storage** (vs Supabase's 500MB-1GB)
