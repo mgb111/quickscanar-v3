@@ -31,10 +31,10 @@ export async function GET(
 
     // Use proxy for mind files to avoid CORS issues
     const originalMindUrl = experience.mind_file_url
-    const mindFileUrl = originalMindUrl 
-      ? '/api/ar-assets/' + encodeURIComponent(originalMindUrl)
-      : 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const usingCustomMind = !!experience.mind_file_url
+  const mindFileUrl = originalMindUrl 
+  ? '/api/ar-assets/' + originalMindUrl.split('/').pop() // Just get the filename
+  : 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+const usingCustomMind = !!experience.mind_file_url
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -349,15 +349,15 @@ export async function GET(
     >
       <a-assets>
         <video
-          id="videoTexture"
-          src="${experience.video_url ? '/api/ar-assets/' + encodeURIComponent(experience.video_url) : experience.video_url}"
-          loop
-          muted
-          playsinline
-          crossorigin="anonymous"
-          preload="auto"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-        ></video>
+  id="videoTexture"
+  src="${experience.video_url ? '/api/ar-assets/' + experience.video_url.split('/').pop() : experience.video_url}"
+  loop
+  muted
+  playsinline
+  crossorigin="anonymous"
+  preload="auto"
+  style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
+></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
