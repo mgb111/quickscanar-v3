@@ -11,17 +11,19 @@ export async function GET(
       return NextResponse.json({ error: 'Path parameter is required' }, { status: 400 })
     }
 
-    // Get R2 configuration from environment variables
-    const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
-    const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'quickscanar'
-    
-    if (!R2_ACCOUNT_ID) {
-      console.error('❌ Missing CLOUDFLARE_ACCOUNT_ID environment variable')
-      return NextResponse.json({ error: 'R2 configuration missing' }, { status: 500 })
-    }
 
-    // Construct the R2 URL
-    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${path.join('/')}`
+
+    // The path now contains the full R2 URL, so we can use it directly
+    const r2Url = decodeURIComponent(path.join('/'))
+    
+    console.log('🔍 Path received:', path)
+    console.log('🔍 Decoded URL:', r2Url)
+    
+    // Validate that it's a valid R2 URL
+    if (!r2Url.includes('r2.cloudflarestorage.com')) {
+      console.error('❌ Invalid R2 URL:', r2Url)
+      return NextResponse.json({ error: 'Invalid R2 URL' }, { status: 400 })
+    }
     
     console.log('🔍 Proxying R2 request:', r2Url)
 
@@ -94,16 +96,16 @@ export async function HEAD(
       return NextResponse.json({ error: 'Path parameter is required' }, { status: 400 })
     }
 
-    // Get R2 configuration
-    const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
-    const R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'quickscanar'
-    
-    if (!R2_ACCOUNT_ID) {
-      return NextResponse.json({ error: 'R2 configuration missing' }, { status: 500 })
-    }
 
-    // Construct the R2 URL
-    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${path.join('/')}`
+
+    // The path now contains the full R2 URL, so we can use it directly
+    const r2Url = decodeURIComponent(path.join('/'))
+    
+    // Validate that it's a valid R2 URL
+    if (!r2Url.includes('r2.cloudflarestorage.com')) {
+      console.error('❌ Invalid R2 URL:', r2Url)
+      return NextResponse.json({ error: 'Invalid R2 URL' }, { status: 400 })
+    }
     
     // Fetch headers only from R2
     const response = await fetch(r2Url, { method: 'HEAD' })
