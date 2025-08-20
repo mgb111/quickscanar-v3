@@ -19,6 +19,13 @@ This guide will help you set up Cloudflare R2 object storage to replace Supabase
 4. **Important**: Check ✅ **"Public bucket"** option
 5. Click **Create bucket**
 
+## **🎯 Step 3.5: Get Your Public URL**
+1. Click on your `quickscanar` bucket
+2. Go to **Settings** tab
+3. Look for **"Public access"** section
+4. **Copy the public URL** (format: `https://pub-xxxxxxxx.r2.dev`)
+5. **Save this URL** - you'll need it for your environment variables
+
 ## **🎯 Step 4: Configure CORS for AR Files**
 **CRITICAL**: You must set CORS rules for your R2 bucket to allow AR files to load properly.
 
@@ -58,6 +65,9 @@ CLOUDFLARE_ACCOUNT_ID=your_32_character_account_id
 CLOUDFLARE_ACCESS_KEY_ID=your_access_key_here
 CLOUDFLARE_SECRET_ACCESS_KEY=your_secret_key_here
 CLOUDFLARE_R2_BUCKET_NAME=quickscanar
+
+# Your Public R2 URL (from bucket Settings → Public access)
+CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxxxxxxx.r2.dev
 ```
 
 ## **🎯 Step 7: Test Your Setup**
@@ -67,8 +77,9 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 4. Check the console for R2 upload logs
 
 ## **🔧 How It Works**
-- **Video files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/video-{timestamp}-{id}.mp4`
-- **Mind files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/mind-{timestamp}-{id}.mind`
+- **Video files** are uploaded to: `https://pub-xxxxxxxx.r2.dev/video-{timestamp}-{id}.mp4`
+- **Mind files** are uploaded to: `https://pub-xxxxxxxx.r2.dev/mind-{timestamp}-{id}.mp4`
+- **Get your public URL** from R2 bucket Settings → Public access
 - **File size limit**: 100MB per file
 - **Supported video formats**: MP4, WebM, OGG, AVI, MOV, QuickTime
 
