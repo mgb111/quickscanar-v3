@@ -29,7 +29,8 @@ export async function GET(
     }
     
     // Construct the full R2 URL from the filename
-    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${filename}`
+    // Correct format: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{FILENAME}
+    const r2Url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${filename}`
     
     console.log('🔍 Full R2 URL:', r2Url)
 
@@ -111,8 +112,8 @@ export async function HEAD(
       return NextResponse.json({ error: 'R2 configuration missing' }, { status: 500 })
     }
     
-    // Construct the R2 URL
-    const r2Url = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${filename}`
+    // ✅ FIXED: Construct the R2 URL using the correct format
+    const r2Url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${filename}`
     
     // Fetch headers only from R2
     const response = await fetch(r2Url, { method: 'HEAD' })
