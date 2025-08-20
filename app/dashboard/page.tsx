@@ -152,16 +152,25 @@ export default function Dashboard() {
                 Step 1: Convert Your Images to AR Format
               </h3>
               <p className="text-gray-600">
-                First, convert your images to AR-ready targets using our MindAR compiler
+                First, convert your images to AR-ready targets using our MindAR compiler. Videos will be automatically compressed to under 10MB.
               </p>
             </div>
-            <Link
-              href="/compiler"
-              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
-            >
-              Convert Images
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Link>
+            <div className="flex space-x-3">
+              <Link
+                href="/compiler"
+                className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+              >
+                Convert Images
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+              <Link
+                href="/test-compression"
+                className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
+              >
+                Test Compression
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </div>
           </div>
         </div>
 

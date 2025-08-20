@@ -4,15 +4,24 @@ import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { Camera, Upload, Video, ArrowLeft, Plus, X, CheckCircle } from 'lucide-react'
+import { Camera, Upload, Video, ArrowLeft, Plus, X, CheckCircle, Image } from 'lucide-react'
 import Header from '@/components/Header'
 import toast from 'react-hot-toast'
+import VideoCompressor from '@/components/VideoCompressor'
+import { createClient } from '@supabase/supabase-js'
+
+// Create Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface ARExperience {
   id: string
   title: string
   mind_file_url: string
   video_file_url: string
+  marker_image_url: string
   user_id: string
   created_at: string
   updated_at: string
@@ -24,37 +33,42 @@ export default function CreateExperience() {
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
+  const [markerImageFile, setMarkerImageFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showCompression, setShowCompression] = useState(false)
+  const [originalVideoFile, setOriginalVideoFile] = useState<File | null>(null)
 
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (100MB limit)
-      const maxSizeInBytes = 100 * 1024 * 1024 // 100MB
-      const fileSizeMB = file.size / 1024 / 1024
-      
-      console.log('📁 File validation:', {
-        name: file.name,
-        size: file.size,
-        sizeMB: fileSizeMB.toFixed(2),
-        maxSizeMB: 100,
-        isUnderLimit: file.size <= maxSizeInBytes
-      })
-      
-      if (file.size > maxSizeInBytes) {
-        toast.error(`Video file too large. Maximum size is 100MB, your file is ${fileSizeMB.toFixed(1)}MB`)
-        return
-      }
-
-      // Check file type
+      // Check file type first
       const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
       if (!allowedTypes.includes(file.type)) {
         toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
         return
       }
 
-      setVideoFile(file)
-      toast.success('Video uploaded successfully!')
+      const fileSizeMB = file.size / 1024 / 1024
+      const maxSizeMB = 10 // New 10MB limit
+      
+      console.log('📁 File validation:', {
+        name: file.name,
+        size: file.size,
+        sizeMB: fileSizeMB.toFixed(2),
+        maxSizeMB: maxSizeMB,
+        isUnderLimit: file.size <= maxSizeMB * 1024 * 1024
+      })
+      
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        // File is too large, show compression dialog
+        setOriginalVideoFile(file)
+        setShowCompression(true)
+        toast.success(`Video is ${fileSizeMB.toFixed(1)}MB. We'll compress it to under ${maxSizeMB}MB.`)
+      } else {
+        // File is under limit, accept directly
+        setVideoFile(file)
+        toast.success('Video uploaded successfully!')
+      }
     }
   }, [])
 
@@ -70,13 +84,44 @@ export default function CreateExperience() {
     }
   }, [])
 
-  const removeFile = useCallback((type: 'video' | 'mind') => {
+  const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please upload a JPEG, PNG, or WebP image')
+        return
+      }
+      setMarkerImageFile(file)
+      toast.success('Marker image uploaded successfully!')
+    }
+  }, [])
+
+  const removeFile = useCallback((type: 'video' | 'mind' | 'marker') => {
     if (type === 'video') {
       setVideoFile(null)
-    } else {
+      setOriginalVideoFile(null)
+      setShowCompression(false)
+    } else if (type === 'mind') {
       setMindFile(null)
+    } else if (type === 'marker') {
+      setMarkerImageFile(null)
     }
-    toast.success(`${type === 'video' ? 'Video' : 'Mind file'} removed`)
+    toast.success(`${type === 'video' ? 'Video' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
+  }, [])
+
+  const handleCompressionComplete = useCallback((compressedFile: File) => {
+    setVideoFile(compressedFile)
+    setShowCompression(false)
+    setOriginalVideoFile(null)
+    toast.success(`Video compressed successfully! New size: ${(compressedFile.size / 1024 / 1024).toFixed(1)}MB`)
+  }, [])
+
+  const handleCompressionCancel = useCallback(() => {
+    setShowCompression(false)
+    setOriginalVideoFile(null)
+    toast.success('Video compression cancelled')
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,6 +139,11 @@ export default function CreateExperience() {
 
     if (!mindFile) {
       toast.error('Please upload a mind file')
+      return
+    }
+
+    if (!markerImageFile) {
+      toast.error('Please upload a marker image')
       return
     }
 
@@ -147,18 +197,49 @@ export default function CreateExperience() {
       const mindData = await mindResponse.json()
       console.log('✅ Mind file uploaded successfully:', mindData.url)
 
+      // Upload marker image
+      console.log('📤 Uploading marker image:', {
+        name: markerImageFile.name,
+        size: markerImageFile.size,
+        type: markerImageFile.type
+      })
+      
+      const markerImageFormData = new FormData()
+      markerImageFormData.append('file', markerImageFile)
+      
+      const markerImageResponse = await fetch('/api/upload/marker-image/', {
+        method: 'POST',
+        body: markerImageFormData
+      })
+
+      if (!markerImageResponse.ok) {
+        const err = await markerImageResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Marker image upload failed')
+      }
+
+      const markerImageData = await markerImageResponse.json()
+      console.log('✅ Marker image uploaded successfully:', markerImageData.url)
+
       // Create AR experience in database
       console.log('💾 Creating AR experience in database...')
+      
+      // Get the current user's session token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('No active session found')
+      }
       
       const createResponse = await fetch('/api/ar-experiences/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           title: title.trim(),
           video_file_url: videoData.url,
           mind_file_url: mindData.url,
+          marker_image_url: markerImageData.url,
         }),
       })
 
@@ -305,13 +386,16 @@ export default function CreateExperience() {
               {/* Video Upload */}
               <div>
                 <label className="block text-lg font-medium text-black mb-3">
-                  Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
+                  Video File * <span className="text-sm font-normal text-black opacity-70">(Max 10MB)</span>
                 </label>
                 <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
                     <div className="space-y-3">
                       <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
                       <p className="text-base text-black font-medium">{videoFile.name}</p>
+                      <p className="text-sm text-gray-600">
+                        Size: {(videoFile.size / 1024 / 1024).toFixed(1)}MB
+                      </p>
                       <button
                         type="button"
                         onClick={() => removeFile('video')}
@@ -381,7 +465,59 @@ export default function CreateExperience() {
                   )}
                 </div>
               </div>
+
+              {/* Marker Image Upload */}
+              <div>
+                <label className="block text-lg font-medium text-black mb-3">
+                  Marker Image *
+                </label>
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                  {markerImageFile ? (
+                    <div className="space-y-3">
+                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                      <p className="text-base text-black font-medium">{markerImageFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => removeFile('marker')}
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Image className="h-10 w-10 text-black mx-auto mb-3" />
+                      <p className="text-base text-black">
+                        <label htmlFor="marker-image-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                          Upload Marker Image
+                        </label>
+                      </p>
+                      <p className="text-sm text-black opacity-70 mt-2">JPG, PNG, or WebP</p>
+                      <input
+                        id="marker-image-upload"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleMarkerImageUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Video Compression Dialog */}
+            {showCompression && originalVideoFile && (
+              <div className="mt-8">
+                <VideoCompressor
+                  file={originalVideoFile}
+                  onCompressed={handleCompressionComplete}
+                  onCancel={handleCompressionCancel}
+                  targetSizeMB={10}
+                />
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-center pt-4">

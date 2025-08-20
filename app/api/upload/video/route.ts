@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
       type: file.type
     })
 
-    // Check file size (limit from environment or default to 100MB)
-    const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '100')
+    // Check file size (limit from environment or default to 10MB)
+    const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '10')
     const maxSizeInBytes = maxSizeMB * 1024 * 1024
     
     if (file.size > maxSizeInBytes) {
