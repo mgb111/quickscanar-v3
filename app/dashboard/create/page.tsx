@@ -27,20 +27,7 @@ export default function CreateExperience() {
 
   const [submitting, setSubmitting] = useState(false)
 
-  // Helper function to convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => {
-        const result = reader.result as string
-        // Remove the data:image/jpeg;base64, prefix
-        const base64 = result.split(',')[1]
-        resolve(base64)
-      }
-      reader.onerror = error => reject(error)
-    })
-  }
+
 
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -124,19 +111,18 @@ export default function CreateExperience() {
         type: videoFile.type
       })
       
-      // Use streaming upload for video (multipart/form-data)
+      // Upload video file
       const maxVideoMB = 100;
       if (videoFile.size > maxVideoMB * 1024 * 1024) {
         throw new Error(`Video file too large. Maximum size is ${maxVideoMB}MB.`);
       }
-      const videoForm = new FormData();
-      videoForm.append('file', videoFile);
-      videoForm.append('fileType', 'video');
-      videoForm.append('fileName', videoFile.name);
-      videoForm.append('contentType', videoFile.type);
-      const videoResponse = await fetch('/api/upload/r2-streaming/', {
+      
+      const videoFormData = new FormData()
+      videoFormData.append('file', videoFile)
+      
+      const videoResponse = await fetch('/api/upload/video/', {
         method: 'POST',
-        body: videoForm
+        body: videoFormData
       })
 
       if (!videoResponse.ok) {
@@ -147,27 +133,19 @@ export default function CreateExperience() {
       const videoData = await videoResponse.json()
       console.log('✅ Video uploaded successfully:', videoData.url)
 
-      // Upload mind file using base64
+      // Upload mind file
       console.log('📤 Uploading mind file:', {
         name: mindFile.name,
         size: mindFile.size,
         type: mindFile.type
       })
       
-      // Convert file to base64
-      const mindBase64 = await fileToBase64(mindFile)
+      const mindFormData = new FormData()
+      mindFormData.append('file', mindFile)
       
-      const mindResponse = await fetch('/api/upload/r2-base64/', {
+      const mindResponse = await fetch('/api/upload/mind/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileName: mindFile.name,
-          fileType: 'mind',
-          contentType: mindFile.type,
-          base64Data: mindBase64
-        })
+        body: mindFormData
       })
 
       if (!mindResponse.ok) {
