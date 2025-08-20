@@ -26,7 +26,7 @@ export async function GET(
       title: experience.title,
       marker_image_url: experience.marker_image_url,
       mind_file_url: experience.mind_file_url,
-      video_file_url: experience.video_file_url
+      video_url: experience.video_url
     })
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
@@ -346,7 +346,7 @@ export async function GET(
       <a-assets>
         <video
           id="videoTexture"
-          src="${experience.video_file_url}"
+          src="${experience.video_url}"
           loop
           muted
           playsinline

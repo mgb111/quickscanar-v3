@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
+import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode.react'
+import Header from '@/components/Header'
 
 type ARExperience = {
   id: string
@@ -15,24 +15,18 @@ type ARExperience = {
   description: string | null
   marker_image_url: string | null
   mind_file_url: string
-  video_file_url: string
+  video_url: string
   preview_image_url: string | null
   created_at: string
   updated_at: string
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const router = useRouter()
   const [experiences, setExperiences] = useState<ARExperience[]>([])
   const [loadingExperiences, setLoadingExperiences] = useState(true)
   const [showQR, setShowQR] = useState<string | null>(null)
-
-  // Create Supabase client
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   useEffect(() => {
     if (!loading && !user) {
@@ -100,122 +94,219 @@ export default function Dashboard() {
     }
   }
 
+  const clearAllStorage = async () => {
+    if (!confirm('⚠️  WARNING: This will delete ALL files from ALL storage buckets. This action cannot be undone. Are you sure?')) {
+      return
+    }
+
+    if (!supabase) {
+      toast.error('Supabase client not available')
+      return
+    }
+
+    try {
+      toast.loading('Clearing all storage...', { id: 'storage-clear' })
+      
+      // List all buckets
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
+      
+      if (bucketsError) throw bucketsError
+      
+      let totalDeleted = 0
+      
+      // Clear each bucket
+      for (const bucket of buckets) {
+        // List all files in bucket (including subdirectories)
+        const { data: files, error: listError } = await supabase.storage
+          .from(bucket.name)
+          .list('', { limit: 1000, offset: 0 })
+        
+        if (listError) {
+          console.error(`Failed to list files in ${bucket.name}:`, listError)
+          continue
+        }
+        
+        if (files && files.length > 0) {
+          // Delete all files
+          const filePaths = files.map(file => file.name)
+          const { error: deleteError } = await supabase.storage
+            .from(bucket.name)
+            .remove(filePaths)
+          
+          if (deleteError) {
+            console.error(`Failed to delete files in ${bucket.name}:`, deleteError)
+          } else {
+            totalDeleted += filePaths.length
+            console.log(`Deleted ${filePaths.length} files from ${bucket.name}`)
+          }
+        }
+      }
+      
+      toast.success(`Storage cleared! Deleted ${totalDeleted} files from ${buckets.length} buckets.`, { id: 'storage-clear' })
+      
+      // Also clear database records
+      if (user) {
+        const { error: dbError } = await supabase
+          .from('ar_experiences')
+          .delete()
+          .eq('user_id', user.id)
+        
+        if (dbError) {
+          console.error('Failed to clear database records:', dbError)
+        } else {
+          setExperiences([])
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Storage cleanup error:', error)
+      toast.error(`Failed to clear storage: ${error.message}`, { id: 'storage-clear' })
+    }
+  }
+
   if (loading || loadingExperiences) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
       </div>
     )
+  }
+
+  if (!user) {
+    router.push('/auth/signin')
+    return null
   }
 
   return (
     <div className="min-h-screen bg-cream">
       {/* Navigation */}
-      <nav className="bg-dark-blue shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Camera className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-white">{user?.email}</span>
-              <button
-                onClick={() => router.push('/auth/signout')}
-                className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header
+        showDashboard={false}
+        showSignOut={true}
+        userEmail={user?.email}
+        onSignOut={() => router.push('/auth/signout')}
+      />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
-        <div className="text-center text-black mb-8">
-          <h1 className="text-4xl font-bold mb-4 tracking-tight">
+        <div className="text-center text-black mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 tracking-tight">
             AR Experience Dashboard
           </h1>
-          <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl opacity-80 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
             Create and manage your augmented reality experiences
           </p>
+          
+          {/* Storage Cleanup Button */}
+          <div className="mt-6">
+            <button
+              onClick={clearAllStorage}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center mx-auto shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none border-2 border-black"
+            >
+              <Trash2 className="h-5 w-5 mr-2" />
+              Clear All Storage
+            </button>
+            <p className="text-sm text-black opacity-60 mt-2">
+              ⚠️ This will delete ALL files and database records
+            </p>
+          </div>
         </div>
 
-        {/* Step 1: Convert Images */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
+        {/* Step 1: Create AR Format */}
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <Upload className="h-5 w-5 mr-2 text-dark-blue" />
-                Step 1: Convert Your Images to AR Format
+                <Upload className="h-5 w-5 mr-2 text-red-600" />
+                Step 1: Create AR Format
               </h3>
-              <p className="text-gray-600">
-                First, convert your images to AR-ready targets using our MindAR compiler. Videos will be automatically compressed to under 10MB.
+              <p className="text-black opacity-80">
+                First, create AR-ready targets using our MindAR compiler
               </p>
             </div>
-            <div className="flex space-x-3">
-              <Link
-                href="/compiler"
-                className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
-              >
-                Convert Images
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-              <Link
-                href="/test-compression"
-                className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
-              >
-                Test Compression
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </div>
+            <Link
+              href="/compiler"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
+            >
+              <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
+              <span className="hidden sm:inline">Create AR</span>
+              <span className="sm:hidden">Create AR</span>
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </div>
         </div>
 
         {/* Create New Experience */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
-                <Video className="h-5 w-5 mr-2 text-dark-blue" />
+                <Video className="h-5 w-5 mr-2 text-red-600" />
                 Step 2: Create New AR Experience
               </h3>
-              <p className="text-gray-600">
+              <p className="text-black opacity-80">
                 Build your AR experience with videos and converted .mind files
               </p>
             </div>
             <Link
               href="/dashboard/create"
-              className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors flex items-center"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
             >
-              Create Experience
+              <Video className="h-5 w-5 mr-2 hidden sm:inline" />
+              <span className="hidden sm:inline">Create Experience</span>
+              <span className="sm:hidden">Create AR</span>
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Analytics */}
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-red-600" />
+                Step 3: Track Performance
+              </h3>
+              <p className="text-black opacity-80">
+                Monitor engagement, conversions, and user behavior with detailed analytics
+              </p>
+            </div>
+            <Link
+              href="/analytics"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
+            >
+              <BarChart3 className="h-5 w-5 mr-2 hidden sm:inline" />
+              <span className="hidden sm:inline">View Analytics</span>
+              <span className="sm:hidden">Analytics</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </div>
         </div>
 
         {/* Existing Experiences */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 shadow-lg">
           <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
-            <Camera className="h-5 w-5 mr-2 text-dark-blue" />
+            <Camera className="h-5 w-5 mr-2 text-red-600" />
             Your AR Experiences
           </h3>
           
           {experiences.length === 0 ? (
             <div className="text-center py-12">
-              <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No experiences yet</h4>
-              <p className="text-gray-600 mb-6">
-                Start by converting your images to AR format, then create your first experience.
+              <Camera className="h-16 w-16 text-black mx-auto mb-4" />
+              <h4 className="text-lg font-medium text-black mb-2">No experiences yet</h4>
+              <p className="text-black opacity-80 mb-6">
+                Start by creating AR format, then create your first experience.
               </p>
-              <div className="space-x-4">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/compiler"
-                  className="bg-dark-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-red-800 transition-colors inline-flex items-center"
+                  className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation select-none border-2 border-black"
                 >
-                  Convert Images First
+                  <Upload className="h-5 w-5 mr-2 hidden sm:inline" />
+                  <span className="hidden sm:inline">Create AR First</span>
+                  <span className="sm:hidden">Create AR First</span>
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </div>
@@ -225,17 +316,17 @@ export default function Dashboard() {
               {experiences.map((experience) => (
                 <div
                   key={experience.id}
-                  className="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                  className="bg-cream border-2 border-black rounded-xl p-6 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-black mb-2">
                         {experience.title || 'Untitled Experience'}
                       </h4>
-                      <p className="text-sm text-gray-600 mb-3">
+                      <p className="text-sm text-black opacity-80 mb-3">
                         {experience.description || 'No description'}
                       </p>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-black opacity-60">
                         Created: {new Date(experience.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -244,19 +335,19 @@ export default function Dashboard() {
                   <div className="flex space-x-2">
                     <Link
                       href={`/experience/${experience.id}`}
-                      className="flex-1 bg-dark-blue text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-800 transition-colors"
+                      className="flex-1 bg-red-600 text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors border border-black"
                     >
                       View
                     </Link>
                     <button
                       onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
-                      className="bg-white text-dark-blue border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
                     >
                       Share
                     </button>
                     <button
                       onClick={() => deleteExperience(experience.id)}
-                      className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                      className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center border border-black"
                       title="Delete experience"
                     >
                       <Trash2 className="h-4 w-4" />

@@ -1,33 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
-  experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
-    serverActions: {
-      bodySizeLimit: '500mb'
-    }
-  },
-  serverRuntimeConfig: {
-    maxBodySize: '100mb',
-  },
-
   images: {
     unoptimized: true,
     domains: ['localhost', 'your-project.supabase.co'],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/a/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'pmsqoujpagfebrsrzdpl.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/marker_images/**',
-      },
-    ],
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
   },
   webpack: (config) => {
     config.resolve.fallback = {
@@ -38,4 +20,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = nextConfig 
