@@ -32,7 +32,7 @@ export async function GET(
     // Use proxy for mind files to avoid CORS issues
     const originalMindUrl = experience.mind_file_url
     const mindFileUrl = originalMindUrl 
-      ? window.location.origin + '/api/ar-assets/' + encodeURIComponent(originalMindUrl)
+      ? '/api/ar-assets/' + encodeURIComponent(originalMindUrl)
       : 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const usingCustomMind = !!experience.mind_file_url
 
@@ -350,7 +350,7 @@ export async function GET(
       <a-assets>
         <video
           id="videoTexture"
-          src="${experience.video_url ? window.location.origin + '/api/ar-assets/' + encodeURIComponent(experience.video_url) : experience.video_url}"
+          src="${experience.video_url ? '/api/ar-assets/' + encodeURIComponent(experience.video_url) : experience.video_url}"
           loop
           muted
           playsinline
