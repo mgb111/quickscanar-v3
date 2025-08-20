@@ -7,12 +7,10 @@ const nextConfig = {
       bodySizeLimit: '500mb'
     }
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-    responseLimit: '100mb',
+  serverRuntimeConfig: {
+    maxBodySize: '100mb',
   },
+
   images: {
     unoptimized: true,
     domains: ['localhost', 'your-project.supabase.co'],

@@ -6,13 +6,17 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes timeout
 export const runtime = 'nodejs'
 
-// Use service role key if available for server-side uploads; fallback to anon for local/demo
+// Use service role key for server-side uploads to bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+if (!supabaseServiceKey) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY is required for server-side uploads')
+}
 
 const supabase = createClient(
   supabaseUrl,
-  supabaseServiceKey,
+  supabaseServiceKey!,
   { auth: { persistSession: false } }
 )
 
