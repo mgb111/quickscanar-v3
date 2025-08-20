@@ -3,5 +3,13 @@
     "env": {
       "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
     }
+  },
+  "functions": {
+    "api/upload/r2-streaming/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024,
+      "maxSize": "500mb"
+    }
   }
 }
+
