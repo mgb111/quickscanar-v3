@@ -56,7 +56,7 @@ export async function GET(
         width: 100vw;
         height: 100vh;
         overflow: hidden;
-        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        background: #f5f5dc; /* Cream background to match your site */
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         user-select: none;
         -webkit-font-smoothing: antialiased;
@@ -166,7 +166,8 @@ export async function GET(
       /* Interactive button effects */
       #startBtn:hover {
         transform: scale(1.05) !important;
-        box-shadow: 0 12px 35px rgba(102,126,234,0.6) !important;
+        box-shadow: 0 12px 35px rgba(220,38,38,0.6) !important;
+        background: #b91c1c !important;
       }
 
       #startBtn:active {
@@ -188,7 +189,7 @@ export async function GET(
 
       /* Loading animation for button */
       #startBtn.loading {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: #dc2626 !important;
         animation: pulse 2s infinite !important;
       }
 
@@ -218,15 +219,15 @@ export async function GET(
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        color: white;
+        color: black;
         text-align: center;
         z-index: 1002;
-        background: rgba(26, 26, 46, 0.95);
+        background: white;
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 24px;
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 2px solid black;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         display: none;
         max-width: 90vw;
@@ -238,13 +239,13 @@ export async function GET(
         font-size: 18px;
         font-weight: 600;
         margin-bottom: 8px;
-        color: #ffffff;
+        color: #dc2626;
         margin: 0 0 8px 0;
       }
 
       .status-indicator p {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.8);
+        color: black;
         line-height: 1.4;
         margin: 0;
       }
@@ -314,19 +315,19 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.95);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
-      <div style="text-align:center;color:white;max-width:90vw;padding:24px;background:rgba(26,26,46,0.9);border-radius:24px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
+      <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
-          <div style="width:60px;height:60px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <div style="width:60px;height:60px;background:#dc2626;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
               <circle cx="12" cy="13" r="4"/>
             </svg>
           </div>
-          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Ready to start AR</h2>
-          <p style="font-size:16px;opacity:0.9;margin:0;line-height:1.5;color:rgba(255,255,255,0.9);">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
+          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
         </div>
-        <button id="startBtn" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(102,126,234,0.4);transform:scale(1);">Start AR Experience</button>
+        <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
     </div>
 
