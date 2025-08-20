@@ -387,12 +387,21 @@ export async function GET(
     <script>
       async function preflightMind(url) {
         try {
+          // Try with CORS mode first
           const res = await fetch(url, { method: 'GET', mode: 'cors' });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           return true;
         } catch (e) {
           console.error('Mind file preflight failed:', e);
-          return false;
+          
+          // Try without CORS as fallback
+          try {
+            const res2 = await fetch(url, { method: 'GET', mode: 'no-cors' });
+            return true;
+          } catch (e2) {
+            console.error('Fallback fetch also failed:', e2);
+            return false;
+          }
         }
       }
 

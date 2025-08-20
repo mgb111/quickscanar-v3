@@ -19,7 +19,23 @@ This guide will help you set up Cloudflare R2 object storage to replace Supabase
 4. **Important**: Check ✅ **"Public bucket"** option
 5. Click **Create bucket**
 
-## **🎯 Step 4: Create API Token**
+## **🎯 Step 4: Configure CORS for AR Files**
+**CRITICAL**: You must set CORS rules for your R2 bucket to allow AR files to load properly.
+
+1. In your R2 bucket, go to **Settings** → **CORS**
+2. Click **Add CORS rule**
+3. Add this CORS rule:
+   ```json
+   {
+     "AllowedOrigins": ["*"],
+     "AllowedMethods": ["GET", "HEAD"],
+     "AllowedHeaders": ["*"],
+     "MaxAgeSeconds": 3000
+   }
+   ```
+4. Click **Save**
+
+## **🎯 Step 5: Create API Token**
 1. In R2 Object Storage, click **Manage R2 API tokens**
 2. Click **Create API token**
 3. **Select "Custom token"**
@@ -33,7 +49,7 @@ This guide will help you set up Cloudflare R2 object storage to replace Supabase
    - `CLOUDFLARE_ACCESS_KEY_ID` = Access Key ID
    - `CLOUDFLARE_SECRET_ACCESS_KEY` = Secret Access Key
 
-## **🎯 Step 5: Add to Environment Variables**
+## **🎯 Step 6: Add to Environment Variables**
 Add these to your `.env.local` file:
 
 ```bash
@@ -44,7 +60,7 @@ CLOUDFLARE_SECRET_ACCESS_KEY=your_secret_key_here
 CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 ```
 
-## **🎯 Step 6: Test Your Setup**
+## **🎯 Step 7: Test Your Setup**
 1. Start your development server: `npm run dev`
 2. Go to `/dashboard/create`
 3. Try uploading a video file
@@ -68,6 +84,7 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 - **"Access denied"**: Verify your API token has correct permissions
 - **"Bucket not found"**: Ensure bucket name is exactly `quickscanar`
 - **"File too large"**: Check file size is under 100MB
+- **"Failed to fetch mind file"**: Make sure CORS is configured in R2 bucket settings
 
 ## **📱 Next Steps**
 After setup:

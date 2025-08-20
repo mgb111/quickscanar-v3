@@ -89,7 +89,10 @@ export async function POST(request: NextRequest) {
         originalName: file.name,
         fileType: fileType,
         uploadedAt: new Date().toISOString(),
-      }
+      },
+      // Set CORS headers for web access
+      CacheControl: 'public, max-age=31536000',
+      ACL: 'public-read'
     })
 
     await r2Client.send(uploadCommand)
