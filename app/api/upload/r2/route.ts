@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     await r2Client.send(uploadCommand)
 
     // Generate public URL (R2 public bucket)
-    const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
+    const publicUrl = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${fileName}`
 
     console.log('✅ File uploaded to R2:', {
       fileName,

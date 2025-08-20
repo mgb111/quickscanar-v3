@@ -67,8 +67,8 @@ CLOUDFLARE_R2_BUCKET_NAME=quickscanar
 4. Check the console for R2 upload logs
 
 ## **🔧 How It Works**
-- **Video files** are uploaded to: `https://{ACCOUNT_ID}.r2.cloudflarestorage.com/video-{timestamp}-{id}.mp4`
-- **Mind files** are uploaded to: `https://{ACCOUNT_ID}.r2.cloudflarestorage.com/mind-{timestamp}-{id}.mind`
+- **Video files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/video-{timestamp}-{id}.mp4`
+- **Mind files** are uploaded to: `https://{BUCKET_NAME}.{ACCOUNT_ID}.r2.cloudflarestorage.com/mind-{timestamp}-{id}.mind`
 - **File size limit**: 100MB per file
 - **Supported video formats**: MP4, WebM, OGG, AVI, MOV, QuickTime
 
