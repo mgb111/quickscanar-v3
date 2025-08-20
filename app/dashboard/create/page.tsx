@@ -125,25 +125,42 @@ export default function CreateExperience() {
 
       const videoUrl = videoPresignedData.publicUrl
 
-      // Upload mind file to R2
+      // Upload mind file to R2 (two-step: presign then upload)
       let mindUrl = ''
       if (mindFile) {
-        const mindFormData = new FormData()
-        mindFormData.append('file', mindFile)
-        mindFormData.append('fileType', 'mind')
-        
-        const mindResponse = await fetch('/api/upload/r2', {
-              method: 'POST',
-          body: mindFormData
+        // Step 1: Get presigned URL for .mind upload
+        const mindPresignedResponse = await fetch('/api/upload/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: mindFile.name,
+            fileType: 'mind',
+            // .mind is a binary bundle; octet-stream is a safe default
+            contentType: 'application/octet-stream',
+          }),
         })
 
-        if (!mindResponse.ok) {
-          const err = await mindResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to upload mind file')
+        if (!mindPresignedResponse.ok) {
+          const err = await mindPresignedResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get mind upload URL')
         }
 
-        const mindData = await mindResponse.json()
-        mindUrl = mindData.url
+        const mindPresignedData = await mindPresignedResponse.json()
+
+        // Step 2: Upload .mind directly to R2 using presigned URL
+        const mindUploadResponse = await fetch(mindPresignedData.signedUrl, {
+          method: 'PUT',
+          body: mindFile,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+        })
+
+        if (!mindUploadResponse.ok) {
+          throw new Error('Failed to upload mind file to R2')
+        }
+
+        mindUrl = mindPresignedData.publicUrl
       }
 
       // Create AR experience record

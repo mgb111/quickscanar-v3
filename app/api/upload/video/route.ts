@@ -1,16 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Use service role key if available for server-side uploads; fallback to anon for local/demo
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, serviceKey, {
-  auth: { persistSession: false }
-})
-
 // This route now only returns a signed URL for direct-to-R2 upload (no file handling here)
-import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
