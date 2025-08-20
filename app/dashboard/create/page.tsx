@@ -91,45 +91,77 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-
-      // Upload video file to R2
-      const videoFormData = new FormData()
-      videoFormData.append('file', videoFile)
-      videoFormData.append('fileType', 'video')
+      // ✅ STEP 1: Get presigned URLs for direct uploads
+      toast.loading('Getting upload permissions...', { id: 'upload-status' })
       
-      const videoResponse = await fetch('/api/upload/r2', {
+      // Get presigned URL for video
+      const videoPresignedResponse = await fetch('/api/upload/presigned', {
         method: 'POST',
-        body: videoFormData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: videoFile.name,
+          fileType: 'video',
+          contentType: videoFile.type
+        })
       })
 
-      if (!videoResponse.ok) {
-        const err = await videoResponse.json().catch(() => null)
-        throw new Error(err?.error || 'Failed to upload video')
+      if (!videoPresignedResponse.ok) {
+        const err = await videoPresignedResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Failed to get video upload permission')
       }
 
-      const videoData = await videoResponse.json()
-      const videoUrl = videoData.url
-
-      // Upload mind file to R2
-      let mindUrl = ''
-      if (mindFile) {
-        const mindFormData = new FormData()
-        mindFormData.append('file', mindFile)
-        mindFormData.append('fileType', 'mind')
-        
-        const mindResponse = await fetch('/api/upload/r2', {
-              method: 'POST',
-          body: mindFormData
+      const videoPresignedData = await videoPresignedResponse.json()
+      
+      // Get presigned URL for mind file
+      const mindPresignedResponse = await fetch('/api/upload/presigned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: mindFile.name,
+          fileType: 'mind',
+          contentType: 'application/octet-stream'
         })
+      })
 
-        if (!mindResponse.ok) {
-          const err = await mindResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to upload mind file')
-        }
-
-        const mindData = await mindResponse.json()
-        mindUrl = mindData.url
+      if (!mindPresignedResponse.ok) {
+        const err = await mindPresignedResponse.json().catch(() => null)
+        throw new Error(err?.error || 'Failed to get mind file upload permission')
       }
+
+      const mindPresignedData = await mindPresignedResponse.json()
+
+      // ✅ STEP 2: Upload files directly to R2 using presigned URLs
+      toast.loading('Uploading video file...', { id: 'upload-status' })
+      
+      const videoUploadResponse = await fetch(videoPresignedData.signedUrl, {
+        method: 'PUT',
+        body: videoFile,
+        headers: {
+          'Content-Type': videoFile.type,
+        },
+      })
+
+      if (!videoUploadResponse.ok) {
+        throw new Error('Failed to upload video directly to R2')
+      }
+
+      toast.loading('Uploading mind file...', { id: 'upload-status' })
+      
+      const mindUploadResponse = await fetch(mindPresignedData.signedUrl, {
+        method: 'PUT',
+        body: mindFile,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      })
+
+      if (!mindUploadResponse.ok) {
+        throw new Error('Failed to upload mind file directly to R2')
+      }
+
+      // Use the public URLs from the presigned data
+      const videoUrl = videoPresignedData.publicUrl
+      const mindUrl = mindPresignedData.publicUrl
 
       // Create AR experience record
       const experienceData = {
@@ -154,7 +186,7 @@ export default function CreateExperience() {
 
       const experience = await experienceResponse.json()
 
-      toast.success('AR experience created successfully!')
+      toast.success('AR experience created successfully!', { id: 'upload-status' })
       
       // Redirect to the new experience
       setTimeout(() => {
@@ -163,11 +195,11 @@ export default function CreateExperience() {
 
     } catch (error) {
       console.error('Error creating AR experience:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
-          } finally {
-        setSubmitting(false)
-      }
-      }
+      toast.error(error instanceof Error ? error.message : 'Failed to create AR experience', { id: 'upload-status' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (loading) {
     return (
