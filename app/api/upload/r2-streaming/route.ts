@@ -42,13 +42,6 @@ export async function OPTIONS(request: NextRequest) {
   })
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-    sizeLimit: '500mb',
-  },
-};
-
 export async function POST(request: NextRequest) {
   try {
     console.log('☁️  R2 streaming upload request received')
