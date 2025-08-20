@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
-// Force Next.js to handle larger request bodies for this route
-export const dynamic = 'force-dynamic'
-export const maxDuration = 300 // 5 minutes timeout
-export const runtime = 'nodejs'
+// Use service role key if available for server-side uploads; fallback to anon for local/demo
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-
+const supabase = createClient(
+  supabaseUrl,
+  supabaseServiceKey,
+  { auth: { persistSession: false } }
+)
 
 // Cloudflare R2 configuration
 const R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
@@ -46,123 +50,113 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('☁️  R2 base64 upload request received')
-    
-    // Parse JSON body
-    let body: any
+    // Accept both form-data and JSON (base64) for flexibility
+    let file: File | null = null;
+    let fileType: string | null = null;
+    let fileName: string | null = null;
+    let contentType: string | null = null;
+    let buffer: Buffer | null = null;
+    let isBase64 = false;
+    let base64Data: string | null = null;
+
+    // Try formData first
     try {
-      body = await request.json()
-    } catch (e) {
-      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
-    }
-    const { fileName, fileType, contentType, base64Data } = body
-
-    if (!fileName || !fileType || !base64Data) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: fileName, fileType, or base64Data' 
-      }, { status: 400 })
-    }
-
-    // Validate base64 string
-    const base64Pattern = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/
-    if (!base64Pattern.test(base64Data.replace(/\s/g, ''))) {
-      return NextResponse.json({ error: 'Invalid base64 data.' }, { status: 400 })
-    }
-
-    // Check file size (base64 expands size by ~33%)
-    const fileSizeBytes = Math.floor((base64Data.length * 3) / 4) // rough estimate
-    const maxBytes = 50 * 1024 * 1024 // 50MB
-    if (fileSizeBytes > maxBytes) {
-      return NextResponse.json({ error: `File too large. Max allowed is 50MB.` }, { status: 413 })
-    }
-
-    console.log('📁 File details:', {
-      name: fileName,
-      type: contentType,
-      fileType,
-      base64Length: base64Data.length,
-      fileSizeBytes,
-    })
-
-    // Validate file types based on fileType
-    if (fileType === 'video') {
-      const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
-      if (contentType && !allowedVideoTypes.includes(contentType)) {
-        return NextResponse.json({ 
-          error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}` 
-        }, { status: 400 })
+      const formData = await request.formData();
+      file = formData.get('file') as File;
+      fileType = formData.get('fileType') as string || null;
+      fileName = file?.name || null;
+      contentType = file?.type || null;
+      if (file) {
+        const arrayBuffer = await file.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
       }
-    } else if (fileType === 'mind') {
+    } catch {}
+
+    // If no file, try JSON (base64)
+    if (!file) {
+      try {
+        const body = await request.json();
+        fileName = body.fileName;
+        fileType = body.fileType;
+        contentType = body.contentType;
+        base64Data = body.base64Data;
+        if (base64Data) {
+          buffer = Buffer.from(base64Data, 'base64');
+          isBase64 = true;
+        }
+      } catch {}
+    }
+
+    if (!buffer || !fileName || !fileType) {
+      return NextResponse.json({ error: 'No file uploaded or missing fields' }, { status: 400 });
+    }
+
+    // .mind file logic
+    if (fileType === 'mind' || fileName.endsWith('.mind')) {
       if (!fileName.endsWith('.mind')) {
-        return NextResponse.json({ 
-          error: 'Please upload a .mind file' 
-        }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid file type. Must be a .mind file.' }, { status: 400 });
       }
+      if (buffer.length < 1000) {
+        return NextResponse.json({ error: 'Invalid .mind file. File is too small.' }, { status: 400 });
+      }
+      const path = `mind-${Date.now()}-${fileName}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('mind-files')
+        .upload(path, buffer, {
+          contentType: 'application/octet-stream',
+          upsert: false
+        });
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Failed to upload .mind file: ${uploadError.message}`);
+      }
+      const { data: urlData } = supabase.storage
+        .from('mind-files')
+        .getPublicUrl(path);
+      return NextResponse.json({ success: true, url: urlData.publicUrl, path });
     }
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const randomId = Math.random().toString(36).substring(2, 15)
-    const fileExtension = fileName.split('.').pop()
-    const uniqueFileName = `${fileType}-${timestamp}-${randomId}.${fileExtension}`
-
-    console.log('📤 Starting base64 file upload to R2...')
-    
-    // Convert base64 to buffer
-    const buffer = Buffer.from(base64Data, 'base64')
-    
-    console.log('📦 Buffer created from base64, size:', buffer.length)
-    
-    const uploadCommand = new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
-      Key: uniqueFileName,
-      Body: buffer,
-      ContentType: contentType,
-      Metadata: {
-        originalName: fileName,
-        fileType: fileType,
-        uploadedAt: new Date().toISOString(),
-        uploadMethod: 'base64'
+    // Video file logic
+    if (fileType === 'video' || (contentType && contentType.startsWith('video/'))) {
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'];
+      if (!allowedTypes.includes(contentType || '')) {
+        return NextResponse.json({ error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}` }, { status: 400 });
       }
-    })
-
-    console.log('🚀 Sending upload command to R2...')
-    await r2Client.send(uploadCommand)
-
-    // Generate public URL (R2 public bucket)
-    const publicUrl = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${uniqueFileName}`
-
-    console.log('✅ File uploaded to R2 successfully:', {
-      fileName: uniqueFileName,
-      publicUrl,
-      size: buffer.length
-    })
-
-    return NextResponse.json({
-      success: true,
-      url: publicUrl,
-      fileName: uniqueFileName,
-      size: buffer.length
-    }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    })
-
-  } catch (error) {
-    console.error('❌ R2 base64 upload error:', error)
-    
-    if (error instanceof Error) {
-      console.error('Error name:', error.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
+      const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '100');
+      const maxSizeInBytes = maxSizeMB * 1024 * 1024;
+      if (buffer.length > maxSizeInBytes) {
+        return NextResponse.json({ error: `Video file too large. Maximum size is ${maxSizeMB}MB, your file is ${(buffer.length / 1024 / 1024).toFixed(1)}MB` }, { status: 413 });
+      }
+      const fileNameFinal = `video-${Date.now()}-${fileName}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(fileNameFinal, buffer, {
+          contentType: contentType || undefined,
+          upsert: false
+        });
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Failed to upload video: ${uploadError.message}`);
+      }
+      const { data: urlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(fileNameFinal);
+      return NextResponse.json({ success: true, url: urlData.publicUrl });
     }
-    
+
+    // Fallback: R2 logic for other file types (base64 only)
+    if (isBase64) {
+      // ... (keep your R2 logic here for other types if needed)
+      return NextResponse.json({ error: 'Only .mind and video files are supported in this endpoint.' }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: `Upload failed: ${error?.message || 'Unknown error'}` },
       { status: 500 }
-    )
+    );
   }
 }
+
