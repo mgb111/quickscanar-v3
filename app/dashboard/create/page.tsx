@@ -181,8 +181,8 @@ export default function CreateExperience() {
 
       toast.success('AR experience created successfully!')
       
-      // Redirect to the new experience
-      router.push(`/dashboard/experiences/${newExperience.id}`)
+      // Redirect to the home page
+      router.push('/')
 
     } catch (error) {
       console.error('❌ Error creating AR experience:', error)
@@ -224,15 +224,6 @@ export default function CreateExperience() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="text-center text-black mb-12">
-          <div className="flex justify-center mb-6">
-            <Link 
-              href="/dashboard" 
-              className="inline-flex items-center text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Link>
-          </div>
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
             Create AR Experience
           </h1>
