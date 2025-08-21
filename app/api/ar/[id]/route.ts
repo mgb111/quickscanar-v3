@@ -949,7 +949,7 @@ export async function GET(
             started = true;
             console.log('[AR] startAR invoked');
             try {
-              const sys = (scene as any).systems && (scene as any).systems['mindar-image-system'];
+              const sys = scene && scene.systems && scene.systems['mindar-image-system'];
               if (sys && sys.start) {
                 console.log('[AR] Starting mindar-image-system');
                 await sys.start();
@@ -960,14 +960,15 @@ export async function GET(
               console.warn('Failed to start MindAR system:', e);
             }
             try {
-              if (video) await (video as HTMLVideoElement).play().catch(()=>{});
+              const v = video;
+              if (v && v.play) await v.play().catch(()=>{});
             } catch {}
-            const overlayEl = document.getElementById('overlay') as HTMLElement | null;
+            const overlayEl = document.getElementById('overlay');
             if (overlayEl) overlayEl.style.display = 'none';
             showStatus('Initializing...', 'Starting camera and tracker');
             setTimeout(hideStatus, 1000);
-            if (externalLinkBtn) (externalLinkBtn as HTMLElement).style.display = 'block';
-            if (modeSelector) (modeSelector as HTMLElement).style.display = 'block';
+            if (externalLinkBtn) externalLinkBtn.style.display = 'block';
+            if (modeSelector) modeSelector.style.display = 'block';
           };
 
           // Attach to start button if present
@@ -975,7 +976,7 @@ export async function GET(
             console.log('[AR] Binding start button handlers');
             startBtn.addEventListener('click', startAR, { once: true });
             startBtn.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
-            startBtn.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
+            startBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAR(); }, { once: true });
           } else {
             console.warn('[AR] startBtn not found');
           }
@@ -987,7 +988,7 @@ export async function GET(
             overlayEl.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
           }
           document.addEventListener('click', startAR, { once: true });
-          document.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
+          document.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAR(); }, { once: true });
         }
 
         // AR Mode switching functionality
@@ -1000,8 +1001,6 @@ export async function GET(
           // Update MindAR scene attributes
           if (scene) {
             const mindAttr = 'imageTargetSrc: ' + mindFileUrl + '; ' +
-              'interpolation: ' + mode.mindar.interpolation + '; ' +
-              'smoothing: ' + mode.mindar.smoothing + '; ' +
               'filterMinCF: ' + mode.mindar.filterMinCF + '; ' +
               'filterBeta: ' + mode.mindar.filterBeta + '; ' +
               'missTolerance: 5; warmupTolerance: 5;';
