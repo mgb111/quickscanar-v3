@@ -498,6 +498,9 @@ export async function GET(
       style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
+        ${experience.model_url ? `
+        <a-asset-item id="modelAsset" src="${experience.model_url}"></a-asset-item>
+        ` : `
         <video
           id="videoTexture"
           src="${experience.video_url}"
@@ -508,11 +511,15 @@ export async function GET(
           preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
+        `}
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="smoothingFactor: 0.06; freq: 120; mincutoff: 0.3; beta: 2.2; dcutoff: 1.0; posDeadzone: 0.0045; rotDeadzoneDeg: 1.2; emaFactor: 0.26">
+        ${experience.model_url ? `
+        <a-entity id="modelEntity" gltf-model="#modelAsset" visible="false" position="0 0 0.01"></a-entity>
+        ` : `
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -535,6 +542,7 @@ export async function GET(
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
           animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
         ></a-plane>
+        `}
       </a-entity>
     </a-scene>
 
@@ -621,6 +629,7 @@ export async function GET(
         const overlay = document.getElementById('overlay');
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#videoTexture');
+        const modelEntity = document.querySelector('#modelEntity');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
         const backgroundPlane = document.querySelector('#backgroundPlane');
@@ -651,7 +660,7 @@ export async function GET(
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
 
-          video.addEventListener('loadedmetadata', () => {
+          if (video) video.addEventListener('loadedmetadata', () => {
             console.log('Video metadata loaded');
             const ratio = video.videoWidth / video.videoHeight || (16/9);
             const planeHeight = 1 / ratio;
@@ -667,12 +676,14 @@ export async function GET(
           });
 
           // Reduce video updates for smoother playback
-          video.addEventListener('timeupdate', () => {
-            if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-              // Force repaint for smooth updates
-              videoPlane.setAttribute('material', 'shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1');
-            }
-          });
+          if (video) {
+            video.addEventListener('timeupdate', () => {
+              if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+                // Force repaint for smooth updates
+                videoPlane.setAttribute('material', 'shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1');
+              }
+            });
+          }
         }
 
         // A-Frame/MindAR lifecycle
@@ -713,15 +724,19 @@ export async function GET(
             targetFoundTimeout = setTimeout(() => {
               if (!isTargetVisible) {
                 isTargetVisible = true;
-                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
-                if (videoPlane) {
-                  videoPlane.setAttribute('visible', 'true');
-                  // Add smooth animation for appearance
-                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
-                }
-                if (video) {
-                  video.currentTime = 0; // Restart video
-                  video.play().catch(() => {});
+                if (modelEntity) {
+                  modelEntity.setAttribute('visible', 'true');
+                } else {
+                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
+                  if (videoPlane) {
+                    videoPlane.setAttribute('visible', 'true');
+                    // Add smooth animation for appearance
+                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                  }
+                  if (video) {
+                    video.currentTime = 0; // Restart video
+                    video.play().catch(() => {});
+                  }
                 }
                 showStatus('Target Found!', 'AR content should be visible');
                 setTimeout(hideStatus, 1500);
@@ -743,15 +758,19 @@ export async function GET(
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
                 isTargetVisible = false;
-                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
-                if (videoPlane) {
-                  // Add smooth animation for disappearance
-                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
-                  setTimeout(() => {
-                    videoPlane.setAttribute('visible', 'false');
-                  }, 200);
+                if (modelEntity) {
+                  modelEntity.setAttribute('visible', 'false');
+                } else {
+                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
+                  if (videoPlane) {
+                    // Add smooth animation for disappearance
+                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
+                    setTimeout(() => {
+                      videoPlane.setAttribute('visible', 'false');
+                    }, 200);
+                  }
+                  if (video) video.pause();
                 }
-                if (video) video.pause();
                 showStatus('Target Lost', 'Point camera at your marker again');
               }
             }, 300); // 300ms debounce for lost (longer to prevent flickering)
@@ -761,21 +780,6 @@ export async function GET(
         }
 
         // Tap to start to satisfy autoplay/camera permissions
-        if (startBtn && overlay) {
-          // Add loading state to button
-          startBtn.addEventListener('click', async () => {
-            startBtn.classList.add('loading');
-            startBtn.textContent = 'Starting...';
-            
-            try {
-              if (video) await video.play().catch(() => {});
-            } catch {}
-
-            // Smooth fade out for overlay
-            overlay.style.opacity = '0';
-            overlay.style.transition = 'opacity 0.5s ease';
-            
-            setTimeout(() => {
               overlay.style.display = 'none';
               showStatus('Initializing...', 'Starting camera and tracker');
               setTimeout(hideStatus, 1000);
