@@ -66,10 +66,55 @@ export async function GET(
           throttleHz: { type: 'number', default: 60 }, // apply transforms at most this often
           medianWindow: { type: 'number', default: 3 }, // median window size for position
           zeroRoll: { type: 'boolean', default: false }, // lock roll around marker normal
+          // Dynamic mode switching
+          arMode: { type: 'number', default: 4 }, // current AR mode (0-9)
         },
 
         init: function () {
           const { freq, mincutoff, beta, dcutoff } = this.data;
+          
+          // Define 10 AR experience modes
+          this.arModes = [
+            // Mode 0: Raw Tracking - minimal filtering, maximum responsiveness
+            { name: "Raw Tracking", desc: "Minimal filtering, maximum responsiveness", 
+              smoothingFactor: 0.8, mincutoff: 2.0, beta: 0.5, posDeadzone: 0.0005, rotDeadzoneDeg: 0.1, emaFactor: 0.05, throttleHz: 120, medianWindow: 1, mode: 'normal', zeroRoll: false },
+            
+            // Mode 1: Light Smoothing - slight filtering, still very responsive
+            { name: "Light Smoothing", desc: "Slight filtering, still very responsive", 
+              smoothingFactor: 0.3, mincutoff: 1.2, beta: 1.0, posDeadzone: 0.002, rotDeadzoneDeg: 0.3, emaFactor: 0.1, throttleHz: 90, medianWindow: 2, mode: 'normal', zeroRoll: false },
+            
+            // Mode 2: Balanced - good compromise between smooth and responsive
+            { name: "Balanced", desc: "Good compromise between smooth and responsive", 
+              smoothingFactor: 0.15, mincutoff: 0.8, beta: 1.5, posDeadzone: 0.003, rotDeadzoneDeg: 0.6, emaFactor: 0.18, throttleHz: 75, medianWindow: 3, mode: 'normal', zeroRoll: false },
+            
+            // Mode 3: Heavy Filtering - more stable, slightly less responsive
+            { name: "Heavy Filtering", desc: "More stable, slightly less responsive", 
+              smoothingFactor: 0.08, mincutoff: 0.4, beta: 2.0, posDeadzone: 0.005, rotDeadzoneDeg: 1.0, emaFactor: 0.25, throttleHz: 60, medianWindow: 4, mode: 'normal', zeroRoll: true },
+            
+            // Mode 4: Ultra Smooth - maximum stability, some lag acceptable
+            { name: "Ultra Smooth", desc: "Maximum stability, some lag acceptable", 
+              smoothingFactor: 0.045, mincutoff: 0.2, beta: 2.5, posDeadzone: 0.007, rotDeadzoneDeg: 1.8, emaFactor: 0.4, throttleHz: 45, medianWindow: 5, mode: 'ultra_lock', zeroRoll: true },
+            
+            // Mode 5: Responsive - prioritizes quick response over smoothness
+            { name: "Responsive", desc: "Prioritizes quick response over smoothness", 
+              smoothingFactor: 0.4, mincutoff: 1.5, beta: 0.8, posDeadzone: 0.001, rotDeadzoneDeg: 0.2, emaFactor: 0.08, throttleHz: 100, medianWindow: 2, mode: 'normal', zeroRoll: false },
+            
+            // Mode 6: Predictive - uses higher beta for motion prediction
+            { name: "Predictive", desc: "Uses motion prediction for smoother tracking", 
+              smoothingFactor: 0.12, mincutoff: 0.6, beta: 3.0, posDeadzone: 0.004, rotDeadzoneDeg: 0.8, emaFactor: 0.22, throttleHz: 65, medianWindow: 3, mode: 'normal', zeroRoll: true },
+            
+            // Mode 7: Stable Lock - maximum lock with ultra settings
+            { name: "Stable Lock", desc: "Maximum lock with ultra settings", 
+              smoothingFactor: 0.03, mincutoff: 0.15, beta: 2.8, posDeadzone: 0.009, rotDeadzoneDeg: 2.2, emaFactor: 0.45, throttleHz: 35, medianWindow: 6, mode: 'ultra_lock', zeroRoll: true },
+            
+            // Mode 8: Adaptive - medium smoothing with adaptive parameters
+            { name: "Adaptive", desc: "Medium smoothing with adaptive parameters", 
+              smoothingFactor: 0.1, mincutoff: 0.5, beta: 1.8, posDeadzone: 0.0035, rotDeadzoneDeg: 0.9, emaFactor: 0.2, throttleHz: 70, medianWindow: 3, mode: 'normal', zeroRoll: true },
+            
+            // Mode 9: Professional - optimized for production use
+            { name: "Professional", desc: "Optimized for production use", 
+              smoothingFactor: 0.06, mincutoff: 0.3, beta: 2.2, posDeadzone: 0.0045, rotDeadzoneDeg: 1.2, emaFactor: 0.26, throttleHz: 60, medianWindow: 4, mode: 'normal', zeroRoll: true }
+          ];
           
           // One-Euro filter for position to smooth out jitter from camera shake.
           this.positionSmoother = {
@@ -86,6 +131,35 @@ export async function GET(
           // Position history for median filtering
           this._posHistory = [];
           this._lastApply = 0;
+          
+          // Apply initial mode settings
+          this.applyMode(this.data.arMode || 4);
+        },
+        
+        applyMode: function(modeIndex) {
+          if (modeIndex < 0 || modeIndex >= this.arModes.length) return;
+          const mode = this.arModes[modeIndex];
+          
+          // Update all parameters from the selected mode
+          Object.keys(mode).forEach(key => {
+            if (key !== 'name' && key !== 'desc') {
+              this.data[key] = mode[key];
+            }
+          });
+          
+          // Reinitialize filters with new parameters
+          const { freq, mincutoff, beta, dcutoff } = this.data;
+          this.positionSmoother = {
+            x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+          };
+          
+          // Reset history
+          this._posHistory = [];
+          this._lastApply = 0;
+          
+          console.log('Applied AR Mode ' + modeIndex + ': ' + mode.name);
         },
 
         tick: function (t, dt) {
@@ -179,78 +253,61 @@ export async function GET(
         }
       });
     </script>
-    <script>
-      // 10 AR Tracking Modes with different characteristics
-      const AR_MODES = {
-        1: {
-          name: "Raw Tracking",
-          description: "No smoothing, maximum responsiveness",
-          mindar: { filterMinCF: 0.0001, filterBeta: 1, interpolation: false, smoothing: false },
-          smoother: { mode: 'normal', smoothingFactor: 0.9, mincutoff: 5.0, beta: 0.1, posDeadzone: 0.0001, rotDeadzoneDeg: 0.1, emaFactor: 0.05 }
-        },
-        2: {
-          name: "Light Smoothing",
-          description: "Minimal filtering, very responsive",
-          mindar: { filterMinCF: 0.001, filterBeta: 3, interpolation: true, smoothing: false },
-          smoother: { mode: 'normal', smoothingFactor: 0.3, mincutoff: 2.0, beta: 0.5, posDeadzone: 0.001, rotDeadzoneDeg: 0.3, emaFactor: 0.1 }
-        },
-        3: {
-          name: "Balanced Fast",
-          description: "Good responsiveness with light jitter reduction",
-          mindar: { filterMinCF: 0.005, filterBeta: 5, interpolation: true, smoothing: true },
-          smoother: { mode: 'normal', smoothingFactor: 0.2, mincutoff: 1.5, beta: 1.0, posDeadzone: 0.002, rotDeadzoneDeg: 0.5, emaFactor: 0.15 }
-        },
-        4: {
-          name: "Medium Smooth",
-          description: "Balanced smoothness and responsiveness",
-          mindar: { filterMinCF: 0.01, filterBeta: 8, interpolation: true, smoothing: true },
-          smoother: { mode: 'normal', smoothingFactor: 0.15, mincutoff: 1.0, beta: 1.5, posDeadzone: 0.003, rotDeadzoneDeg: 0.8, emaFactor: 0.2 }
-        },
-        5: {
-          name: "Heavy Filtering",
-          description: "Strong smoothing, slight lag",
-          mindar: { filterMinCF: 0.02, filterBeta: 12, interpolation: true, smoothing: true },
-          smoother: { mode: 'normal', smoothingFactor: 0.1, mincutoff: 0.8, beta: 2.0, posDeadzone: 0.004, rotDeadzoneDeg: 1.0, emaFactor: 0.25 }
-        },
-        6: {
-          name: "Ultra Stable",
-          description: "Maximum stability, more lag",
-          mindar: { filterMinCF: 0.05, filterBeta: 15, interpolation: true, smoothing: true },
-          smoother: { mode: 'ultra_lock', smoothingFactor: 0.08, mincutoff: 0.5, beta: 2.5, posDeadzone: 0.006, rotDeadzoneDeg: 1.5, emaFactor: 0.3, throttleHz: 45, medianWindow: 3, zeroRoll: false }
-        },
-        7: {
-          name: "Predictive Smooth",
-          description: "Predictive filtering with interpolation",
-          mindar: { filterMinCF: 0.008, filterBeta: 10, interpolation: true, smoothing: true },
-          smoother: { mode: 'ultra_lock', smoothingFactor: 0.12, mincutoff: 0.7, beta: 2.2, posDeadzone: 0.0035, rotDeadzoneDeg: 0.9, emaFactor: 0.22, throttleHz: 50, medianWindow: 4, zeroRoll: true }
-        },
-        8: {
-          name: "Cinema Mode",
-          description: "Ultra-smooth for video content, slow response",
-          mindar: { filterMinCF: 0.1, filterBeta: 20, interpolation: true, smoothing: true },
-          smoother: { mode: 'ultra_lock', smoothingFactor: 0.05, mincutoff: 0.3, beta: 3.0, posDeadzone: 0.008, rotDeadzoneDeg: 2.0, emaFactor: 0.4, throttleHz: 30, medianWindow: 5, zeroRoll: true }
-        },
-        9: {
-          name: "Locked Position",
-          description: "Maximum lock, minimal movement",
-          mindar: { filterMinCF: 0.15, filterBeta: 25, interpolation: true, smoothing: true },
-          smoother: { mode: 'ultra_lock', smoothingFactor: 0.03, mincutoff: 0.2, beta: 3.5, posDeadzone: 0.01, rotDeadzoneDeg: 2.5, emaFactor: 0.45, throttleHz: 25, medianWindow: 6, zeroRoll: true }
-        },
-        10: {
-          name: "Adaptive Hybrid",
-          description: "Smart balance between all characteristics",
-          mindar: { filterMinCF: 0.003, filterBeta: 7, interpolation: true, smoothing: true },
-          smoother: { mode: 'ultra_lock', smoothingFactor: 0.1, mincutoff: 1.2, beta: 1.8, posDeadzone: 0.0025, rotDeadzoneDeg: 0.7, emaFactor: 0.18, throttleHz: 55, medianWindow: 3, zeroRoll: false }
-        }
-      };
-      
-      let currentMode = 6; // Default to Ultra Stable
-    </script>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+      }
+      
+      /* AR Mode Selector */
+      #arModeSelector {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 8px;
+        padding: 12px;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        min-width: 220px;
+      }
+      
+      #arModeSelector select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 13px;
+        outline: none;
+      }
+      
+      #arModeSelector select option {
+        background: #333;
+        color: white;
+      }
+      
+      #arModeSelector label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+      }
+      
+      #currentModeInfo {
+        margin-top: 8px;
+        font-size: 11px;
+        opacity: 0.7;
+        line-height: 1.3;
       }
 
       body {
@@ -523,71 +580,6 @@ export async function GET(
         opacity: 1;
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
-      
-      /* AR Mode Selector */
-      #arModeSelector {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 10000;
-        background: rgba(0, 0, 0, 0.8);
-        border-radius: 12px;
-        padding: 15px;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        min-width: 280px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      
-      #arModeSelector h3 {
-        margin: 0 0 10px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #fff;
-      }
-      
-      #modeSelect {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        font-size: 13px;
-        margin-bottom: 8px;
-      }
-      
-      #modeSelect option {
-        background: #333;
-        color: white;
-      }
-      
-      #modeDescription {
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.7);
-        line-height: 1.3;
-        margin-top: 5px;
-      }
-      
-      #modeToggle {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10001;
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        color: white;
-        padding: 8px 12px;
-        font-size: 12px;
-        cursor: pointer;
-        backdrop-filter: blur(10px);
-      }
-      
-      #modeToggle:hover {
-        background: rgba(0, 0, 0, 0.9);
-      }
       @media (max-width: 768px) { 
         #externalLinkBtn { bottom: 20px; }
         #externalLinkBtn a { padding: 12px 20px; font-size: 14px; }
@@ -600,218 +592,96 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
+    <!-- AR Mode Selector -->
+    <div id="arModeSelector">
+      <label for="modeSelect">AR Tracking Mode</label>
+      <select id="modeSelect">
+        <option value="0">Mode 1: Raw Tracking</option>
+        <option value="1">Mode 2: Light Smoothing</option>
+        <option value="2">Mode 3: Balanced</option>
+        <option value="3">Mode 4: Heavy Filtering</option>
+        <option value="4" selected>Mode 5: Ultra Smooth</option>
+        <option value="5">Mode 6: Responsive</option>
+        <option value="6">Mode 7: Predictive</option>
+        <option value="7">Mode 8: Stable Lock</option>
+        <option value="8">Mode 9: Adaptive</option>
+        <option value="9">Mode 10: Professional</option>
+      </select>
+      <div id="currentModeInfo">Ultra smooth with minimal jitter</div>
+    </div>
+
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
       <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
-          <div style="width:60px;height:60px;background:#dc2626;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-          </div>
-          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
-          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
-        </div>
-        <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
-      </div>
-    </div>
-
-
-
-    <a-scene
-      id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.001; filterBeta: 10; missTolerance: 5; warmupTolerance: 5;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      embedded
-      loading-screen="enabled: false"
-      style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
-    >
-      <a-assets>
-        ${experience.model_url ? `
-        <a-asset-item id="modelAsset" src="${experience.model_url}"></a-asset-item>
-        ` : `
-        <video
-          id="videoTexture"
-          src="${experience.video_url}"
-          loop
-          muted
-          playsinline
-          crossorigin="anonymous"
-          preload="auto"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-        ></video>
-        `}
-      </a-assets>
-
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="smoothingFactor: 0.06; freq: 120; mincutoff: 0.3; beta: 2.2; dcutoff: 1.0; posDeadzone: 0.0045; rotDeadzoneDeg: 1.2; emaFactor: 0.26">
-        ${experience.model_url ? `
-        <a-entity id="modelEntity" gltf-model="#modelAsset" visible="false" position="0 0 0.01"></a-entity>
-        ` : `
-        <a-plane
-          id="backgroundPlane"
-          width="1"
-          height="1"
-          position="0 0 0.005"
-          rotation="0 0 ${experience.video_rotation || 0}"
-          material="color: #000000"
-          visible="false"
-        ></a-plane>
-
-        <a-plane
-          id="videoPlane"
-          width="1"
-          height="1"
-          position="0 0 0.01"
-          rotation="0 0 ${experience.video_rotation || 0}"
-          material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
-          visible="false"
-          geometry="primitive: plane; skipCache: true"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
-        ></a-plane>
-        `}
-      </a-entity>
-    </a-scene>
-
-    ${experience.link_url ? `
-    <div id="externalLinkBtn">
-      <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
-        Open Link
-      </a>
-    </div>
-    ` : ''}
-    
-    <!-- AR Mode Selector -->
-    <div id="arModeSelector">
-      <h3>AR Tracking Mode</h3>
-      <select id="modeSelect">
-        <option value="1">Mode 1: Raw Tracking</option>
-        <option value="2">Mode 2: Light Smoothing</option>
-        <option value="3">Mode 3: Balanced Fast</option>
-        <option value="4">Mode 4: Medium Smooth</option>
-        <option value="5">Mode 5: Heavy Filtering</option>
-        <option value="6" selected>Mode 6: Ultra Stable</option>
-        <option value="7">Mode 7: Predictive Smooth</option>
-        <option value="8">Mode 8: Cinema Mode</option>
-        <option value="9">Mode 9: Locked Position</option>
-        <option value="10">Mode 10: Adaptive Hybrid</option>
-      </select>
-      <div id="modeDescription">Maximum stability, more lag</div>
-    </div>
-    
-    <button id="modeToggle">Hide Controls</button>
-
-    <script>
-      async function preflightMind(url) {
-        try {
-          // Try with CORS mode first
-          const res = await fetch(url, { method: 'GET', mode: 'cors' });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return true;
-        } catch (e) {
-          console.error('Mind file preflight failed:', e);
-          
-          // Try without CORS as fallback
-          try {
-            const res2 = await fetch(url, { method: 'GET', mode: 'no-cors' });
-            return true;
-          } catch (e2) {
-            console.error('Fallback fetch also failed:', e2);
-            return false;
-          }
-        }
-      }
-
-      function showStatus(title, message) {
-        const statusIndicator = document.getElementById('status-indicator');
-        const statusTitle = document.getElementById('status-title');
-        const statusMessage = document.getElementById('status-message');
-
-        if (statusIndicator && statusTitle && statusMessage) {
-          statusTitle.textContent = title;
-          statusMessage.textContent = message;
-          statusIndicator.style.display = 'block';
-        }
-      }
-
-      function hideStatus() {
-        const statusIndicator = document.getElementById('status-indicator');
-        if (statusIndicator) {
-          statusIndicator.style.display = 'none';
-        }
-      }
-
-      function nukeLoadingScreens() {
-        const selectors = [
-          '.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
-          '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
-          '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
-          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button',
-          '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]',
-          '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'
-        ];
-
-        selectors.forEach(selector => {
-          document.querySelectorAll(selector).forEach(el => {
-            el.style.display = 'none';
-            el.style.visibility = 'hidden';
-            el.style.opacity = '0';
-            el.style.pointerEvents = 'none';
-            el.style.position = 'absolute';
-            el.style.left = '-9999px';
-            el.style.top = '-9999px';
-          });
-        });
-      }
-
-
-
-      nukeLoadingScreens();
-
-      document.addEventListener("DOMContentLoaded", async () => {
-        console.log('AR Experience DOM loaded');
-        nukeLoadingScreens();
-
-        const startBtn = document.getElementById('startBtn');
-        const overlay = document.getElementById('overlay');
-        const scene = document.getElementById('arScene');
-        const video = document.querySelector('#videoTexture');
-        const modelEntity = document.querySelector('#modelEntity');
-        const target = document.querySelector('#target');
-        const videoPlane = document.querySelector('#videoPlane');
-        const backgroundPlane = document.querySelector('#backgroundPlane');
-        const externalLinkBtn = document.getElementById('externalLinkBtn');
-        const modeSelector = document.getElementById('arModeSelector');
-        const modeSelect = document.getElementById('modeSelect');
-        const modeDescription = document.getElementById('modeDescription');
-        const modeToggle = document.getElementById('modeToggle');
-
+{{ ... }}
         console.log('AR Elements found:', {
           scene: !!scene,
           video: !!video,
           target: !!target,
           videoPlane: !!videoPlane,
-          backgroundPlane: !!backgroundPlane
+          backgroundPlane: !!backgroundPlane,
+          externalLinkBtn: !!externalLinkBtn,
+          modeSelector: !!modeSelector
         });
+        
+        // Setup AR mode switching
+        if (modeSelector && target) {
+          const smootherComponent = target.components['one-euro-smoother'];
+          
+          // Update mode info display
+          const updateModeInfo = (modeIndex) => {
+            if (smootherComponent && smootherComponent.arModes) {
+              const mode = smootherComponent.arModes[modeIndex];
+              if (mode && modeInfo) {
+                modeInfo.textContent = mode.desc;
+              }
+            }
+          };
+          
+          // Initialize with current mode
+          updateModeInfo(4); // Default mode
+          
+          // Handle mode changes
+          modeSelector.addEventListener('change', (e) => {
+            const newMode = parseInt(e.target.value);
+            console.log('Switching to AR Mode ' + newMode);
+            
+            if (smootherComponent) {
+              // Apply new mode settings
+              smootherComponent.applyMode(newMode);
+              
+              // Update MindAR scene parameters for modes that need it
+              const mode = smootherComponent.arModes[newMode];
+              if (mode && scene) {
+                let mindarAttr = scene.getAttribute('mindar-image');
+                
+                // Adjust MindAR parameters based on mode
+                if (newMode === 0) { // Raw tracking
+                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.01');
+                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 1');
+                } else if (newMode === 4 || newMode === 7) { // Ultra smooth modes
+                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.0001');
+                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 20');
+                } else { // Balanced modes
+                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.001');
+                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 10');
+                }
+                
+                scene.setAttribute('mindar-image', mindarAttr);
+              }
+              
+              updateModeInfo(newMode);
+            }
+          });
+        }
 
         // Preflight check for .mind URL
         const ok = await preflightMind('${mindFileUrl}');
         if (!ok && scene) {
           const fallbackMind = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
-          const mode = AR_MODES[currentMode];
-          const attr = 'imageTargetSrc: ' + fallbackMind + '; ' +
-            'interpolation: ' + mode.mindar.interpolation + '; ' +
-            'smoothing: ' + mode.mindar.smoothing + '; ' +
-            'filterMinCF: ' + mode.mindar.filterMinCF + '; ' +
-            'filterBeta: ' + mode.mindar.filterBeta + '; ' +
-            'missTolerance: 5; warmupTolerance: 5;';
+          const attr = 'imageTargetSrc: ' + fallbackMind + '; interpolation: true; smoothing: true;';
           scene.setAttribute('mindar-image', attr);
-          showStatus('Using fallback target', 'Your .mind file could not be loaded. Using a sample target to verify camera and tracking.');
+{{ ... }}
         }
 
         if (video && videoPlane && backgroundPlane) {
@@ -941,79 +811,17 @@ export async function GET(
           console.error('Target element not found!');
         }
 
-        // AR Mode switching functionality
-        function applyARMode(modeId) {
-          const mode = AR_MODES[modeId];
-          if (!mode) return;
-          
-          currentMode = modeId;
-          
-          // Update MindAR scene attributes
-          if (scene) {
-            const mindAttr = 'imageTargetSrc: ' + mindFileUrl + '; ' +
-              'interpolation: ' + mode.mindar.interpolation + '; ' +
-              'smoothing: ' + mode.mindar.smoothing + '; ' +
-              'filterMinCF: ' + mode.mindar.filterMinCF + '; ' +
-              'filterBeta: ' + mode.mindar.filterBeta + '; ' +
-              'missTolerance: 5; warmupTolerance: 5;';
-            scene.setAttribute('mindar-image', mindAttr);
-          }
-          
-          // Update smoother component attributes
-          if (target) {
-            const smootherAttr = Object.entries(mode.smoother)
-              .map(([key, value]) => key + ': ' + value)
-              .join('; ');
-            target.setAttribute('one-euro-smoother', smootherAttr);
-          }
-          
-          // Update UI
-          modeDescription.textContent = mode.description;
-          console.log('Applied AR Mode ' + modeId + ': ' + mode.name);
-        }
-        
-        // Mode selector event listener
-        if (modeSelect) {
-          modeSelect.addEventListener('change', (e) => {
-            applyARMode(parseInt(e.target.value));
-          });
-        }
-        
-        // Mode toggle visibility
-        if (modeToggle && modeSelector) {
-          let controlsVisible = true;
-          modeToggle.addEventListener('click', () => {
-            controlsVisible = !controlsVisible;
-            modeSelector.style.display = controlsVisible ? 'block' : 'none';
-            modeToggle.textContent = controlsVisible ? 'Hide Controls' : 'Show Controls';
-          });
-        }
-        
-        // Apply default mode
-        applyARMode(currentMode);
-        
-        // Start AR Experience (requires user gesture)
-        if (startBtn) {
-          startBtn.addEventListener('click', async () => {
-            // Hide overlay once user taps
-            if (overlay) overlay.style.display = 'none';
-
-            // Status feedback
-            showStatus('Initializing...', 'Starting camera and tracker');
-            setTimeout(hideStatus, 1000);
-
-            // Show external link button if exists
-            if (externalLinkBtn) {
-              externalLinkBtn.style.display = 'block';
-            }
-
-            // Show mode selector
-            if (modeSelector) {
-              modeSelector.style.display = 'block';
-            }
-            // If you have AR init logic, call here (e.g., await initAR())
+        // Tap to start to satisfy autoplay/camera permissions
+              overlay.style.display = 'none';
+              showStatus('Initializing...', 'Starting camera and tracker');
+              setTimeout(hideStatus, 1000);
+              // Show external link button if exists
+              if (externalLinkBtn) {
+                externalLinkBtn.style.display = 'block';
+              }
+            }, 500);
+            
           }, { once: true });
-        }
 
           // Mobile touch improvements
           if ('ontouchstart' in window) {
