@@ -45,6 +45,67 @@ export async function GET(
     <title>${experience.title} - AR Experience</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script>
+      !function(t,e){if("object"==typeof exports&&"object"==typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var i=e();for(var s in i)("object"==typeof exports?exports:t)[s]=i[s]}}("undefined"!=typeof self?self:this,(()=>(()=>{"use strict";var t={d:(e,i)=>{for(var s in i)t.o(i,s)&&!t.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:i[s]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{LowPassFilter:()=>i,OneEuroFilter:()=>s});class i{setAlpha(t){(t<=0||t>1)&&console.log("alpha should be in (0.0., 1.0]"),this.a=t}constructor(t,e=0){this.y=this.s=e,this.setAlpha(t),this.initialized=!1}filter(t){var e;return this.initialized?e=this.a*t+(1-this.a)*this.s:(e=t,this.initialized=!0),this.y=t,this.s=e,e}filterWithAlpha(t,e){return this.setAlpha(e),this.filter(t)}hasLastRawValue(){return this.initialized}lastRawValue(){return this.y}reset(){this.initialized=!1}}class s{alpha(t){var e=1/this.freq;return 1/(1+1/(2*Math.PI*t)/e)}setFrequency(t){t<=0&&console.log("freq should be >0"),this.freq=t}setMinCutoff(t){t<=0&&console.log("mincutoff should be >0"),this.mincutoff=t}setBeta(t){this.beta_=t}setDerivateCutoff(t){t<=0&&console.log("dcutoff should be >0"),this.dcutoff=t}constructor(t,e=1,s=0,h=1){this.setFrequency(t),this.setMinCutoff(e),this.setBeta(s),this.setDerivateCutoff(h),this.x=new i(this.alpha(e)),this.dx=new i(this.alpha(h)),this.lasttime=void 0}reset(){this.x.reset(),this.dx.reset(),this.lasttime=void 0}filter(t,e=undefined){null!=this.lasttime&&null!=e&&(this.freq=1/(e-this.lasttime)),this.lasttime=e;var i=this.x.hasLastRawValue()?(t-this.x.lastRawValue())*this.freq:0,s=this.dx.filterWithAlpha(i,this.alpha(this.dcutoff)),h=this.mincutoff+this.beta_*Math.abs(s);return this.x.filterWithAlpha(t,this.alpha(h))}}return e})()));
+    </script>
+    <script>
+      AFRAME.registerComponent('one-euro-smoother', {
+        schema: {
+          freq: { type: 'number', default: 120 },
+          mincutoff: { type: 'number', default: 1.0 },
+          beta: { type: 'number', default: 0.05 },
+          dcutoff: { type: 'number', default: 1.0 },
+        },
+
+        init: function () {
+          const { freq, mincutoff, beta, dcutoff } = this.data;
+          this.smoother = {
+            position: {
+              x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+              y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+              z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            },
+            rotation: {
+              x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+              y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+              z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            },
+          };
+          this.targetMatrix = new THREE.Matrix4();
+        },
+
+        tick: function (t, dt) {
+          if (!this.el.object3D.visible) return;
+
+          this.targetMatrix.copy(this.el.object3D.matrix);
+          const timestamp = t / 1000;
+
+          const position = new THREE.Vector3();
+          const quaternion = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          this.targetMatrix.decompose(position, quaternion, scale);
+
+          const euler = new THREE.Euler().setFromQuaternion(quaternion, 'XYZ');
+
+          const smoothedPos = {
+            x: this.smoother.position.x.filter(position.x, timestamp),
+            y: this.smoother.position.y.filter(position.y, timestamp),
+            z: this.smoother.position.z.filter(position.z, timestamp),
+          };
+
+          const smoothedEuler = {
+            x: this.smoother.rotation.x.filter(euler.x, timestamp),
+            y: this.smoother.rotation.y.filter(euler.y, timestamp),
+            z: this.smoother.rotation.z.filter(euler.z, timestamp),
+          };
+
+          const smoothedQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(smoothedEuler.x, smoothedEuler.y, smoothedEuler.z, 'XYZ'));
+
+          this.el.object3D.position.set(smoothedPos.x, smoothedPos.y, smoothedPos.z);
+          this.el.object3D.quaternion.copy(smoothedQuaternion);
+        }
+      });
+    </script>
     <style>
       * {
         margin: 0;
@@ -199,21 +260,7 @@ export async function GET(
         100% { opacity: 1; }
       }
 
-      /* Force smooth transitions on all AR elements */
-      a-entity[mindar-image-target] {
-        transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-      }
-
-      a-plane {
-        transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-      }
-
-      /* Reduce jitter with CSS stabilization */
-      #videoPlane {
-        transform-style: preserve-3d !important;
-        transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-      }
-
+      
       .status-indicator {
         position: fixed;
         top: 50%;
@@ -391,7 +438,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="freq: 120; mincutoff: 1.0; beta: 0.05; dcutoff: 1.0">
         <a-plane
           id="backgroundPlane"
           width="1"
