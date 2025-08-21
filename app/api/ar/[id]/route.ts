@@ -61,6 +61,11 @@ export async function GET(
           posDeadzone: { type: 'number', default: 0.0015 }, // meters; ignore micro translation noise
           rotDeadzoneDeg: { type: 'number', default: 0.4 }, // degrees; ignore micro rotation noise
           emaFactor: { type: 'number', default: 0.15 }, // 0..1, additional EMA blend after One-Euro
+          // Ultra lock controls
+          mode: { type: 'string', default: 'normal' }, // 'normal' | 'ultra_lock'
+          throttleHz: { type: 'number', default: 60 }, // apply transforms at most this often
+          medianWindow: { type: 'number', default: 3 }, // median window size for position
+          zeroRoll: { type: 'boolean', default: false }, // lock roll around marker normal
         },
 
         init: function () {
@@ -77,14 +82,25 @@ export async function GET(
           this.rawMatrix = new THREE.Matrix4();
           this.tmpVec = new THREE.Vector3();
           this.tmpQuat = new THREE.Quaternion();
+
+          // Position history for median filtering
+          this._posHistory = [];
+          this._lastApply = 0;
         },
 
         tick: function (t, dt) {
           // Only run if the target is visible.
           if (!this.el.object3D.visible) return;
 
-          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor } = this.data;
+          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
+
+          // Throttle updates to reduce visible micro jitter
+          const interval = 1000 / Math.max(15, throttleHz || 60);
+          if (this._lastApply && (t - this._lastApply) < interval) {
+            return;
+          }
+          this._lastApply = t;
 
           // 1. Get the raw matrix from the underlying MindAR object.
           // This matrix is updated by MindAR with the raw tracking data.
@@ -96,12 +112,33 @@ export async function GET(
           const rawScale = new THREE.Vector3();
           this.rawMatrix.decompose(rawPosition, rawQuaternion, rawScale);
 
-          // 3. Smooth the position using the One-Euro filter.
+          // 3. Smooth the position using a median filter (optional) then One-Euro filter.
           // This reduces translational jitter (shakiness).
+          let usePos = rawPosition;
+          if (mode === 'ultra_lock' && medianWindow > 1) {
+            // push copy
+            this._posHistory.push(rawPosition.clone());
+            const maxN = Math.min(7, Math.max(2, Math.floor(medianWindow)));
+            while (this._posHistory.length > maxN) this._posHistory.shift();
+            // compute median per axis
+            const med = (arr)=>{
+              const a = arr.slice().sort((a,b)=>a-b);
+              const m = Math.floor(a.length/2);
+              return a.length % 2 ? a[m] : 0.5*(a[m-1]+a[m]);
+            };
+            const xs = this._posHistory.map(v=>v.x);
+            const ys = this._posHistory.map(v=>v.y);
+            const zs = this._posHistory.map(v=>v.z);
+            usePos = new THREE.Vector3(med(xs), med(ys), med(zs));
+          } else {
+            // reset history to avoid lag when switching
+            this._posHistory.length = 0;
+          }
+
           const smoothedPosition = {
-            x: this.positionSmoother.x.filter(rawPosition.x, timestamp),
-            y: this.positionSmoother.y.filter(rawPosition.y, timestamp),
-            z: this.positionSmoother.z.filter(rawPosition.z, timestamp),
+            x: this.positionSmoother.x.filter(usePos.x, timestamp),
+            y: this.positionSmoother.y.filter(usePos.y, timestamp),
+            z: this.positionSmoother.z.filter(usePos.z, timestamp),
           };
 
           // 3b. Apply a deadzone and an extra EMA blend to damp tiny residual motions further.
@@ -129,6 +166,13 @@ export async function GET(
             // Adaptive slerp: larger differences get slightly higher interpolation for responsiveness
             const adapt = THREE.MathUtils.clamp(smoothingFactor + (angleDeg / 90) * 0.05, 0.05, 0.35);
             currentQuaternion.slerp(rawQuaternion, adapt);
+          }
+
+          // Optional zero-roll correction to keep content visually flat to the marker
+          if (mode === 'ultra_lock' && zeroRoll) {
+            const e = new THREE.Euler().setFromQuaternion(currentQuaternion, 'YXZ');
+            e.z = 0; // remove roll
+            currentQuaternion.setFromEuler(e);
           }
 
           // 5. Position already updated via EMA lerp. Quaternion updated via slerp above.
