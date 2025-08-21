@@ -58,6 +58,10 @@ export async function GET(
           mincutoff: { type: 'number', default: 0.5 }, // Lower value = more smoothing for slow movements
           beta: { type: 'number', default: 1.5 }, // Higher value = more smoothing for fast movements
           dcutoff: { type: 'number', default: 1.0 },
+          // Extra stabilizers
+          posDeadzone: { type: 'number', default: 0.0015 }, // meters; ignore micro translation noise
+          rotDeadzoneDeg: { type: 'number', default: 0.4 }, // degrees; ignore micro rotation noise
+          emaFactor: { type: 'number', default: 0.15 }, // 0..1, additional EMA blend after One-Euro
         },
 
         init: function () {
@@ -72,13 +76,15 @@ export async function GET(
 
           // We will use a separate matrix to hold the raw, unsmoothed transform from MindAR.
           this.rawMatrix = new THREE.Matrix4();
+          this.tmpVec = new THREE.Vector3();
+          this.tmpQuat = new THREE.Quaternion();
         },
 
         tick: function (t, dt) {
           // Only run if the target is visible.
           if (!this.el.object3D.visible) return;
 
-          const { smoothingFactor } = this.data;
+          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
           // 1. Get the raw matrix from the underlying MindAR object.
@@ -99,16 +105,34 @@ export async function GET(
             z: this.positionSmoother.z.filter(rawPosition.z, timestamp),
           };
 
+          // 3b. Apply a deadzone and an extra EMA blend to damp tiny residual motions further.
+          const currentPos = this.el.object3D.position;
+          // Deadzone: if movement is below threshold, keep current axis value
+          const dz = posDeadzone;
+          const targetPos = this.tmpVec.set(
+            Math.abs(smoothedPosition.x - currentPos.x) < dz ? currentPos.x : smoothedPosition.x,
+            Math.abs(smoothedPosition.y - currentPos.y) < dz ? currentPos.y : smoothedPosition.y,
+            Math.abs(smoothedPosition.z - currentPos.z) < dz ? currentPos.z : smoothedPosition.z,
+          );
+          // EMA blend: current := lerp(current, target, emaFactor)
+          currentPos.lerp(targetPos, emaFactor);
+
           // 4. Smooth the rotation using spherical linear interpolation (Slerp).
           // This provides a much more stable and natural rotational smoothing than filtering Euler angles.
           // It smoothly interpolates from the object's current orientation to the new raw orientation.
           const currentQuaternion = this.el.object3D.quaternion;
-          currentQuaternion.slerp(rawQuaternion, smoothingFactor);
+          // Compute angular difference in degrees
+          const dot = THREE.MathUtils.clamp(currentQuaternion.dot(rawQuaternion), -1, 1);
+          const angleRad = 2 * Math.acos(Math.abs(dot));
+          const angleDeg = THREE.MathUtils.radToDeg(angleRad);
+          // Deadzone for rotation: ignore micro rotation
+          if (angleDeg > rotDeadzoneDeg) {
+            // Adaptive slerp: larger differences get slightly higher interpolation for responsiveness
+            const adapt = THREE.MathUtils.clamp(smoothingFactor + (angleDeg / 90) * 0.05, 0.05, 0.35);
+            currentQuaternion.slerp(rawQuaternion, adapt);
+          }
 
-          // 5. Apply the smoothed position and rotation to the entity's object3D.
-          // This is what the user sees.
-          this.el.object3D.position.set(smoothedPosition.x, smoothedPosition.y, smoothedPosition.z);
-          // The quaternion is already updated by the slerp function.
+          // 5. Position already updated via EMA lerp. Quaternion updated via slerp above.
         }
       });
     </script>
