@@ -516,6 +516,22 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
+    <div id="arProfileSelector">
+      <label for="profileSelect">AR Tracking Mode:</label>
+      <select id="profileSelect">
+        <option value="1">Mode 1: Raw Tracking</option>
+        <option value="2">Mode 2: Light Smoothing</option>
+        <option value="3">Mode 3: Medium Smoothing</option>
+        <option value="4">Mode 4: Heavy Smoothing</option>
+        <option value="5">Mode 5: Ultra Smooth (Laggy)</option>
+        <option value="6">Mode 6: Responsive but Shaky</option>
+        <option value="7" selected>Mode 7: Balanced (Default-like)</option>
+        <option value="8">Mode 8: Confidence-Based</option>
+        <option value="9">Mode 9: Predictive Filtering</option>
+        <option value="10">Mode 10: Extreme Lag-Free</option>
+      </select>
+    </div>
+
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
       <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
@@ -773,6 +789,7 @@ export async function GET(
         const videoPlane = document.querySelector('#videoPlane');
         const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
+        const profileSelect = document.getElementById('profileSelect');
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -931,6 +948,11 @@ export async function GET(
               if (externalLinkBtn) {
                 externalLinkBtn.style.display = 'block';
               }
+              // Show AR profile selector
+              const profileSelector = document.getElementById('arProfileSelector');
+              if (profileSelector) {
+                profileSelector.style.display = 'block';
+              }
             }, 500);
             
           }, { once: true });
@@ -945,6 +967,19 @@ export async function GET(
               startBtn.style.transform = 'scale(1)';
             });
           }
+        }
+
+        // Setup profile selector event listener
+        if (profileSelect) {
+          profileSelect.addEventListener('change', (e) => {
+            const selectedProfile = parseInt(e.target.value);
+            applyProfile(selectedProfile);
+          });
+          
+          // Apply default profile on load
+          setTimeout(() => {
+            applyProfile(currentProfile);
+          }, 1000);
         }
 
         setInterval(nukeLoadingScreens, 1000);
