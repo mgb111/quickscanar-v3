@@ -30,7 +30,6 @@ export async function GET(
     })
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const usingCustomMind = !!experience.mind_file_url
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -407,8 +406,9 @@ export async function GET(
         opacity: 0.95;
         transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
       }
+      /* Hover moves up slightly without shifting horizontally */
       #externalLinkBtn a:hover {
-        transform: translateX(-50%) translateY(-2px); /* Adjust transform for centering */
+        transform: translateY(-2px);
         opacity: 1;
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
@@ -444,9 +444,9 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.001; filterBeta: 10; missTolerance: 5; warmupTolerance: 5;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.001; filterBeta: 10; missTolerance: 5; warmupTolerance: 5;"
       color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights, antialias: true, alpha: true"
+      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
@@ -474,7 +474,7 @@ export async function GET(
           width="1"
           height="1"
           position="0 0 0.005"
-          rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
+          rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
           visible="false"
         ></a-plane>
@@ -484,7 +484,7 @@ export async function GET(
           width="1"
           height="1"
           position="0 0 0.01"
-          rotation="0 0 ${(experience.video_rotation || 0) * Math.PI / 180}"
+          rotation="0 0 ${experience.video_rotation || 0}"
           material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
           visible="false"
           geometry="primitive: plane; skipCache: true"
@@ -594,7 +594,7 @@ export async function GET(
         const ok = await preflightMind('${mindFileUrl}');
         if (!ok && scene) {
           const fallbackMind = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
-          const attr = 'imageTargetSrc: ' + fallbackMind + ';';
+          const attr = 'imageTargetSrc: ' + fallbackMind + '; interpolation: true; smoothing: true;';
           scene.setAttribute('mindar-image', attr);
           showStatus('Using fallback target', 'Your .mind file could not be loaded. Using a sample target to verify camera and tracking.');
         }
@@ -726,7 +726,7 @@ export async function GET(
             try {
               if (video) await video.play().catch(() => {});
             } catch {}
-            
+
             // Smooth fade out for overlay
             overlay.style.opacity = '0';
             overlay.style.transition = 'opacity 0.5s ease';
@@ -773,6 +773,8 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'text/html',
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (error) {
