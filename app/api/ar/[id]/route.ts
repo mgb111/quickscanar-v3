@@ -51,58 +51,64 @@ export async function GET(
     <script>
       AFRAME.registerComponent('one-euro-smoother', {
         schema: {
+          // Lower value = more smoothing, less responsive
+          smoothingFactor: { type: 'number', default: 0.1 },
+          // One-Euro filter params for position
           freq: { type: 'number', default: 120 },
-          mincutoff: { type: 'number', default: 1.0 },
-          beta: { type: 'number', default: 0.05 },
+          mincutoff: { type: 'number', default: 0.5 }, // Lower value = more smoothing for slow movements
+          beta: { type: 'number', default: 1.5 }, // Higher value = more smoothing for fast movements
           dcutoff: { type: 'number', default: 1.0 },
         },
 
         init: function () {
           const { freq, mincutoff, beta, dcutoff } = this.data;
-          this.smoother = {
-            position: {
-              x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-              y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-              z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-            },
-            rotation: {
-              x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-              y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-              z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-            },
+          
+          // One-Euro filter for position to smooth out jitter from camera shake.
+          this.positionSmoother = {
+            x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
+            z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
           };
-          this.targetMatrix = new THREE.Matrix4();
+
+          // We will use a separate matrix to hold the raw, unsmoothed transform from MindAR.
+          this.rawMatrix = new THREE.Matrix4();
         },
 
         tick: function (t, dt) {
+          // Only run if the target is visible.
           if (!this.el.object3D.visible) return;
 
-          this.targetMatrix.copy(this.el.object3D.matrix);
-          const timestamp = t / 1000;
+          const { smoothingFactor } = this.data;
+          const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
-          const position = new THREE.Vector3();
-          const quaternion = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          this.targetMatrix.decompose(position, quaternion, scale);
+          // 1. Get the raw matrix from the underlying MindAR object.
+          // This matrix is updated by MindAR with the raw tracking data.
+          this.rawMatrix.copy(this.el.object3D.matrix);
 
-          const euler = new THREE.Euler().setFromQuaternion(quaternion, 'XYZ');
+          // 2. Decompose the raw matrix into its position, quaternion, and scale components.
+          const rawPosition = new THREE.Vector3();
+          const rawQuaternion = new THREE.Quaternion();
+          const rawScale = new THREE.Vector3();
+          this.rawMatrix.decompose(rawPosition, rawQuaternion, rawScale);
 
-          const smoothedPos = {
-            x: this.smoother.position.x.filter(position.x, timestamp),
-            y: this.smoother.position.y.filter(position.y, timestamp),
-            z: this.smoother.position.z.filter(position.z, timestamp),
+          // 3. Smooth the position using the One-Euro filter.
+          // This reduces translational jitter (shakiness).
+          const smoothedPosition = {
+            x: this.positionSmoother.x.filter(rawPosition.x, timestamp),
+            y: this.positionSmoother.y.filter(rawPosition.y, timestamp),
+            z: this.positionSmoother.z.filter(rawPosition.z, timestamp),
           };
 
-          const smoothedEuler = {
-            x: this.smoother.rotation.x.filter(euler.x, timestamp),
-            y: this.smoother.rotation.y.filter(euler.y, timestamp),
-            z: this.smoother.rotation.z.filter(euler.z, timestamp),
-          };
+          // 4. Smooth the rotation using spherical linear interpolation (Slerp).
+          // This provides a much more stable and natural rotational smoothing than filtering Euler angles.
+          // It smoothly interpolates from the object's current orientation to the new raw orientation.
+          const currentQuaternion = this.el.object3D.quaternion;
+          currentQuaternion.slerp(rawQuaternion, smoothingFactor);
 
-          const smoothedQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(smoothedEuler.x, smoothedEuler.y, smoothedEuler.z, 'XYZ'));
-
-          this.el.object3D.position.set(smoothedPos.x, smoothedPos.y, smoothedPos.z);
-          this.el.object3D.quaternion.copy(smoothedQuaternion);
+          // 5. Apply the smoothed position and rotation to the entity's object3D.
+          // This is what the user sees.
+          this.el.object3D.position.set(smoothedPosition.x, smoothedPosition.y, smoothedPosition.z);
+          // The quaternion is already updated by the slerp function.
         }
       });
     </script>
@@ -438,7 +444,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="freq: 120; mincutoff: 1.0; beta: 0.05; dcutoff: 1.0">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="smoothingFactor: 0.1; freq: 120; mincutoff: 0.5; beta: 1.5; dcutoff: 1.0">
         <a-plane
           id="backgroundPlane"
           width="1"
