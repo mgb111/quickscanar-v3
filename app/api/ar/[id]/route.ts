@@ -66,55 +66,10 @@ export async function GET(
           throttleHz: { type: 'number', default: 60 }, // apply transforms at most this often
           medianWindow: { type: 'number', default: 3 }, // median window size for position
           zeroRoll: { type: 'boolean', default: false }, // lock roll around marker normal
-          // Dynamic mode switching
-          arMode: { type: 'number', default: 4 }, // current AR mode (0-9)
         },
 
         init: function () {
           const { freq, mincutoff, beta, dcutoff } = this.data;
-          
-          // Define 10 AR experience modes
-          this.arModes = [
-            // Mode 0: Raw Tracking - minimal filtering, maximum responsiveness
-            { name: "Raw Tracking", desc: "Minimal filtering, maximum responsiveness", 
-              smoothingFactor: 0.8, mincutoff: 2.0, beta: 0.5, posDeadzone: 0.0005, rotDeadzoneDeg: 0.1, emaFactor: 0.05, throttleHz: 120, medianWindow: 1, mode: 'normal', zeroRoll: false },
-            
-            // Mode 1: Light Smoothing - slight filtering, still very responsive
-            { name: "Light Smoothing", desc: "Slight filtering, still very responsive", 
-              smoothingFactor: 0.3, mincutoff: 1.2, beta: 1.0, posDeadzone: 0.002, rotDeadzoneDeg: 0.3, emaFactor: 0.1, throttleHz: 90, medianWindow: 2, mode: 'normal', zeroRoll: false },
-            
-            // Mode 2: Balanced - good compromise between smooth and responsive
-            { name: "Balanced", desc: "Good compromise between smooth and responsive", 
-              smoothingFactor: 0.15, mincutoff: 0.8, beta: 1.5, posDeadzone: 0.003, rotDeadzoneDeg: 0.6, emaFactor: 0.18, throttleHz: 75, medianWindow: 3, mode: 'normal', zeroRoll: false },
-            
-            // Mode 3: Heavy Filtering - more stable, slightly less responsive
-            { name: "Heavy Filtering", desc: "More stable, slightly less responsive", 
-              smoothingFactor: 0.08, mincutoff: 0.4, beta: 2.0, posDeadzone: 0.005, rotDeadzoneDeg: 1.0, emaFactor: 0.25, throttleHz: 60, medianWindow: 4, mode: 'normal', zeroRoll: true },
-            
-            // Mode 4: Ultra Smooth - maximum stability, some lag acceptable
-            { name: "Ultra Smooth", desc: "Maximum stability, some lag acceptable", 
-              smoothingFactor: 0.045, mincutoff: 0.2, beta: 2.5, posDeadzone: 0.007, rotDeadzoneDeg: 1.8, emaFactor: 0.4, throttleHz: 45, medianWindow: 5, mode: 'ultra_lock', zeroRoll: true },
-            
-            // Mode 5: Responsive - prioritizes quick response over smoothness
-            { name: "Responsive", desc: "Prioritizes quick response over smoothness", 
-              smoothingFactor: 0.4, mincutoff: 1.5, beta: 0.8, posDeadzone: 0.001, rotDeadzoneDeg: 0.2, emaFactor: 0.08, throttleHz: 100, medianWindow: 2, mode: 'normal', zeroRoll: false },
-            
-            // Mode 6: Predictive - uses higher beta for motion prediction
-            { name: "Predictive", desc: "Uses motion prediction for smoother tracking", 
-              smoothingFactor: 0.12, mincutoff: 0.6, beta: 3.0, posDeadzone: 0.004, rotDeadzoneDeg: 0.8, emaFactor: 0.22, throttleHz: 65, medianWindow: 3, mode: 'normal', zeroRoll: true },
-            
-            // Mode 7: Stable Lock - maximum lock with ultra settings
-            { name: "Stable Lock", desc: "Maximum lock with ultra settings", 
-              smoothingFactor: 0.03, mincutoff: 0.15, beta: 2.8, posDeadzone: 0.009, rotDeadzoneDeg: 2.2, emaFactor: 0.45, throttleHz: 35, medianWindow: 6, mode: 'ultra_lock', zeroRoll: true },
-            
-            // Mode 8: Adaptive - medium smoothing with adaptive parameters
-            { name: "Adaptive", desc: "Medium smoothing with adaptive parameters", 
-              smoothingFactor: 0.1, mincutoff: 0.5, beta: 1.8, posDeadzone: 0.0035, rotDeadzoneDeg: 0.9, emaFactor: 0.2, throttleHz: 70, medianWindow: 3, mode: 'normal', zeroRoll: true },
-            
-            // Mode 9: Professional - optimized for production use
-            { name: "Professional", desc: "Optimized for production use", 
-              smoothingFactor: 0.06, mincutoff: 0.3, beta: 2.2, posDeadzone: 0.0045, rotDeadzoneDeg: 1.2, emaFactor: 0.26, throttleHz: 60, medianWindow: 4, mode: 'normal', zeroRoll: true }
-          ];
           
           // One-Euro filter for position to smooth out jitter from camera shake.
           this.positionSmoother = {
@@ -131,35 +86,6 @@ export async function GET(
           // Position history for median filtering
           this._posHistory = [];
           this._lastApply = 0;
-          
-          // Apply initial mode settings
-          this.applyMode(this.data.arMode || 4);
-        },
-        
-        applyMode: function(modeIndex) {
-          if (modeIndex < 0 || modeIndex >= this.arModes.length) return;
-          const mode = this.arModes[modeIndex];
-          
-          // Update all parameters from the selected mode
-          Object.keys(mode).forEach(key => {
-            if (key !== 'name' && key !== 'desc') {
-              this.data[key] = mode[key];
-            }
-          });
-          
-          // Reinitialize filters with new parameters
-          const { freq, mincutoff, beta, dcutoff } = this.data;
-          this.positionSmoother = {
-            x: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-            y: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-            z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
-          };
-          
-          // Reset history
-          this._posHistory = [];
-          this._lastApply = 0;
-          
-          console.log('Applied AR Mode ' + modeIndex + ': ' + mode.name);
         },
 
         tick: function (t, dt) {
@@ -258,56 +184,6 @@ export async function GET(
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-      }
-      
-      /* AR Mode Selector */
-      #arModeSelector {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        background: rgba(0, 0, 0, 0.8);
-        border-radius: 8px;
-        padding: 12px;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        min-width: 220px;
-      }
-      
-      #arModeSelector select {
-        width: 100%;
-        padding: 8px;
-        border-radius: 4px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        font-size: 13px;
-        outline: none;
-      }
-      
-      #arModeSelector select option {
-        background: #333;
-        color: white;
-      }
-      
-      #arModeSelector label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 500;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        opacity: 0.9;
-      }
-      
-      #currentModeInfo {
-        margin-top: 8px;
-        font-size: 11px;
-        opacity: 0.7;
-        line-height: 1.3;
       }
 
       body {
@@ -592,98 +468,180 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    <!-- AR Mode Selector -->
-    <div id="arModeSelector">
-      <label for="modeSelect">AR Tracking Mode</label>
-      <select id="modeSelect">
-        <option value="0">Mode 1: Raw Tracking</option>
-        <option value="1">Mode 2: Light Smoothing</option>
-        <option value="2">Mode 3: Balanced</option>
-        <option value="3">Mode 4: Heavy Filtering</option>
-        <option value="4" selected>Mode 5: Ultra Smooth</option>
-        <option value="5">Mode 6: Responsive</option>
-        <option value="6">Mode 7: Predictive</option>
-        <option value="7">Mode 8: Stable Lock</option>
-        <option value="8">Mode 9: Adaptive</option>
-        <option value="9">Mode 10: Professional</option>
-      </select>
-      <div id="currentModeInfo">Ultra smooth with minimal jitter</div>
-    </div>
-
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
       <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
-          <!-- Keep existing start UI (unchanged) -->
-          <h2 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:black;">Ready to start AR?</h2>
-          <p style="margin:0 0 16px 0;color:#333;">Tap the button below to enable camera and begin.</p>
-          <button id="startBtn" style="cursor:pointer;background:black;color:white;border:none;border-radius:999px;padding:12px 18px;font-weight:700;letter-spacing:0.3px;box-shadow:0 8px 24px rgba(0,0,0,0.25);transition:transform .15s ease, box-shadow .15s ease;">
-            Start AR
-          </button>
+          <div style="width:60px;height:60px;background:#dc2626;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
         </div>
+        <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
     </div>
 
+
+
+    <a-scene
+      id="arScene"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.001; filterBeta: 10; missTolerance: 5; warmupTolerance: 5;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      embedded
+      loading-screen="enabled: false"
+      style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
+    >
+      <a-assets>
+        ${experience.model_url ? `
+        <a-asset-item id="modelAsset" src="${experience.model_url}"></a-asset-item>
+        ` : `
+        <video
+          id="videoTexture"
+          src="${experience.video_url}"
+          loop
+          muted
+          playsinline
+          crossorigin="anonymous"
+          preload="auto"
+          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
+        ></video>
+        `}
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="smoothingFactor: 0.06; freq: 120; mincutoff: 0.3; beta: 2.2; dcutoff: 1.0; posDeadzone: 0.0045; rotDeadzoneDeg: 1.2; emaFactor: 0.26">
+        ${experience.model_url ? `
+        <a-entity id="modelEntity" gltf-model="#modelAsset" visible="false" position="0 0 0.01"></a-entity>
+        ` : `
+        <a-plane
+          id="backgroundPlane"
+          width="1"
+          height="1"
+          position="0 0 0.005"
+          rotation="0 0 ${experience.video_rotation || 0}"
+          material="color: #000000"
+          visible="false"
+        ></a-plane>
+
+        <a-plane
+          id="videoPlane"
+          width="1"
+          height="1"
+          position="0 0 0.01"
+          rotation="0 0 ${experience.video_rotation || 0}"
+          material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
+          visible="false"
+          geometry="primitive: plane; skipCache: true"
+          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
+          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
+        ></a-plane>
+        `}
+      </a-entity>
+    </a-scene>
+
+    ${experience.link_url ? `
+    <div id="externalLinkBtn">
+      <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
+        Open Link
+      </a>
+    </div>
+    ` : ''}
+
     <script>
+      async function preflightMind(url) {
+        try {
+          // Try with CORS mode first
+          const res = await fetch(url, { method: 'GET', mode: 'cors' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return true;
+        } catch (e) {
+          console.error('Mind file preflight failed:', e);
+          
+          // Try without CORS as fallback
+          try {
+            const res2 = await fetch(url, { method: 'GET', mode: 'no-cors' });
+            return true;
+          } catch (e2) {
+            console.error('Fallback fetch also failed:', e2);
+            return false;
+          }
+        }
+      }
+
+      function showStatus(title, message) {
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusTitle = document.getElementById('status-title');
+        const statusMessage = document.getElementById('status-message');
+
+        if (statusIndicator && statusTitle && statusMessage) {
+          statusTitle.textContent = title;
+          statusMessage.textContent = message;
+          statusIndicator.style.display = 'block';
+        }
+      }
+
+      function hideStatus() {
+        const statusIndicator = document.getElementById('status-indicator');
+        if (statusIndicator) {
+          statusIndicator.style.display = 'none';
+        }
+      }
+
+      function nukeLoadingScreens() {
+        const selectors = [
+          '.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo',
+          '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text',
+          '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal',
+          '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button',
+          '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]',
+          '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'
+        ];
+
+        selectors.forEach(selector => {
+          document.querySelectorAll(selector).forEach(el => {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            el.style.top = '-9999px';
+          });
+        });
+      }
+
+
+
+      nukeLoadingScreens();
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        console.log('AR Experience DOM loaded');
+        nukeLoadingScreens();
+
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
+        const scene = document.getElementById('arScene');
+        const video = document.querySelector('#videoTexture');
+        const modelEntity = document.querySelector('#modelEntity');
+        const target = document.querySelector('#target');
+        const videoPlane = document.querySelector('#videoPlane');
+        const backgroundPlane = document.querySelector('#backgroundPlane');
+        const externalLinkBtn = document.getElementById('externalLinkBtn');
+
         console.log('AR Elements found:', {
           scene: !!scene,
           video: !!video,
           target: !!target,
           videoPlane: !!videoPlane,
-          backgroundPlane: !!backgroundPlane,
-          externalLinkBtn: !!externalLinkBtn,
-          modeSelector: !!modeSelector
+          backgroundPlane: !!backgroundPlane
         });
-        
-        // Setup AR mode switching
-        if (modeSelector && target) {
-          const smootherComponent = target.components['one-euro-smoother'];
-          
-          // Update mode info display
-          const updateModeInfo = (modeIndex) => {
-            if (smootherComponent && smootherComponent.arModes) {
-              const mode = smootherComponent.arModes[modeIndex];
-              if (mode && modeInfo) {
-                modeInfo.textContent = mode.desc;
-              }
-            }
-          };
-          
-          // Initialize with current mode
-          updateModeInfo(4); // Default mode
-          
-          // Handle mode changes
-          modeSelector.addEventListener('change', (e) => {
-            const newMode = parseInt(e.target.value);
-            console.log('Switching to AR Mode ' + newMode);
-            
-            if (smootherComponent) {
-              // Apply new mode settings
-              smootherComponent.applyMode(newMode);
-              
-              // Update MindAR scene parameters for modes that need it
-              const mode = smootherComponent.arModes[newMode];
-              if (mode && scene) {
-                let mindarAttr = scene.getAttribute('mindar-image');
-                
-                // Adjust MindAR parameters based on mode
-                if (newMode === 0) { // Raw tracking
-                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.01');
-                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 1');
-                } else if (newMode === 4 || newMode === 7) { // Ultra smooth modes
-                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.0001');
-                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 20');
-                } else { // Balanced modes
-                  mindarAttr = mindarAttr.replace(/filterMinCF: [0-9.]+/, 'filterMinCF: 0.001');
-                  mindarAttr = mindarAttr.replace(/filterBeta: [0-9.]+/, 'filterBeta: 10');
-                }
-                
-                scene.setAttribute('mindar-image', mindarAttr);
-              }
-              
-              updateModeInfo(newMode);
-            }
-          });
-        }
 
         // Preflight check for .mind URL
         const ok = await preflightMind('${mindFileUrl}');
@@ -691,6 +649,7 @@ export async function GET(
           const fallbackMind = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
           const attr = 'imageTargetSrc: ' + fallbackMind + '; interpolation: true; smoothing: true;';
           scene.setAttribute('mindar-image', attr);
+          showStatus('Using fallback target', 'Your .mind file could not be loaded. Using a sample target to verify camera and tracking.');
         }
 
         if (video && videoPlane && backgroundPlane) {
