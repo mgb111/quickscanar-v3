@@ -311,8 +311,9 @@ export async function GET(
       /* Optional external link button */
       #externalLinkBtn {
         position: fixed;
-        right: 16px;
-        bottom: 16px;
+        bottom: 24px; /* Move up from the bottom */
+        left: 50%; /* Center horizontally */
+        transform: translateX(-50%); /* Correct for centering */
         z-index: 1004;
         display: none; /* shown dynamically if link exists */
       }
@@ -322,21 +323,21 @@ export async function GET(
         color: #ffffff;
         border: 2px solid #000000;
         border-radius: 9999px;
-        padding: 10px 14px;
-        font-size: 12px;
+        padding: 14px 22px; /* Increased padding for a bigger button */
+        font-size: 16px; /* Larger font size */
         font-weight: 600;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-        opacity: 0.9;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        opacity: 0.95;
         transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
       }
       #externalLinkBtn a:hover {
-        transform: translateY(-1px);
+        transform: translateX(-50%) translateY(-2px); /* Adjust transform for centering */
         opacity: 1;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
       @media (max-width: 768px) { 
-        #externalLinkBtn a { padding: 9px 12px; font-size: 12px; }
-        #externalLinkBtn { right: 12px; bottom: 12px; }
+        #externalLinkBtn { bottom: 20px; }
+        #externalLinkBtn a { padding: 12px 20px; font-size: 14px; }
       }
     </style>
   </head>
@@ -366,7 +367,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.00001; filterBeta: 1000; missTolerance: 15; warmupTolerance: 2;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.001; filterBeta: 10; missTolerance: 5; warmupTolerance: 5;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -559,12 +560,7 @@ export async function GET(
             console.log('MindAR arReady');
             scene.style.opacity = '1';
             
-            // Apply custom stabilization after AR is ready
-            setTimeout(() => {
-              interceptMatrixUpdates();
-              addFrameRateLimiter();
-              console.log('Applied custom matrix stabilization and frame rate limiting');
-            }, 1000);
+            // Custom stabilization logic removed.
           });
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
@@ -577,66 +573,7 @@ export async function GET(
         let targetLostTimeout = null;
         let isTargetVisible = false;
         
-        // Advanced stabilization system
-        let lastTransform = null;
-        let transformBuffer = [];
-        const TRANSFORM_BUFFER_SIZE = 5;
-        const SMOOTHING_FACTOR = 0.7;
-        
-        // Custom matrix smoothing function
-        function smoothTransform(newTransform) {
-          if (!lastTransform) {
-            lastTransform = newTransform;
-            return newTransform;
-          }
-          
-          // Simple exponential smoothing
-          const smoothed = newTransform.map((row, i) => 
-            row.map((val, j) => 
-              SMOOTHING_FACTOR * lastTransform[i][j] + (1 - SMOOTHING_FACTOR) * val
-            )
-          );
-          
-          lastTransform = smoothed;
-          return smoothed;
-        }
-        
-        // Override MindAR's matrix updates for custom stabilization
-        function interceptMatrixUpdates() {
-          const target = document.querySelector('#target');
-          if (target && target.object3D) {
-            const originalUpdateMatrix = target.updateWorldMatrix;
-            target.updateWorldMatrix = function(worldMatrix) {
-              if (worldMatrix && isTargetVisible) {
-                // Apply custom smoothing to the world matrix
-                const smoothedMatrix = smoothTransform(worldMatrix);
-                originalUpdateMatrix.call(this, smoothedMatrix);
-              } else {
-                originalUpdateMatrix.call(this, worldMatrix);
-              }
-            };
-          }
-        }
-        
-        // Add frame rate limiting to reduce update frequency
-        let lastUpdateTime = 0;
-        const UPDATE_INTERVAL = 1000 / 30; // Limit to 30 FPS for stability
-        
-        function addFrameRateLimiter() {
-          const scene = document.querySelector('a-scene');
-          if (scene && scene.systems && scene.systems['mindar-image-system']) {
-            const system = scene.systems['mindar-image-system'];
-            const originalProcessVideo = system.processingVideo;
-            
-            system.processVideo = function(input) {
-              const now = Date.now();
-              if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-                lastUpdateTime = now;
-                return originalProcessVideo.call(this, input);
-              }
-            };
-          }
-        }
+        // Custom stabilization logic removed to rely on MindAR's built-in filtering.
 
         if (target) {
           console.log('Target element found, adding event listeners');
