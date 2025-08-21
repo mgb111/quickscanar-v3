@@ -428,6 +428,54 @@ export async function GET(
         top: -9999px !important;
       }
 
+      /* AR Profile Selector */
+      #arProfileSelector {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1005;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid #000;
+        border-radius: 12px;
+        padding: 12px;
+        font-family: inherit;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        display: none; /* shown after AR starts */
+      }
+
+      #arProfileSelector select {
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        min-width: 200px;
+      }
+
+      #arProfileSelector label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 6px;
+      }
+
+      @media (max-width: 768px) {
+        #arProfileSelector {
+          top: 15px;
+          right: 15px;
+          padding: 10px;
+        }
+        
+        #arProfileSelector select {
+          min-width: 180px;
+          font-size: 13px;
+        }
+      }
+
       /* Optional external link button */
       #externalLinkBtn {
         position: fixed;
@@ -547,6 +595,106 @@ export async function GET(
     ` : ''}
 
     <script>
+      const arProfiles = {
+        1: {
+          name: "Mode 1: Raw Tracking",
+          filterMinCF: 0.0,
+          filterBeta: 0.0,
+          interpolationFactor: 0.0,
+          damping: 0.0
+        },
+        2: {
+          name: "Mode 2: Light Smoothing",
+          filterMinCF: 0.0001,
+          filterBeta: 0.001,
+          interpolationFactor: 0.1,
+          damping: 0.05
+        },
+        3: {
+          name: "Mode 3: Medium Smoothing",
+          filterMinCF: 0.0005,
+          filterBeta: 0.01,
+          interpolationFactor: 0.25,
+          damping: 0.1
+        },
+        4: {
+          name: "Mode 4: Heavy Smoothing",
+          filterMinCF: 0.001,
+          filterBeta: 0.05,
+          interpolationFactor: 0.5,
+          damping: 0.2
+        },
+        5: {
+          name: "Mode 5: Ultra Smooth (Laggy)",
+          filterMinCF: 0.01,
+          filterBeta: 0.1,
+          interpolationFactor: 0.75,
+          damping: 0.4
+        },
+        6: {
+          name: "Mode 6: Responsive but Shaky",
+          filterMinCF: 0.0001,
+          filterBeta: 0.0001,
+          interpolationFactor: 0.05,
+          damping: 0.0
+        },
+        7: {
+          name: "Mode 7: Balanced (Default-like)",
+          filterMinCF: 0.0003,
+          filterBeta: 0.003,
+          interpolationFactor: 0.2,
+          damping: 0.08
+        },
+        8: {
+          name: "Mode 8: Confidence-Based",
+          filterMinCF: 0.005,
+          filterBeta: 0.05,
+          interpolationFactor: 0.3,
+          damping: 0.15
+        },
+        9: {
+          name: "Mode 9: Predictive Filtering",
+          filterMinCF: 0.0005,
+          filterBeta: 0.02,
+          interpolationFactor: 0.4,
+          damping: 0.25,
+          predictive: true
+        },
+        10: {
+          name: "Mode 10: Extreme Lag-Free",
+          filterMinCF: 0.0,
+          filterBeta: 0.0,
+          interpolationFactor: 0.0,
+          damping: 0.0,
+          fastTracking: true
+        }
+      };
+
+      let currentProfile = 7; // Default to balanced mode
+
+      function applyProfile(profileId) {
+        const profile = arProfiles[profileId];
+        if (!profile) return;
+
+        currentProfile = profileId;
+        const scene = document.getElementById('arScene');
+        const target = document.querySelector('#target');
+        
+        if (scene) {
+          // Update MindAR scene parameters
+          const mindArAttr = \`imageTargetSrc: \${scene.getAttribute('mindar-image').split(';')[0].split(':')[1].trim()}; interpolation: true; smoothing: true; filterMinCF: \${profile.filterMinCF}; filterBeta: \${profile.filterBeta}; missTolerance: 5; warmupTolerance: 5;\`;
+          scene.setAttribute('mindar-image', mindArAttr);
+        }
+
+        if (target) {
+          // Update one-euro-smoother parameters
+          const smootherAttr = \`mode: ultra_lock; smoothingFactor: \${0.06 + profile.damping}; freq: 120; mincutoff: \${0.3 - profile.interpolationFactor * 0.2}; beta: \${2.2 + profile.interpolationFactor}; dcutoff: 1.0; posDeadzone: \${0.0045 + profile.damping * 0.01}; rotDeadzoneDeg: \${1.2 + profile.damping * 2}; emaFactor: \${0.26 + profile.interpolationFactor * 0.2}; throttleHz: \${profile.fastTracking ? 120 : 60}; medianWindow: \${profile.predictive ? 5 : 3}; zeroRoll: true\`;
+          target.setAttribute('one-euro-smoother', smootherAttr);
+        }
+
+        console.log(\`Applied AR Profile \${profileId}: \${profile.name}\`);
+      }
+
       async function preflightMind(url) {
         try {
           // Try with CORS mode first
