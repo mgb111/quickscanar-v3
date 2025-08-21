@@ -941,6 +941,34 @@ export async function GET(
           console.error('Target element not found!');
         }
 
+        // Start AR handlers (fix overlay stuck)
+        if (startBtn && scene) {
+          let started = false;
+          const startAR = async () => {
+            if (started) return;
+            started = true;
+            try {
+              const sys = (scene as any).systems && (scene as any).systems['mindar-image-system'];
+              if (sys && sys.start) await sys.start();
+            } catch (e) {
+              console.warn('Failed to start MindAR system:', e);
+            }
+            try { if (video) await (video as HTMLVideoElement).play().catch(()=>{}); } catch {}
+            const overlayEl = document.getElementById('overlay') as HTMLElement | null;
+            if (overlayEl) overlayEl.style.display = 'none';
+            showStatus('Initializing...', 'Starting camera and tracker');
+            setTimeout(hideStatus, 1000);
+            if (externalLinkBtn) (externalLinkBtn as HTMLElement).style.display = 'block';
+            if (modeSelector) (modeSelector as HTMLElement).style.display = 'block';
+          };
+          // Click to start
+          startBtn.addEventListener('click', startAR, { once: true });
+          // Touch to start (iOS)
+          startBtn.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
+          // Keyboard (Enter)
+          startBtn.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
+        }
+
         // AR Mode switching functionality
         function applyARMode(modeId) {
           const mode = AR_MODES[modeId];
