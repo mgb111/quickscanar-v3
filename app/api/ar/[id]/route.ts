@@ -773,7 +773,7 @@ export async function GET(
 
       nukeLoadingScreens();
 
-      document.addEventListener("DOMContentLoaded", async () => {
+      const initARPage = async () => {
         console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
 
@@ -942,18 +942,26 @@ export async function GET(
         }
 
         // Start AR handlers (fix overlay stuck)
-        if (startBtn && scene) {
+        if (scene) {
           let started = false;
           const startAR = async () => {
             if (started) return;
             started = true;
+            console.log('[AR] startAR invoked');
             try {
               const sys = (scene as any).systems && (scene as any).systems['mindar-image-system'];
-              if (sys && sys.start) await sys.start();
+              if (sys && sys.start) {
+                console.log('[AR] Starting mindar-image-system');
+                await sys.start();
+              } else {
+                console.warn('[AR] mindar-image-system.start not found');
+              }
             } catch (e) {
               console.warn('Failed to start MindAR system:', e);
             }
-            try { if (video) await (video as HTMLVideoElement).play().catch(()=>{}); } catch {}
+            try {
+              if (video) await (video as HTMLVideoElement).play().catch(()=>{});
+            } catch {}
             const overlayEl = document.getElementById('overlay') as HTMLElement | null;
             if (overlayEl) overlayEl.style.display = 'none';
             showStatus('Initializing...', 'Starting camera and tracker');
@@ -961,12 +969,25 @@ export async function GET(
             if (externalLinkBtn) (externalLinkBtn as HTMLElement).style.display = 'block';
             if (modeSelector) (modeSelector as HTMLElement).style.display = 'block';
           };
-          // Click to start
-          startBtn.addEventListener('click', startAR, { once: true });
-          // Touch to start (iOS)
-          startBtn.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
-          // Keyboard (Enter)
-          startBtn.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
+
+          // Attach to start button if present
+          if (startBtn) {
+            console.log('[AR] Binding start button handlers');
+            startBtn.addEventListener('click', startAR, { once: true });
+            startBtn.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
+            startBtn.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
+          } else {
+            console.warn('[AR] startBtn not found');
+          }
+
+          // Fallbacks: any interaction starts AR
+          const overlayEl = document.getElementById('overlay');
+          if (overlayEl) {
+            overlayEl.addEventListener('click', startAR, { once: true });
+            overlayEl.addEventListener('touchend', (e) => { e.preventDefault(); startAR(); }, { once: true });
+          }
+          document.addEventListener('click', startAR, { once: true });
+          document.addEventListener('keydown', (e: any) => { if (e.key === 'Enter') startAR(); }, { once: true });
         }
 
         // AR Mode switching functionality
@@ -1050,7 +1071,14 @@ export async function GET(
         }
 
         setInterval(nukeLoadingScreens, 1000);
-      });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initARPage, { once: true });
+      } else {
+        // DOM already ready, run immediately
+        initARPage();
+      }
 
       window.addEventListener('error', (event) => {
         console.error('AR Error:', event.error);
