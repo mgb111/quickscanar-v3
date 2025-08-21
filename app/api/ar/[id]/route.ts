@@ -613,7 +613,17 @@ export async function GET(
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
       <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
-{{ ... }}
+          <!-- Keep existing start UI (unchanged) -->
+          <h2 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:black;">Ready to start AR?</h2>
+          <p style="margin:0 0 16px 0;color:#333;">Tap the button below to enable camera and begin.</p>
+          <button id="startBtn" style="cursor:pointer;background:black;color:white;border:none;border-radius:999px;padding:12px 18px;font-weight:700;letter-spacing:0.3px;box-shadow:0 8px 24px rgba(0,0,0,0.25);transition:transform .15s ease, box-shadow .15s ease;">
+            Start AR
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
         console.log('AR Elements found:', {
           scene: !!scene,
           video: !!video,
@@ -681,7 +691,6 @@ export async function GET(
           const fallbackMind = 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind';
           const attr = 'imageTargetSrc: ' + fallbackMind + '; interpolation: true; smoothing: true;';
           scene.setAttribute('mindar-image', attr);
-{{ ... }}
         }
 
         if (video && videoPlane && backgroundPlane) {
