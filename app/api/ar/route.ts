@@ -32,6 +32,26 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Enforce 1 campaign/experience per user (API-level guard)
+    const { count: existingCount, error: countError } = await supabase
+      .from('ar_experiences')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user_id)
+
+    if (countError) {
+      console.error('❌ Error checking existing experiences count:', countError)
+      return NextResponse.json({ 
+        error: `Failed to validate user quota: ${countError.message}`
+      }, { status: 500 })
+    }
+
+    if ((existingCount ?? 0) >= 1) {
+      return NextResponse.json({
+        error: 'Limit reached: Only 1 campaign per user is allowed. Delete or update the existing one.',
+        code: 'LIMIT_EXCEEDED'
+      }, { status: 409 })
+    }
+
     // Create AR experience in database
     const { data: experience, error } = await supabase
       .from('ar_experiences')
