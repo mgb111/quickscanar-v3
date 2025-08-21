@@ -576,7 +576,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="smoothingFactor: 0.06; freq: 120; mincutoff: 0.3; beta: 2.2; dcutoff: 1.0; posDeadzone: 0.0045; rotDeadzoneDeg: 1.2; emaFactor: 0.26">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.14; freq: 120; mincutoff: 0.14; beta: 2.36; dcutoff: 1.0; posDeadzone: 0.0085; rotDeadzoneDeg: 2.4; emaFactor: 0.29; throttleHz: 60; medianWindow: 3; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -693,22 +693,24 @@ export async function GET(
         if (!profile) return;
 
         currentProfile = profileId;
-        const scene = document.getElementById('arScene');
         const target = document.querySelector('#target');
         
-        if (scene) {
-          // Update MindAR scene parameters
-          const mindArAttr = \`imageTargetSrc: \${scene.getAttribute('mindar-image').split(';')[0].split(':')[1].trim()}; interpolation: true; smoothing: true; filterMinCF: \${profile.filterMinCF}; filterBeta: \${profile.filterBeta}; missTolerance: 5; warmupTolerance: 5;\`;
-          scene.setAttribute('mindar-image', mindArAttr);
-        }
-
         if (target) {
-          // Update one-euro-smoother parameters
-          const smootherAttr = \`mode: ultra_lock; smoothingFactor: \${0.06 + profile.damping}; freq: 120; mincutoff: \${0.3 - profile.interpolationFactor * 0.2}; beta: \${2.2 + profile.interpolationFactor}; dcutoff: 1.0; posDeadzone: \${0.0045 + profile.damping * 0.01}; rotDeadzoneDeg: \${1.2 + profile.damping * 2}; emaFactor: \${0.26 + profile.interpolationFactor * 0.2}; throttleHz: \${profile.fastTracking ? 120 : 60}; medianWindow: \${profile.predictive ? 5 : 3}; zeroRoll: true\`;
+          // Update one-euro-smoother parameters based on profile
+          const smoothingFactor = Math.max(0.01, Math.min(0.5, 0.06 + profile.damping));
+          const mincutoff = Math.max(0.1, Math.min(1.0, 0.3 - profile.interpolationFactor * 0.15));
+          const beta = Math.max(0.5, Math.min(5.0, 2.2 + profile.interpolationFactor));
+          const posDeadzone = Math.max(0.001, Math.min(0.01, 0.0045 + profile.damping * 0.005));
+          const rotDeadzone = Math.max(0.2, Math.min(3.0, 1.2 + profile.damping * 1.5));
+          const emaFactor = Math.max(0.05, Math.min(0.6, 0.26 + profile.interpolationFactor * 0.15));
+          
+          const smootherAttr = \`mode: ultra_lock; smoothingFactor: \${smoothingFactor}; freq: 120; mincutoff: \${mincutoff}; beta: \${beta}; dcutoff: 1.0; posDeadzone: \${posDeadzone}; rotDeadzoneDeg: \${rotDeadzone}; emaFactor: \${emaFactor}; throttleHz: \${profile.fastTracking ? 120 : 60}; medianWindow: \${profile.predictive ? 5 : 3}; zeroRoll: true\`;
           target.setAttribute('one-euro-smoother', smootherAttr);
+          
+          console.log(\`Applied AR Profile \${profileId}: \${profile.name}\`, {
+            smoothingFactor, mincutoff, beta, posDeadzone, rotDeadzone, emaFactor
+          });
         }
-
-        console.log(\`Applied AR Profile \${profileId}: \${profile.name}\`);
       }
 
       async function preflightMind(url) {
@@ -976,10 +978,14 @@ export async function GET(
             applyProfile(selectedProfile);
           });
           
-          // Apply default profile on load
-          setTimeout(() => {
-            applyProfile(currentProfile);
-          }, 1000);
+          // Apply default profile after AR is ready
+          if (scene) {
+            scene.addEventListener('arReady', () => {
+              setTimeout(() => {
+                applyProfile(currentProfile);
+              }, 500);
+            });
+          }
         }
 
         setInterval(nukeLoadingScreens, 1000);
