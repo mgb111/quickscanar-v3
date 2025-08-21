@@ -183,6 +183,16 @@ export default function CreateExperience() {
 
       if (!experienceResponse.ok) {
         const errorData = await experienceResponse.json().catch(() => ({ error: 'Unknown error' }))
+        if (experienceResponse.status === 409) {
+          if (errorData?.code === 'LIMIT_LIFETIME') {
+            toast.error('Free plan allows only 1 campaign lifetime per user. Upgrade to create more.')
+            return
+          }
+          if (errorData?.code === 'LIMIT_EXCEEDED') {
+            toast.error('Only 1 campaign is allowed on your current plan. Upgrade to create more.')
+            return
+          }
+        }
         throw new Error(errorData.error || 'Failed to create AR experience')
       }
 
