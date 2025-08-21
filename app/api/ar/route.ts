@@ -32,7 +32,29 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Enforce 1 campaign/experience per user (API-level guard)
+    // Enforce 1 campaign per user (free plan)
+    // Phase 1: Lifetime limit via claims table (if present)
+    try {
+      const { data: claimRows, error: claimErr } = await supabase
+        .from('user_campaign_claims')
+        .select('id')
+        .eq('user_id', user_id)
+        .limit(1)
+
+      if (claimErr) {
+        // If table doesn't exist or permission error, log and continue to fallback check
+        console.warn('⚠️ Claims table check skipped:', claimErr.message)
+      } else if (claimRows && claimRows.length > 0) {
+        return NextResponse.json({
+          error: 'Free plan allows only 1 campaign lifetime per user. Upgrade to create more.',
+          code: 'LIMIT_LIFETIME'
+        }, { status: 409 })
+      }
+    } catch (e: any) {
+      console.warn('⚠️ Claims table check failed unexpectedly:', e?.message || e)
+    }
+
+    // Phase 2: Fallback current-count guard to prevent duplicates when claims table not deployed yet
     const { count: existingCount, error: countError } = await supabase
       .from('ar_experiences')
       .select('id', { count: 'exact', head: true })
@@ -62,26 +84,30 @@ export async function POST(request: NextRequest) {
         mind_file_url: mind_file_url || null,
         video_url: video_file_url,
         link_url: link_url ? String(link_url).trim() : null,
-        preview_image_url: null,
-        plane_width: 1.0,
-        plane_height: 0.5625, // Match the schema default
-        video_rotation: 0,
-        user_id: user_id
+        user_id: user_id,
+        
+        // Default values for other fields as needed
+        created_at: new Date().toISOString(),
       })
       .select()
       .single()
 
     if (error) {
-      console.error('❌ Database error creating AR experience:', error)
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      })
-      return NextResponse.json({ 
-        error: `Failed to create AR experience: ${error.message}` 
-      }, { status: 500 })
+      console.error('❌ Error creating AR experience:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Best-effort: Record lifetime claim after first successful creation
+    try {
+      const { error: claimInsertErr } = await supabase
+        .from('user_campaign_claims')
+        .insert({ user_id, first_created_at: new Date().toISOString() })
+      if (claimInsertErr) {
+        // If duplicate or table missing, ignore but log
+        console.warn('⚠️ Failed to record lifetime claim (non-fatal):', claimInsertErr.message)
+      }
+    } catch (e: any) {
+      console.warn('⚠️ Failed to record lifetime claim (unexpected):', e?.message || e)
     }
 
     console.log('AR experience created successfully:', experience.id)
