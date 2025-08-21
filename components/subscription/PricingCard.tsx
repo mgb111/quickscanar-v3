@@ -15,6 +15,9 @@ interface PricingPlan {
   popular?: boolean
   recommended?: boolean
   polarCheckoutUrl?: string
+  ctaText?: string
+  savingsText?: string
+  priceNote?: string
 }
 
 interface PricingCardProps {
@@ -115,10 +118,14 @@ export default function PricingCard({
           )}
         </div>
         
-        {plan.interval === 'year' && plan.amount > 0 && (
-          <div className="text-sm text-red-600 font-medium">
-            Save 20% with annual billing
-          </div>
+        {/* Price note (e.g., Free: Forever) */}
+        {plan.priceNote && (
+          <div className="text-sm text-black opacity-70">{plan.priceNote}</div>
+        )}
+
+        {/* Savings text for plans like annual */}
+        {plan.savingsText && (
+          <div className="text-sm text-red-600 font-medium">{plan.savingsText}</div>
         )}
       </div>
 
@@ -163,7 +170,7 @@ export default function PricingCard({
                 : 'bg-black text-white hover:bg-red-600'
             } ${isLoading || !user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
           >
-            {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : 'Subscribe Now'}
+            {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : (plan.ctaText || 'Subscribe Now')}
           </a>
         )}
       </div>

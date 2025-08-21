@@ -28,6 +28,9 @@ interface SubscriptionPlan {
   popular?: boolean
   recommended?: boolean
   polarCheckoutUrl?: string
+  ctaText?: string
+  savingsText?: string
+  priceNote?: string
 }
 
 interface UserSubscription {
@@ -51,35 +54,52 @@ export default function SubscriptionPage() {
     const actualPlans = [
       {
         id: 'price_free',
-        name: 'Free Plan',
-        description: 'Get started with AR experiences',
+        name: 'Free',
+        description: 'Forever',
         amount: 0,
         currency: 'USD',
         interval: 'month',
-        features: ['1 AR Experience', 'Basic Analytics', 'Community Support'],
-        polarCheckoutUrl: undefined
+        features: [
+          '1 AR Experience',
+          'Basic Analytics',
+          'Community Support',
+        ],
+        priceNote: 'Forever',
+        polarCheckoutUrl: undefined,
       },
       {
         id: 'price_monthly',
-        name: 'Monthly Plan',
-        description: 'Perfect for growing creators',
-        amount: 9.99,
+        name: 'Monthly',
+        description: '$49 per month',
+        amount: 49,
         currency: 'USD',
         interval: 'month',
-        features: ['10 AR Experiences', 'Standard Analytics', 'Email Support', 'Custom Branding'],
-        recommended: true,
-        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'
+        features: [
+          '3 AR Campaigns',
+          'Advanced Analytics',
+          'Priority Support',
+          'Custom Branding',
+        ],
+        popular: true, // Shows "Most Popular" badge
+        ctaText: 'Start Monthly Plan',
+        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d',
       },
       {
         id: 'price_yearly',
-        name: 'Yearly Plan',
-        description: 'Save 20% with annual billing',
-        amount: 99.99,
+        name: 'Annual',
+        description: '$499 per year',
+        amount: 499,
         currency: 'USD',
         interval: 'year',
-        features: ['10 AR Experiences', 'Standard Analytics', 'Email Support', 'Custom Branding', 'Advanced Templates'],
-        popular: true,
-        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3JBFrWiJY3CTYZ0vkr2Mwj9d'
+        features: [
+          'Unlimited AR Campaigns',
+          'Premium Analytics',
+          '24/7 Support',
+          'White-label Solutions',
+        ],
+        savingsText: 'Save $89/year',
+        ctaText: 'Start Annual',
+        polarCheckoutUrl: 'https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3JBFrWiJY3CTYZ0vkr2Mwj9d',
       }
     ]
     console.log('🔍 Setting actual plans:', actualPlans)
