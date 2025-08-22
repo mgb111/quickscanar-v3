@@ -428,54 +428,6 @@ export async function GET(
         top: -9999px !important;
       }
 
-      /* AR Profile Selector */
-      #arProfileSelector {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1005;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 2px solid #000;
-        border-radius: 12px;
-        padding: 12px;
-        font-family: inherit;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        display: none; /* shown after AR starts */
-      }
-
-      #arProfileSelector select {
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 8px 12px;
-        font-size: 14px;
-        font-family: inherit;
-        cursor: pointer;
-        min-width: 200px;
-      }
-
-      #arProfileSelector label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 6px;
-      }
-
-      @media (max-width: 768px) {
-        #arProfileSelector {
-          top: 15px;
-          right: 15px;
-          padding: 10px;
-        }
-        
-        #arProfileSelector select {
-          min-width: 180px;
-          font-size: 13px;
-        }
-      }
-
       /* Optional external link button */
       #externalLinkBtn {
         position: fixed;
@@ -516,14 +468,6 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    <div id="arProfileSelector">
-      <label for="profileSelect">AR Tracking Mode:</label>
-      <select id="profileSelect">
-        <option value="ultra_lock" selected>Ultra Lock - No Shaking</option>
-      </select>
-      <p style="font-size: 11px; color: #666; margin-top: 4px; margin-bottom: 0;">Ultra Lock mode provides maximum stability with no video shaking</p>
-    </div>
-
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
       <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
         <div style="margin-bottom:20px;">
@@ -534,7 +478,7 @@ export async function GET(
             </svg>
           </div>
           <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
-          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file. <strong>Audio will play when the video starts.</strong></p>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file. <strong>Audio will play when the marker is tracked.</strong></p>
         </div>
         <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
@@ -558,6 +502,7 @@ export async function GET(
           id="videoTexture"
           src="${experience.video_url}"
           loop
+          muted
           playsinline
           crossorigin="anonymous"
           preload="auto"
@@ -602,21 +547,6 @@ export async function GET(
     ` : ''}
 
     <script>
-      let currentProfile = 'ultra_lock'; // Default to ultra lock mode
-
-      function applyProfile(profileId) {
-        currentProfile = profileId;
-        const target = document.querySelector('#target');
-        
-        if (target) {
-          // Ultra lock mode - maximum stability, no shaking
-          const smootherAttr = 'mode: ultra_lock; smoothingFactor: 0.05; freq: 120; mincutoff: 0.1; beta: 3.0; dcutoff: 1.0; posDeadzone: 0.01; rotDeadzoneDeg: 3.0; emaFactor: 0.1; throttleHz: 60; medianWindow: 5; zeroRoll: true';
-          target.setAttribute('one-euro-smoother', smootherAttr);
-          
-          console.log('Applied Ultra Lock Profile - Maximum Stability');
-        }
-      }
-
       async function preflightMind(url) {
         try {
           // Try with CORS mode first
@@ -695,7 +625,6 @@ export async function GET(
         const videoPlane = document.querySelector('#videoPlane');
         const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
-        const profileSelect = document.getElementById('profileSelect');
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -796,6 +725,7 @@ export async function GET(
                 }
                 if (video) {
                   video.currentTime = 0; // Restart video
+                  video.muted = false; // Enable audio when target is found
                   video.play().catch(() => {});
                 }
                 showStatus('Target Found!', 'AR content should be visible');
@@ -826,7 +756,10 @@ export async function GET(
                     videoPlane.setAttribute('visible', 'false');
                   }, 200);
                 }
-                if (video) video.pause();
+                if (video) {
+                  video.pause();
+                  video.muted = true; // Mute audio when target is lost
+                }
                 showStatus('Target Lost', 'Point camera at your marker again');
               }
             }, 300); // 300ms debounce for lost (longer to prevent flickering)
@@ -842,9 +775,8 @@ export async function GET(
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            try {
-              if (video) await video.play().catch(() => {});
-            } catch {}
+            // Don't start video here - wait for target to be found
+            // if (video) await video.play().catch(() => {});
 
             // Smooth fade out for overlay
             overlay.style.opacity = '0';
@@ -857,11 +789,6 @@ export async function GET(
               // Show external link button if exists
               if (externalLinkBtn) {
                 externalLinkBtn.style.display = 'block';
-              }
-              // Show AR profile selector
-              const profileSelector = document.getElementById('arProfileSelector');
-              if (profileSelector) {
-                profileSelector.style.display = 'block';
               }
             }, 500);
             
@@ -880,21 +807,7 @@ export async function GET(
         }
 
         // Setup profile selector event listener
-        if (profileSelect) {
-          profileSelect.addEventListener('change', (e) => {
-            const selectedProfile = e.target.value;
-            applyProfile(selectedProfile);
-          });
-          
-          // Apply default profile after AR is ready
-          if (scene) {
-            scene.addEventListener('arReady', () => {
-              setTimeout(() => {
-                applyProfile(currentProfile);
-              }, 500);
-            });
-          }
-        }
+        // Removed profile selector logic
 
         setInterval(nukeLoadingScreens, 1000);
       });
