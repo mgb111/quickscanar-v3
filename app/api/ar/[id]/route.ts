@@ -519,17 +519,9 @@ export async function GET(
     <div id="arProfileSelector">
       <label for="profileSelect">AR Tracking Mode:</label>
       <select id="profileSelect">
-        <option value="1">Mode 1: Raw Tracking</option>
-        <option value="2">Mode 2: Light Smoothing</option>
-        <option value="3">Mode 3: Medium Smoothing</option>
-        <option value="4">Mode 4: Heavy Smoothing</option>
-        <option value="5">Mode 5: Ultra Smooth (Laggy)</option>
-        <option value="6">Mode 6: Responsive but Shaky</option>
-        <option value="7" selected>Mode 7: Balanced (Default-like)</option>
-        <option value="8">Mode 8: Confidence-Based</option>
-        <option value="9">Mode 9: Predictive Filtering</option>
-        <option value="10">Mode 10: Extreme Lag-Free</option>
+        <option value="ultra_lock" selected>Ultra Lock - No Shaking</option>
       </select>
+      <p style="font-size: 11px; color: #666; margin-top: 4px; margin-bottom: 0;">Ultra Lock mode provides maximum stability with no video shaking</p>
     </div>
 
     <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
@@ -542,7 +534,7 @@ export async function GET(
             </svg>
           </div>
           <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
-          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file.</p>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file. <strong>Audio will play when the video starts.</strong></p>
         </div>
         <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
@@ -566,7 +558,6 @@ export async function GET(
           id="videoTexture"
           src="${experience.video_url}"
           loop
-          muted
           playsinline
           crossorigin="anonymous"
           preload="auto"
@@ -576,11 +567,11 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.14; freq: 120; mincutoff: 0.14; beta: 2.36; dcutoff: 1.0; posDeadzone: 0.0085; rotDeadzoneDeg: 2.4; emaFactor: 0.29; throttleHz: 60; medianWindow: 3; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.05; freq: 120; mincutoff: 0.1; beta: 3.0; dcutoff: 1.0; posDeadzone: 0.01; rotDeadzoneDeg: 3.0; emaFactor: 0.1; throttleHz: 60; medianWindow: 5; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
-          height="1"
+          height="0.5625"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -590,7 +581,7 @@ export async function GET(
         <a-plane
           id="videoPlane"
           width="1"
-          height="1"
+          height="0.5625"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
@@ -611,105 +602,18 @@ export async function GET(
     ` : ''}
 
     <script>
-      const arProfiles = {
-        1: {
-          name: "Mode 1: Raw Tracking",
-          filterMinCF: 0.0,
-          filterBeta: 0.0,
-          interpolationFactor: 0.0,
-          damping: 0.0
-        },
-        2: {
-          name: "Mode 2: Light Smoothing",
-          filterMinCF: 0.0001,
-          filterBeta: 0.001,
-          interpolationFactor: 0.1,
-          damping: 0.05
-        },
-        3: {
-          name: "Mode 3: Medium Smoothing",
-          filterMinCF: 0.0005,
-          filterBeta: 0.01,
-          interpolationFactor: 0.25,
-          damping: 0.1
-        },
-        4: {
-          name: "Mode 4: Heavy Smoothing",
-          filterMinCF: 0.001,
-          filterBeta: 0.05,
-          interpolationFactor: 0.5,
-          damping: 0.2
-        },
-        5: {
-          name: "Mode 5: Ultra Smooth (Laggy)",
-          filterMinCF: 0.01,
-          filterBeta: 0.1,
-          interpolationFactor: 0.75,
-          damping: 0.4
-        },
-        6: {
-          name: "Mode 6: Responsive but Shaky",
-          filterMinCF: 0.0001,
-          filterBeta: 0.0001,
-          interpolationFactor: 0.05,
-          damping: 0.0
-        },
-        7: {
-          name: "Mode 7: Balanced (Default-like)",
-          filterMinCF: 0.0003,
-          filterBeta: 0.003,
-          interpolationFactor: 0.2,
-          damping: 0.08
-        },
-        8: {
-          name: "Mode 8: Confidence-Based",
-          filterMinCF: 0.005,
-          filterBeta: 0.05,
-          interpolationFactor: 0.3,
-          damping: 0.15
-        },
-        9: {
-          name: "Mode 9: Predictive Filtering",
-          filterMinCF: 0.0005,
-          filterBeta: 0.02,
-          interpolationFactor: 0.4,
-          damping: 0.25,
-          predictive: true
-        },
-        10: {
-          name: "Mode 10: Extreme Lag-Free",
-          filterMinCF: 0.0,
-          filterBeta: 0.0,
-          interpolationFactor: 0.0,
-          damping: 0.0,
-          fastTracking: true
-        }
-      };
-
-      let currentProfile = 7; // Default to balanced mode
+      let currentProfile = 'ultra_lock'; // Default to ultra lock mode
 
       function applyProfile(profileId) {
-        const profile = arProfiles[profileId];
-        if (!profile) return;
-
         currentProfile = profileId;
         const target = document.querySelector('#target');
         
         if (target) {
-          // Update one-euro-smoother parameters based on profile
-          const smoothingFactor = Math.max(0.01, Math.min(0.5, 0.06 + profile.damping));
-          const mincutoff = Math.max(0.1, Math.min(1.0, 0.3 - profile.interpolationFactor * 0.15));
-          const beta = Math.max(0.5, Math.min(5.0, 2.2 + profile.interpolationFactor));
-          const posDeadzone = Math.max(0.001, Math.min(0.01, 0.0045 + profile.damping * 0.005));
-          const rotDeadzone = Math.max(0.2, Math.min(3.0, 1.2 + profile.damping * 1.5));
-          const emaFactor = Math.max(0.05, Math.min(0.6, 0.26 + profile.interpolationFactor * 0.15));
-          
-          const smootherAttr = \`mode: ultra_lock; smoothingFactor: \${smoothingFactor}; freq: 120; mincutoff: \${mincutoff}; beta: \${beta}; dcutoff: 1.0; posDeadzone: \${posDeadzone}; rotDeadzoneDeg: \${rotDeadzone}; emaFactor: \${emaFactor}; throttleHz: \${profile.fastTracking ? 120 : 60}; medianWindow: \${profile.predictive ? 5 : 3}; zeroRoll: true\`;
+          // Ultra lock mode - maximum stability, no shaking
+          const smootherAttr = 'mode: ultra_lock; smoothingFactor: 0.05; freq: 120; mincutoff: 0.1; beta: 3.0; dcutoff: 1.0; posDeadzone: 0.01; rotDeadzoneDeg: 3.0; emaFactor: 0.1; throttleHz: 60; medianWindow: 5; zeroRoll: true';
           target.setAttribute('one-euro-smoother', smootherAttr);
           
-          console.log(\`Applied AR Profile \${profileId}: \${profile.name}\`, {
-            smoothingFactor, mincutoff, beta, posDeadzone, rotDeadzone, emaFactor
-          });
+          console.log('Applied Ultra Lock Profile - Maximum Stability');
         }
       }
 
@@ -822,10 +726,14 @@ export async function GET(
             console.log('Video metadata loaded');
             const ratio = video.videoWidth / video.videoHeight || (16/9);
             const planeHeight = 1 / ratio;
+            
+            // Set video plane dimensions to match video aspect ratio
             videoPlane.setAttribute('width', 1);
             videoPlane.setAttribute('height', planeHeight);
             backgroundPlane.setAttribute('width', 1);
             backgroundPlane.setAttribute('height', planeHeight);
+            
+            console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight, 'ratio:', ratio, 'plane height:', planeHeight);
             
             // Enable hardware acceleration for video
             video.style.transform = 'translateZ(0)';
@@ -974,7 +882,7 @@ export async function GET(
         // Setup profile selector event listener
         if (profileSelect) {
           profileSelect.addEventListener('change', (e) => {
-            const selectedProfile = parseInt(e.target.value);
+            const selectedProfile = e.target.value;
             applyProfile(selectedProfile);
           });
           
