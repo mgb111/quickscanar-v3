@@ -325,7 +325,7 @@ function HomePage() {
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
                   <span className="text-black">36 campaigns per year</span>
-                </li>>
+                </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
                   <span className="text-black">24/7 support</span>
