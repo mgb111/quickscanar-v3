@@ -1,287 +1,249 @@
-# 📊 Analytics System Setup Guide
+# QuickScanAR Analytics Setup Guide
 
-## 🎯 Overview
+This guide will help you set up analytics tracking for your AR experiences. Analytics will track user engagement, performance metrics, and provide insights into how your AR campaigns are performing.
 
-Your analytics system has been completely updated to use real data instead of placeholder data. It now integrates with your Polar.sh subscription system to provide subscription-based analytics limits and real-time tracking.
+## Prerequisites
 
-## 🚀 What's New
+- Supabase project set up and running
+- Database access to run SQL commands
+- QuickScanAR application deployed
 
-### ✅ **Real Data Integration**
-- **No more placeholder data** - All metrics come from your actual database
-- **Real-time tracking** - Events are stored as they happen
-- **Subscription-based limits** - Free users see limited analytics, premium users get full access
+## Step 1: Set Up Analytics Database Tables
 
-### ✅ **Subscription Integration**
-- **Free Plan**: Limited to 1,000 views, 500 unique viewers, 3 countries, 3 cities, 2 campaigns
-- **Premium Plans**: Unlimited analytics with full geographic data, all campaigns, and advanced metrics
-- **Upgrade prompts** throughout the interface
+1. **Go to your Supabase Dashboard**
+   - Navigate to the SQL Editor
+   - Create a new query
 
-### ✅ **Comprehensive Tracking**
-- **Session tracking** - Start/end times, duration
-- **Performance metrics** - Loading times, AR initialization, device compatibility
-- **Geographic data** - Country, city, region detection
-- **Device analytics** - Mobile, tablet, desktop breakdown
-- **Engagement metrics** - Interactions, completions, conversions
+2. **Run the Analytics Schema**
+   - Copy the contents of `analytics-setup.sql`
+   - Paste it into the SQL Editor
+   - Click "Run" to execute
 
-## 🗄️ Database Setup
+3. **Verify Setup**
+   - You should see success messages indicating:
+     - ✅ Analytics tables created
+     - ✅ RLS policies configured
+     - ✅ Triggers and functions created
+     - ✅ Sample data inserted
 
-### 1. Run Analytics Schema
+## Step 2: Verify Database Tables
 
-Execute the analytics schema in your Supabase SQL editor:
+After running the schema, you should have these new tables:
 
-```sql
--- Copy and paste the contents of analytics-schema.sql
--- This creates all necessary tables and functions
-```
-
-### 2. Verify Tables Created
-
-You should see these tables:
-- `ar_analytics_events` - Individual analytics events
-- `ar_analytics_sessions` - Session tracking
-- `ar_analytics_daily_aggregates` - Daily aggregated data
+- `ar_analytics_events` - Tracks all analytics events
+- `ar_analytics_sessions` - Tracks user sessions
+- `ar_analytics_daily_aggregates` - Daily aggregated metrics
 - `ar_analytics_conversions` - Conversion tracking
 - `ar_analytics_performance` - Performance metrics
 - `ar_analytics_geographic` - Geographic data
+- `user_subscriptions` - User subscription status
 
-## 🔧 Implementation
+## Step 3: Test Analytics Tracking
 
-### 1. Add Analytics Tracker to AR Experiences
+1. **Create an AR Experience**
+   - Go to your QuickScanAR dashboard
+   - Create a new AR experience
+   - Upload a marker image and video
 
-```tsx
-import AnalyticsTracker from '@/components/analytics/AnalyticsTracker'
+2. **View the Experience**
+   - Open the experience page
+   - Check the browser console for analytics events
+   - You should see "Analytics event tracked" messages
 
-function MyARExperience() {
-  const { user } = useAuth()
-  
-  return (
-    <div>
-      {/* Your AR experience content */}
-      
-      {/* Analytics tracker - invisible component */}
-      <AnalyticsTracker
-        experienceId="exp_123"
-        userId={user?.id}
-        sessionId={`session_${Date.now()}`}
-        onEventTracked={(event, data) => {
-          console.log('Event tracked:', event, data)
-        }}
-      />
-    </div>
-  )
-}
+3. **Launch AR Experience**
+   - Click "Launch AR Experience"
+   - Allow camera permissions
+   - Point camera at the marker
+   - Analytics will track:
+     - Session start/end
+     - Target recognition
+     - Target lost events
+     - Device information
+     - Geographic location
+
+## Step 4: View Analytics Dashboard
+
+1. **Navigate to Analytics**
+   - Go to `/analytics` in your app
+   - You should see your analytics data
+
+2. **What You'll See**
+   - **Overview**: Total views, unique viewers, session duration, conversion rate
+   - **Engagement**: Interaction rates, completion rates, drop-off rates
+   - **Performance**: Target recognition success, loading times, error rates
+   - **Geographic**: Top countries and cities
+   - **Devices**: Mobile/tablet/desktop breakdown
+   - **Campaigns**: Performance by experience
+
+## Step 5: Understanding Analytics Data
+
+### Event Types Tracked
+
+- **`view`** - When someone views the experience page
+- **`session_start`** - When AR session begins
+- **`session_end`** - When AR session ends
+- **`target_recognition`** - When marker is successfully recognized
+- **`target_lost`** - When marker tracking is lost
+- **`interaction`** - User interactions with AR content
+- **`completion`** - When AR experience is completed
+- **`conversion`** - Business conversions (if configured)
+- **`error`** - Any errors that occur
+
+### Metrics Explained
+
+- **Total Views**: Number of times experiences were viewed
+- **Unique Viewers**: Number of different people who viewed
+- **Session Duration**: Average time spent in AR
+- **Target Recognition Rate**: Success rate of marker detection
+- **Interaction Rate**: How engaged users are with content
+- **Completion Rate**: How many users finish the experience
+
+## Step 6: Custom Analytics Events
+
+You can track custom events in your AR experiences:
+
+```javascript
+// Track custom interaction
+window.trackAREvent('interaction', {
+  interactionType: 'button_click',
+  buttonId: 'cta_button',
+  page: 'product_showcase'
+});
+
+// Track conversion
+window.trackAREvent('conversion', {
+  conversionType: 'purchase',
+  conversionValue: 99.99,
+  productId: 'product_123'
+});
+
+// Track completion
+window.trackAREvent('completion', {
+  completionRate: 85,
+  totalSteps: 10,
+  completedSteps: 8
+});
 ```
 
-### 2. Track Custom Events
+## Step 7: Subscription Tiers
 
-```tsx
-import { useAnalyticsTracker } from '@/components/analytics/AnalyticsTracker'
+### Free Tier
+- Basic analytics dashboard
+- Limited data (1000 views, 500 unique viewers)
+- Basic metrics only
+- Geographic data limited to top 3 countries/cities
+- Campaign data limited to 2 campaigns
 
-function MyComponent() {
-  const { trackInteraction, trackCompletion, trackConversion } = useAnalyticsTracker('exp_123', 'user_456')
-  
-  const handleButtonClick = () => {
-    trackInteraction('button_click', { 
-      buttonId: 'cta_button', 
-      page: 'home' 
-    })
-  }
-  
-  const handlePurchase = () => {
-    trackConversion('purchase', { 
-      amount: 99.99, 
-      product: 'premium_plan' 
-    })
-  }
-  
-  return (
-    <div>
-      <button onClick={handleButtonClick}>Click Me</button>
-      <button onClick={handlePurchase}>Buy Now</button>
-    </div>
-  )
-}
-```
-
-### 3. Track AR-Specific Events
-
-```tsx
-// Track target recognition
-trackTargetRecognition(1500, { 
-  targetType: 'image', 
-  confidence: 0.95 
-})
-
-// Track AR initialization
-trackEvent('ar_init', { 
-  initTime: 2000, 
-  deviceType: 'mobile' 
-})
-
-// Track errors
-trackError('target_not_found', 'Image target could not be recognized', {
-  targetId: 'logo_123',
-  attempts: 3
-})
-```
-
-## 📱 Analytics Dashboard
-
-### **Free Users See:**
-- Basic metrics (limited views, viewers)
-- 3 countries and 3 cities max
-- 2 campaigns max
-- Upgrade prompts throughout
-
-### **Premium Users See:**
+### Premium Tier
 - Unlimited analytics data
-- All geographic locations
-- All campaigns and detailed metrics
-- Advanced performance insights
+- Advanced insights and metrics
+- Full geographic breakdown
+- All campaign performance data
+- Real-time analytics
+- Export capabilities
 
-### **Key Metrics:**
-- **Total Views** - Page loads and AR experience views
-- **Unique Viewers** - Distinct users
-- **Session Duration** - Average time spent
-- **Conversion Rate** - Goal completions
-- **Engagement** - Interactions, completions, drop-offs
-- **Performance** - Loading times, error rates, device compatibility
+## Troubleshooting
 
-## 🔍 Tracking Events
+### No Analytics Data Showing
 
-### **Automatic Events:**
-- `session_start` - When user starts AR experience
-- `view` - Page/experience view
-- `session_end` - When user leaves (with duration)
-- `performance` - Device and loading metrics
+1. **Check Database Tables**
+   ```sql
+   SELECT COUNT(*) FROM ar_analytics_events;
+   SELECT COUNT(*) FROM ar_analytics_sessions;
+   ```
 
-### **Manual Events:**
-- `interaction` - User interactions (clicks, taps, gestures)
-- `completion` - Experience completion rates
-- `conversion` - Business goals (purchases, signups)
-- `error` - Error tracking and debugging
-- `target_recognition` - AR target detection
+2. **Verify RLS Policies**
+   ```sql
+   SELECT * FROM pg_policies WHERE tablename = 'ar_analytics_events';
+   ```
 
-## 🎨 Customization
+3. **Check Browser Console**
+   - Look for "Analytics event tracked" messages
+   - Check for any error messages
 
-### **Styling Analytics Dashboard:**
-```tsx
-// Custom colors and themes
-const customTheme = {
-  primary: '#3B82F6',
-  secondary: '#10B981',
-  accent: '#F59E0B'
-}
+4. **Verify API Endpoint**
+   - Test `/api/analytics` endpoint
+   - Check network tab for failed requests
 
-// Custom metrics display
-const customMetrics = {
-  showRealTime: true,
-  refreshInterval: 30000,
-  chartType: 'line'
-}
+### Analytics Events Not Tracking
+
+1. **Check User Authentication**
+   - Ensure user is logged in
+   - Verify user ID is being passed correctly
+
+2. **Check Experience ID**
+   - Ensure experience ID matches database
+   - Verify experience exists and is accessible
+
+3. **Check Network Requests**
+   - Look for failed POST requests to `/api/analytics`
+   - Check for CORS or authentication errors
+
+### Performance Issues
+
+1. **Database Indexes**
+   - Ensure indexes are created on analytics tables
+   - Monitor query performance
+
+2. **Data Cleanup**
+   - Consider archiving old analytics data
+   - Implement data retention policies
+
+## Advanced Configuration
+
+### Custom Analytics Providers
+
+You can integrate with external analytics providers:
+
+```javascript
+// Google Analytics
+window.trackAREvent('custom', {
+  provider: 'google_analytics',
+  event: 'ar_experience_view',
+  category: 'AR',
+  action: 'view',
+  label: experienceId
+});
+
+// Facebook Pixel
+window.trackAREvent('custom', {
+  provider: 'facebook_pixel',
+  event: 'ViewContent',
+  content_type: 'ar_experience',
+  content_id: experienceId
+});
 ```
 
-### **Custom Event Types:**
-```tsx
-// Track custom business events
-trackEvent('product_view', {
-  productId: 'prod_123',
-  category: 'electronics',
-  price: 299.99
-})
+### Real-time Analytics
 
-trackEvent('social_share', {
-  platform: 'facebook',
-  content: 'ar_experience',
-  reach: 1500
-})
-```
+For real-time analytics, consider:
 
-## 🧪 Testing
+1. **WebSocket Integration**
+   - Real-time event streaming
+   - Live dashboard updates
 
-### **1. Test Analytics API:**
-```bash
-# Test event tracking
-curl -X POST http://localhost:3000/api/analytics \
-  -H "Content-Type: application/json" \
-  -d '{
-    "experienceId": "test_exp",
-    "event": "view",
-    "userId": "test_user",
-    "sessionId": "test_session"
-  }'
-```
+2. **Server-Sent Events**
+   - Push analytics updates to dashboard
+   - Real-time performance monitoring
 
-### **2. Test Analytics Page:**
-- Visit `/analytics` page
-- Check browser console for tracking logs
-- Verify data appears in dashboard
-- Test different time ranges
+## Support
 
-### **3. Test Subscription Limits:**
-- Create test events to exceed free limits
-- Verify upgrade prompts appear
-- Check that premium users see full data
+If you encounter issues:
 
-## 🚨 Troubleshooting
+1. Check the browser console for error messages
+2. Verify database tables and policies
+3. Test API endpoints manually
+4. Check Supabase logs for database errors
+5. Ensure environment variables are set correctly
 
-### **Common Issues:**
+## Next Steps
 
-1. **No data showing:**
-   - Check database tables exist
-   - Verify RLS policies are correct
-   - Check API endpoint is working
+Once analytics are working:
 
-2. **Events not tracking:**
-   - Verify AnalyticsTracker component is mounted
-   - Check browser console for errors
-   - Ensure API endpoint is accessible
+1. **Monitor Performance**: Watch for trends in user engagement
+2. **Optimize Content**: Use insights to improve AR experiences
+3. **A/B Testing**: Test different markers, videos, and content
+4. **User Segmentation**: Analyze behavior by device, location, etc.
+5. **ROI Tracking**: Connect analytics to business outcomes
 
-3. **Subscription limits not working:**
-   - Verify user_subscriptions table has data
-   - Check subscription status API
-   - Ensure user authentication is working
-
-### **Debug Commands:**
-```bash
-# Check database tables
-psql -d your_db -c "\dt ar_analytics_*"
-
-# Check recent events
-psql -d your_db -c "SELECT * FROM ar_analytics_events ORDER BY created_at DESC LIMIT 10;"
-
-# Check subscription status
-psql -d your_db -c "SELECT * FROM user_subscriptions WHERE user_id = 'your_user_id';"
-```
-
-## 📈 Next Steps
-
-### **Immediate:**
-1. ✅ Run analytics schema in Supabase
-2. ✅ Add AnalyticsTracker to your AR experiences
-3. ✅ Test basic event tracking
-4. ✅ Verify dashboard shows real data
-
-### **Short-term:**
-1. Customize tracking for your specific use cases
-2. Add conversion tracking for business goals
-3. Set up automated reporting
-4. Integrate with external analytics tools
-
-### **Long-term:**
-1. Advanced segmentation and cohort analysis
-2. A/B testing for AR experiences
-3. Predictive analytics and insights
-4. Real-time dashboards and alerts
-
-## 🔗 Related Files
-
-- `app/analytics/page.tsx` - Main analytics dashboard
-- `app/api/analytics/route.ts` - Analytics API endpoints
-- `components/analytics/AnalyticsTracker.tsx` - Event tracking component
-- `analytics-schema.sql` - Database schema
-- `polar-integration-schema.sql` - Subscription integration
-
----
-
-**🎉 Your analytics system is now live with real data! No more placeholders, just actionable insights for your AR experiences.**
+Your analytics are now set up and ready to provide valuable insights into your AR campaign performance!

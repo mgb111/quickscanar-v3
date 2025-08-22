@@ -6,13 +6,21 @@ import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
 
 function HomePage() {
-  const { user, loading } = useAuth()
+  const { user, loading, signOut } = useAuth()
 
   const isSupabaseConfigured = () => {
     return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   }
 
   const supabaseError = false // You can implement actual error checking here
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }
 
   if (loading) {
     return (
@@ -31,6 +39,7 @@ function HomePage() {
         showSignOut={Boolean(isSupabaseConfigured() && !supabaseError && user)}
         showSignIn={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
         showSignUp={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
+        onSignOut={handleSignOut}
       />
 
       {/* Hero Section */}
@@ -575,7 +584,7 @@ function HomePage() {
             </div>
           </div>
           <div className="border-t border-white opacity-20 mt-12 pt-8 text-center text-white opacity-80">
-            <p className="text-lg">&copy; 2024 QuickScanAR. All rights reserved.</p>
+            <p className="text-lg">&copy; 2025 QuickScanAR. All rights reserved.</p>
           </div>
         </div>
       </footer>

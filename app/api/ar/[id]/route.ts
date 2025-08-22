@@ -44,6 +44,95 @@ export async function GET(
     <title>${experience.title} - AR Experience</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <!-- Analytics Tracking Script -->
+    <script>
+      // Analytics tracking for AR experience
+      const experienceId = '${experience.id}';
+      const sessionId = 'ar_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      let sessionStartTime = Date.now();
+      let hasTrackedStart = false;
+      let hasTrackedEnd = false;
+      
+      // Track analytics event
+      async function trackAnalyticsEvent(eventType, metadata = {}) {
+        try {
+          const response = await fetch('/api/analytics', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              experienceId: experienceId,
+              event: eventType,
+              userId: null, // Anonymous user
+              sessionId: sessionId,
+              deviceInfo: {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                isTablet: /iPad|Android(?=.*\\bMobile\\b)(?=.*\\bSafari\\b)/i.test(navigator.userAgent),
+                isDesktop: !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) && !(/iPad|Android(?=.*\\bMobile\\b)(?=.*\\bSafari\\b)/i.test(navigator.userAgent))
+              },
+              location: await getLocationInfo(),
+              duration: eventType === 'session_end' ? Math.round((Date.now() - sessionStartTime) / 1000) : undefined,
+              metadata: metadata,
+              timestamp: new Date().toISOString()
+            })
+          });
+          
+          if (response.ok) {
+            console.log('Analytics event tracked:', eventType);
+          }
+        } catch (error) {
+          console.error('Failed to track analytics event:', error);
+        }
+      }
+      
+      // Get location info
+      async function getLocationInfo() {
+        try {
+          const response = await fetch('https://ipapi.co/json/');
+          const data = await response.json();
+          return {
+            country: data.country_name,
+            countryCode: data.country_code,
+            city: data.city,
+            region: data.region,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            timezone: data.timezone
+          };
+        } catch (error) {
+          return {};
+        }
+      }
+      
+      // Track session start
+      if (!hasTrackedStart) {
+        trackAnalyticsEvent('session_start');
+        hasTrackedStart = true;
+      }
+      
+      // Track page view
+      trackAnalyticsEvent('view');
+      
+      // Track session end on page unload
+      window.addEventListener('beforeunload', () => {
+        if (!hasTrackedEnd) {
+          trackAnalyticsEvent('session_end');
+          hasTrackedEnd = true;
+        }
+      });
+      
+      // Track AR-specific events
+      window.trackAREvent = function(eventType, metadata) {
+        trackAnalyticsEvent(eventType, metadata);
+      };
+    </script>
     <script>
       !function(t,e){if("object"==typeof exports&&"object"==typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var i=e();for(var s in i)("object"==typeof exports?exports:t)[s]=i[s]}}("undefined"!=typeof self?self:this,(()=>(()=>{"use strict";var t={d:(e,i)=>{for(var s in i)t.o(i,s)&&!t.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:i[s]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{LowPassFilter:()=>i,OneEuroFilter:()=>s});class i{setAlpha(t){(t<=0||t>1)&&console.log("alpha should be in (0.0., 1.0]"),this.a=t}constructor(t,e=0){this.y=this.s=e,this.setAlpha(t),this.initialized=!1}filter(t){var e;return this.initialized?e=this.a*t+(1-this.a)*this.s:(e=t,this.initialized=!0),this.y=t,this.s=e,e}filterWithAlpha(t,e){return this.setAlpha(e),this.filter(t)}hasLastRawValue(){return this.initialized}lastRawValue(){return this.y}reset(){this.initialized=!1}}class s{alpha(t){var e=1/this.freq;return 1/(1+1/(2*Math.PI*t)/e)}setFrequency(t){t<=0&&console.log("freq should be >0"),this.freq=t}setMinCutoff(t){t<=0&&console.log("mincutoff should be >0"),this.mincutoff=t}setBeta(t){this.beta_=t}setDerivateCutoff(t){t<=0&&console.log("dcutoff should be >0"),this.dcutoff=t}constructor(t,e=1,s=0,h=1){this.setFrequency(t),this.setMinCutoff(e),this.setBeta(s),this.setDerivateCutoff(h),this.x=new i(this.alpha(e)),this.dx=new i(this.alpha(h)),this.lasttime=void 0}reset(){this.x.reset(),this.dx.reset(),this.lasttime=void 0}filter(t,e=undefined){null!=this.lasttime&&null!=e&&(this.freq=1/(e-this.lasttime)),this.lasttime=e;var i=this.x.hasLastRawValue()?(t-this.x.lastRawValue())*this.freq:0,s=this.dx.filterWithAlpha(i,this.alpha(this.dcutoff)),h=this.mincutoff+this.beta_*Math.abs(s);return this.x.filterWithAlpha(t,this.alpha(h))}}return e})()));
     </script>
@@ -706,6 +795,14 @@ export async function GET(
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
             
+            // Track target recognition analytics
+            if (window.trackAREvent) {
+              window.trackAREvent('target_recognition', {
+                recognitionTime: Date.now() - sessionStartTime,
+                targetIndex: 0
+              });
+            }
+            
             // Clear any pending lost timeout
             if (targetLostTimeout) {
               clearTimeout(targetLostTimeout);
@@ -736,6 +833,14 @@ export async function GET(
 
           target.addEventListener('targetLost', () => {
             console.log('Target lost!');
+            
+            // Track target lost analytics
+            if (window.trackAREvent) {
+              window.trackAREvent('target_lost', {
+                targetIndex: 0,
+                sessionDuration: Date.now() - sessionStartTime
+              });
+            }
             
             // Clear any pending found timeout
             if (targetFoundTimeout) {
