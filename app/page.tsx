@@ -166,7 +166,7 @@ function HomePage() {
               Measurable Results
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Data-driven insights from businesses using AR to enhance their marketing and customer engagement
+              Proven results from businesses using AR to enhance their marketing and customer engagement
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -276,7 +276,7 @@ function HomePage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Basic analytics</span>
+                  <span className="text-black">Basic tracking</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
@@ -308,7 +308,7 @@ function HomePage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">Advanced analytics</span>
+                  <span className="text-white">Advanced tracking</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
@@ -347,7 +347,7 @@ function HomePage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Enterprise analytics</span>
+                  <span className="text-black">Enterprise tracking</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
@@ -410,7 +410,7 @@ function HomePage() {
                 <Rocket className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black mb-4">Measurable Results</h3>
-              <p className="text-black opacity-80">Comprehensive analytics to track engagement and ROI</p>
+              <p className="text-black opacity-80">Comprehensive tracking to measure engagement and ROI</p>
             </div>
           </div>
         </div>
@@ -513,7 +513,7 @@ function HomePage() {
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <h3 className="text-xl font-bold text-black mb-4">Can I measure the ROI of my AR campaigns?</h3>
               <p className="text-black opacity-80 text-lg">
-                Yes, our analytics platform provides comprehensive tracking including engagement metrics, interaction rates, and conversion data. Many clients have documented significant increases in engagement and measurable business outcomes from their AR campaigns.
+                Yes, our platform provides comprehensive tracking including engagement metrics, interaction rates, and conversion data. Many clients have documented significant increases in engagement and measurable business outcomes from their AR campaigns.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">

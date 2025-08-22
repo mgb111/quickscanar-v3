@@ -156,7 +156,7 @@ function SubscriptionSuccessContent() {
                   <Crown className="h-5 w-5 text-yellow-500 mt-0.5" />
                   <div>
                     <h3 className="font-medium text-gray-900">Access Premium Features</h3>
-                    <p className="text-sm text-gray-600">Unlock unlimited AR experiences and advanced analytics</p>
+                    <p className="text-sm text-gray-600">Unlock unlimited AR experiences and advanced tracking</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">

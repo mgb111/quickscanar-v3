@@ -61,7 +61,7 @@ export default function SubscriptionPage() {
         interval: 'month',
         features: [
           '1 AR Experience',
-          'Basic Analytics',
+          'Basic Tracking',
           'Community Support',
         ],
         priceNote: 'Forever',
@@ -76,7 +76,7 @@ export default function SubscriptionPage() {
         interval: 'month',
         features: [
           '3 AR Campaigns',
-          'Advanced Analytics',
+          'Advanced Tracking',
           'Priority Support',
           'Custom Branding',
         ],
@@ -93,7 +93,7 @@ export default function SubscriptionPage() {
         interval: 'year',
         features: [
           'Unlimited AR Campaigns',
-          'Premium Analytics',
+          'Premium Tracking',
           '24/7 Support',
           'White-label Solutions',
         ],
@@ -325,7 +325,7 @@ export default function SubscriptionPage() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-black mb-4">Choose Your Plan</h2>
           <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-            Start with our free plan and upgrade as you grow. All plans include our core AR creation tools and analytics.
+            Start with our free plan and upgrade as you grow. All plans include our core AR creation tools and tracking.
           </p>
         </div>
 
@@ -376,7 +376,7 @@ export default function SubscriptionPage() {
             </div>
             <div>
               <h4 className="font-semibold text-black mb-2">Is there a free trial?</h4>
-              <p className="text-black opacity-80">Yes! Start with our free plan to explore all features. Upgrade when you're ready for more AR experiences and advanced analytics.</p>
+              <p className="text-black opacity-80">Yes! Start with our free plan to explore all features. Upgrade when you're ready for more AR experiences and advanced tracking.</p>
             </div>
             <div>
               <h4 className="font-semibold text-black mb-2">What payment methods do you accept?</h4>
