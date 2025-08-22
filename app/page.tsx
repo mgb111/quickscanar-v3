@@ -70,6 +70,42 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Interactive Product Walkthrough */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
+              See How It Works
+            </h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
+              Interactive walkthrough showing you exactly how to create and launch custom AR experiences
+            </p>
+          </div>
+          <div className="relative w-full">
+            <div style={{ position: 'relative', paddingBottom: 'calc(47.5% + 41px)', height: 0, width: '100%' }}>
+              <iframe 
+                src="https://demo.arcade.software/Mowg28GkHXLAEAj0GPoF?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true" 
+                title="Create and Launch a Custom AR Experience" 
+                frameBorder="0" 
+                loading="lazy" 
+                allowFullScreen={true}
+                allow="clipboard-write"
+                style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  width: '100%', 
+                  height: '100%', 
+                  colorScheme: 'light',
+                  borderRadius: '1rem',
+                  border: '2px solid #000000'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
