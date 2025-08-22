@@ -421,10 +421,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Where Others See Problems, We See Opportunities
+              Business Applications
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Every industry, every business size, every challenge—we've got the AR solution that leaves competitors scratching their heads.
+              Proven use cases across industries that drive engagement and deliver measurable results
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -432,43 +432,43 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Rocket className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Launch Events That Stop Traffic</h3>
-              <p className="text-black opacity-80">Turn product reveals into viral sensations that journalists can't ignore</p>
+              <h3 className="text-xl font-bold text-black mb-4">Product Launches</h3>
+              <p className="text-black opacity-80">Create immersive product reveals that generate buzz and media coverage</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Users className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Trade Shows That Draw Crowds</h3>
-              <p className="text-black opacity-80">Become the booth everyone's talking about while competitors wonder where their visitors went</p>
+              <h3 className="text-xl font-bold text-black mb-4">Trade Show Engagement</h3>
+              <p className="text-black opacity-80">Stand out at events with interactive experiences that draw crowds and generate leads</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Retail Experiences That Convert</h3>
-              <p className="text-black opacity-80">Transform window shoppers into buyers with irresistible interactive experiences</p>
+              <h3 className="text-xl font-bold text-black mb-4">Retail Experiences</h3>
+              <p className="text-black opacity-80">Transform retail spaces with interactive displays that increase dwell time and conversions</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Smartphone className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Social Content That Goes Viral</h3>
-              <p className="text-black opacity-80">Create shareworthy moments that spread your brand message without paid promotion</p>
+              <h3 className="text-xl font-bold text-black mb-4">Social Media Content</h3>
+              <p className="text-black opacity-80">Create shareable AR experiences that boost organic reach and brand awareness</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Target className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Lead Magnets That Actually Work</h3>
-              <p className="text-black opacity-80">Qualify prospects while they're having fun—the leads practically close themselves</p>
+              <h3 className="text-xl font-bold text-black mb-4">Lead Generation</h3>
+              <p className="text-black opacity-80">Capture qualified leads through engaging AR experiences that qualify prospects</p>
             </div>
             <div className="bg-white rounded-2xl p-8 text-center border-2 border-black">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Star className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Brand Moments That Last</h3>
-              <p className="text-black opacity-80">Build emotional connections that turn customers into evangelists for life</p>
+              <h3 className="text-xl font-bold text-black mb-4">Brand Building</h3>
+              <p className="text-black opacity-80">Create memorable brand experiences that build emotional connections with customers</p>
             </div>
           </div>
         </div>
@@ -479,47 +479,47 @@ function HomePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Questions Smart People Ask
+              Frequently Asked Questions
             </h2>
             <p className="text-xl text-black opacity-80">
-              The answers that separate AR winners from wannabes
+              Common questions about AR technology and our platform
             </p>
           </div>
           <div className="space-y-8">
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">What exactly is AR marketing, and why should I care?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">What is AR marketing and how does it benefit my business?</h3>
               <p className="text-black opacity-80 text-lg">
-                AR marketing puts your content directly into your customer's real world through their phone. Think Pokémon GO, but for your brand. It's the difference between showing someone a picture of your product and letting them experience it floating in their living room.
+                AR marketing overlays digital content onto the real world through mobile devices. It creates interactive experiences that increase engagement, improve brand recall, and can drive higher conversion rates compared to traditional marketing methods.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">I'm not technical. Can I really do this myself?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">Do I need technical skills to create AR experiences?</h3>
               <p className="text-black opacity-80 text-lg">
-                If you can upload a photo to Instagram, you can create professional AR with QuickScanAR. We've eliminated every technical hurdle. Our users include 70-year-old florists and 16-year-old entrepreneurs. Both crushing it.
+                No technical skills are required. Our platform is designed for business users and marketers. If you can upload images and videos, you can create professional AR experiences. We've simplified the process to make AR accessible to everyone.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">How fast can I have my first campaign live?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">How quickly can I launch my first AR campaign?</h3>
               <p className="text-black opacity-80 text-lg">
-                Our record holder went from zero to live AR campaign in 3 minutes and 47 seconds. Most people do it in under 10 minutes. Compare that to traditional AR development which takes 6-12 weeks and costs $50,000+.
+                Most users can create and launch their first AR experience in under 10 minutes. The process involves uploading an image, adding your content, and publishing. Compare this to traditional AR development which typically takes 6-12 weeks.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">What makes your AR tracking so much better than everyone else's?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">What makes your AR tracking technology superior?</h3>
               <p className="text-black opacity-80 text-lg">
-                Most AR platforms use basic pattern matching that breaks under real-world conditions. We use military-grade computer vision with neural networks trained on 2.3 million images. The result? AR that works in bright sunlight, dim restaurants, and everything in between.
+                Our platform uses advanced computer vision algorithms trained on millions of images. This enables reliable tracking across various lighting conditions and device types, ensuring consistent performance in real-world business environments.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">Can I really measure ROI on AR campaigns?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">Can I measure the ROI of my AR campaigns?</h3>
               <p className="text-black opacity-80 text-lg">
-                Absolutely. Our analytics track everything: engagement duration, interaction rates, conversion paths, and revenue attribution. One retail client traced $2.1M in sales directly to AR experiences created with QuickScanAR.
+                Yes, our analytics platform provides comprehensive tracking including engagement metrics, interaction rates, and conversion data. Many clients have documented significant increases in engagement and measurable business outcomes from their AR campaigns.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">What if I need more than 3 campaigns per month?</h3>
+              <h3 className="text-xl font-bold text-black mb-4">What if I need more campaigns than the standard plans offer?</h3>
               <p className="text-black opacity-80 text-lg">
-                High-volume users love our flexibility. Contact us for custom enterprise packages that scale with your ambitions. We've supported agencies running 50+ campaigns monthly and Fortune 500 companies with global rollouts.
+                We offer custom enterprise solutions for high-volume users. Contact our sales team to discuss your specific needs. We've supported businesses running dozens of campaigns monthly and can scale to meet your requirements.
               </p>
             </div>
           </div>
@@ -530,16 +530,16 @@ function HomePage() {
       <section className="py-20 bg-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            Your Competition Is Already Googling "How to Do AR"
+            Ready to Transform Your Marketing?
           </h2>
           <p className="text-xl text-white opacity-90 mb-8">
-            While they're still figuring out the basics, you could be launching your first campaign. The choice is obvious.
+            Join businesses already using AR to engage customers and drive results. Start creating your first experience today.
           </p>
           <Link
             href="/compiler"
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >
-            Start Your AR Revolution
+            Start Creating AR Experiences
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -555,7 +555,7 @@ function HomePage() {
                 <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
               </div>
               <p className="text-white opacity-80 text-lg">
-                The world's most powerful AR creation platform disguised as the simplest. Upload, launch, dominate.
+                Professional AR creation platform that makes interactive experiences accessible to businesses of all sizes. Simple, powerful, and results-driven.
               </p>
             </div>
             <div>

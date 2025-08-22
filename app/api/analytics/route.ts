@@ -123,7 +123,7 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
     const experienceIds = experiences.map(exp => exp.id)
 
     // Try to fetch analytics events for the date range
-    let events = []
+    let events: any[] = []
     try {
       const { data: eventsData } = await supabase
         .from('ar_analytics_events')
@@ -137,7 +137,7 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
     }
 
     // Try to fetch daily aggregates
-    let aggregates = []
+    let aggregates: any[] = []
     try {
       const { data: aggregatesData } = await supabase
         .from('ar_analytics_daily_aggregates')
@@ -151,7 +151,7 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
     }
 
     // Try to fetch geographic data
-    let geographicData = []
+    let geographicData: any[] = []
     try {
       const { data: geoData } = await supabase
         .from('ar_analytics_geographic')
@@ -165,7 +165,7 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
     }
 
     // Try to fetch performance data
-    let performanceData = []
+    let performanceData: any[] = []
     try {
       const { data: perfData } = await supabase
         .from('ar_analytics_performance')
