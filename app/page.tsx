@@ -48,8 +48,8 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                Transform Images Into
-                <span className="block text-red-600">Interactive AR Experiences</span>
+                World's Only
+                <span className="block text-red-600">Two-step AR Creator</span>
               </h1>
               <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
                 Create professional AR campaigns in minutes, not months. Upload an image, add your content, and launch experiences that engage your audience in the real world.
