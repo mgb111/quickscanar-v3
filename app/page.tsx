@@ -39,18 +39,18 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                Transform Your
-                <span className="block text-red-600">Marketing with AR</span>
+                World's Only
+                <span className="block text-red-600">2-Step AR Creator</span>
               </h1>
               <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
-                Create immersive augmented reality experiences that drive engagement, boost brand awareness, and deliver measurable ROI through experiential marketing.
+                Upload an image + Upload a video = AR experience ready in minutes. No coding, no complexity, just professional AR marketing that drives engagement and ROI.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/compiler"
                   className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black"
                 >
-                  Create AR
+                  Create AR in 2 Steps
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </div>
@@ -111,10 +111,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                      <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-               Everything You Need to Create AR Experiences
+               Just 2 Steps to Professional AR
              </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-               Powerful AR tools designed to capture attention and convert visitors into customers
+               The world's simplest AR creation process - no coding, no complexity, just results
              </p>
            </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -122,27 +122,27 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Camera className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">AR Target Compiler</h3>
+              <h3 className="text-2xl font-bold text-black mb-4">Step 1: Upload Image</h3>
               <p className="text-black opacity-80 text-lg">
-                Convert any image into AR-ready targets with our advanced MindAR compilation engine
+                Upload any image - logo, product, business card. Our MindAR engine automatically converts it to AR-ready targets.
               </p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Video className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Experience Builder</h3>
+              <h3 className="text-2xl font-bold text-black mb-4">Step 2: Upload Video</h3>
               <p className="text-black opacity-80 text-lg">
-                Create immersive AR experiences by combining targets with videos and interactive content
+                Add your video content. Preserves original dimensions and audio. AR experience is ready instantly.
               </p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Analytics Dashboard</h3>
+              <h3 className="text-2xl font-bold text-black mb-4">Ultra-Stable AR</h3>
               <p className="text-black opacity-80 text-lg">
-                Track engagement metrics and measure ROI with detailed performance insights
+                Zero shaking, zero jitter. Our ultra-lock technology ensures professional, stable AR experiences every time.
               </p>
             </div>
           </div>
@@ -157,21 +157,21 @@ function HomePage() {
                Trusted by 150+ Creators
              </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-               Join the community of creators who are already using AR to boost their marketing results
+               Join the community of creators who are already using the world's simplest AR creation process
              </p>
            </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
              <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">50+</div>
-              <p className="text-lg text-black opacity-80">AR Experiences per month</p>
+               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">2 Steps</div>
+               <p className="text-lg text-black opacity-80">That's all it takes</p>
              </div>
              <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">10 min</div>
-              <p className="text-lg text-black opacity-80">Average creation time</p>
+               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">10 min</div>
+               <p className="text-lg text-black opacity-80">Average creation time</p>
              </div>
              <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">300%</div>
-              <p className="text-lg text-black opacity-80">Increase in engagement</p>
+               <div className="text-4xl lg:text-5xl font-bold text-red-600 mb-2">0 Shaking</div>
+               <p className="text-lg text-black opacity-80">Ultra-stable AR tracking</p>
              </div>
            </div>
          </div>
@@ -304,7 +304,7 @@ function HomePage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">3 AR Campaigns</span>
+                  <span className="text-white">3 AR Campaigns per month</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
@@ -343,7 +343,7 @@ function HomePage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Unlimited AR Campaigns</span>
+                  <span className="text-black">3 AR Campaigns per month</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
@@ -377,10 +377,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Why Use QuickScanAR?
+              Why Choose QuickScanAR?
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Discover the advantages that make us the preferred choice for AR marketing
+              The world's only 2-step AR creator with enterprise-grade stability
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -388,29 +388,29 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Smartphone className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Lightning Fast</h3>
-              <p className="text-black opacity-80">Create AR experiences in minutes, not hours</p>
+              <h3 className="text-xl font-bold text-black mb-4">2 Steps Only</h3>
+              <p className="text-black opacity-80">Upload image + Upload video = AR ready</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">High Converting</h3>
-              <p className="text-black opacity-80">Proven to increase engagement and conversions</p>
+              <h3 className="text-xl font-bold text-black mb-4">Zero Coding</h3>
+              <p className="text-black opacity-80">No technical skills required</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Users className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">User Friendly</h3>
-              <p className="text-black opacity-80">No technical skills required</p>
+              <h3 className="text-xl font-bold text-black mb-4">Ultra-Stable</h3>
+              <p className="text-black opacity-80">No shaking, no jitter</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Scalable</h3>
-              <p className="text-black opacity-80">Grow from 1 to 1000+ AR experiences</p>
+              <h3 className="text-xl font-bold text-black mb-4">10 Minutes</h3>
+              <p className="text-black opacity-80">From idea to live AR</p>
             </div>
           </div>
         </div>
@@ -495,19 +495,19 @@ function HomePage() {
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <h3 className="text-xl font-bold text-black mb-4">Do I need technical skills to use QuickScanAR?</h3>
               <p className="text-black opacity-80 text-lg">
-                No technical skills required! Our platform is designed to be user-friendly. Simply upload your images, use our AR compiler, and create experiences with our drag-and-drop interface.
+                Absolutely not! QuickScanAR is designed to be the world's simplest AR creator. Just upload an image and a video - that's it! No coding, no technical knowledge required.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <h3 className="text-xl font-bold text-black mb-4">How long does it take to create an AR experience?</h3>
               <p className="text-black opacity-80 text-lg">
-                Most users create their first AR experience in under 10 minutes. The process involves uploading an image, compiling it for AR, and adding your video content.
+                Most users create their first AR experience in under 10 minutes. The 2-step process is incredibly fast: upload image + upload video = AR ready!
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <h3 className="text-xl font-bold text-black mb-4">What types of images work best for AR?</h3>
               <p className="text-black opacity-80 text-lg">
-                High-contrast images with distinct features work best. Logos, product packaging, business cards, and printed materials are ideal. Avoid images with too many similar colors or patterns.
+                High-contrast images with distinct features work best. Logos, product packaging, business cards, and printed materials are ideal. Our MindAR engine handles the rest automatically.
               </p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
@@ -519,7 +519,7 @@ function HomePage() {
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
               <h3 className="text-xl font-bold text-black mb-4">Is there a limit to how many AR experiences I can create?</h3>
               <p className="text-black opacity-80 text-lg">
-                Free users can create 1 AR experience. Monthly subscribers get 3 campaigns, and annual subscribers enjoy unlimited AR experiences with premium features.
+                Free users can create 1 AR experience. Monthly subscribers get 3 campaigns per month, and annual subscribers get 3 campaigns per month for 12 months at a discounted rate.
               </p>
             </div>
           </div>
@@ -554,7 +554,7 @@ function HomePage() {
                 <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
               </div>
               <p className="text-white opacity-80 text-lg">
-                Transform your marketing with immersive AR experiences that drive engagement and ROI.
+                The world's only 2-step AR experience creator. Upload image + Upload video = Professional AR ready in minutes.
               </p>
             </div>
             <div>
