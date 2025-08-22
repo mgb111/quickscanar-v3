@@ -48,18 +48,18 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                Turn Any Image Into
-                <span className="block text-red-600">Magical AR Experiences</span>
+                Transform Images Into
+                <span className="block text-red-600">Interactive AR Experiences</span>
               </h1>
               <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
-                What used to take developers weeks now happens in 2 clicks. Drop an image, add your video, and watch your brand leap into the real world. It's like having a superpower for marketing.
+                Create professional AR campaigns in minutes, not months. Upload an image, add your content, and launch experiences that engage your audience in the real world.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/compiler"
                   className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black group"
                 >
-                  Experience the Magic
+                  Create Your First AR Experience
                   <Zap className="ml-2 h-5 w-5 group-hover:animate-pulse" />
                 </Link>
               </div>
@@ -84,10 +84,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Watch Reality Bend to Your Will
+              See How It Works
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              See how Fortune 500 companies are secretly using this technology to crush their competition
+              Watch a complete walkthrough of creating and launching an AR experience in under 5 minutes
             </p>
           </div>
           <div className="relative w-full">
@@ -120,10 +120,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              The Science Behind the Sorcery
+              Advanced Technology, Simple Experience
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Military-grade computer vision meets dead-simple user experience. Here's how we make the impossible look easy.
+              Built on proven computer vision and AR technologies, designed for real-world business use
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -133,25 +133,25 @@ function HomePage() {
               </div>
               <h3 className="text-2xl font-bold text-black mb-4">Neural Image Recognition</h3>
               <p className="text-black opacity-80 text-lg">
-                Our AI doesn't just see your image—it understands it. Instantly transforms any visual into an AR-ready target that works in any lighting condition.
+                Advanced AI that analyzes and processes any image to create reliable AR tracking targets that work across different lighting conditions.
               </p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Video className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Hollywood-Grade Rendering</h3>
+              <h3 className="text-2xl font-bold text-black mb-4">High-Quality Rendering</h3>
               <p className="text-black opacity-80 text-lg">
-                Your videos don't just play—they perform. Crystal-clear quality that makes competitors' AR look like amateur hour.
+                Professional-grade video and 3D content rendering that maintains quality across all devices and platforms.
               </p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Rocket className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Zero-Shake Guarantee</h3>
+              <h3 className="text-2xl font-bold text-black mb-4">Stable Tracking</h3>
               <p className="text-black opacity-80 text-lg">
-                Our proprietary stabilization technology eliminates the jittery mess that plagues other AR platforms. Rock-solid. Always.
+                Proprietary stabilization technology ensures smooth, consistent AR experiences that users can rely on.
               </p>
             </div>
           </div>
@@ -163,10 +163,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              The Numbers Don't Lie
+              Measurable Results
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              While others talk about "engagement," we deliver results that actually move the needle on your bottom line.
+              Data-driven insights from businesses using AR to enhance their marketing and customer engagement
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -194,10 +194,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Success Stories That'll Make You Jealous
+              Customer Success Stories
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Real people, real results, real revenue. These aren't testimonials—they're victory laps.
+              Real businesses achieving real results with AR technology
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -210,7 +210,7 @@ function HomePage() {
                 </div>
               </div>
               <p className="text-black opacity-80 mb-6 text-lg">
-                "Our booth went from ghost town to mob scene. Literally had security asking us to tone it down. Made 300% more connections than any previous trade show."
+                "Our trade show booth engagement increased significantly. We generated 3x more qualified leads compared to previous events, and the AR experience became a key talking point for our sales team."
               </p>
               <div className="flex text-red-600">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
@@ -225,7 +225,7 @@ function HomePage() {
                 </div>
               </div>
               <p className="text-black opacity-80 mb-6 text-lg">
-                "I was skeptical until I saw our conversion rates. 67% increase in first month. My CEO asked if I was buying fake traffic. Nope—just better engagement."
+                "The AR campaigns delivered measurable results within the first month. We saw a 67% increase in engagement rates and improved conversion on our landing pages."
               </p>
               <div className="flex text-red-600">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
@@ -240,7 +240,7 @@ function HomePage() {
                 </div>
               </div>
               <p className="text-black opacity-80 mb-6 text-lg">
-                "Clients now specifically request AR campaigns. We've become the 'AR agency' in our city. Raised our prices 40% and still can't keep up with demand."
+                "Clients are specifically requesting AR campaigns now. We've been able to increase our service pricing by 40% while maintaining strong demand from our client base."
               </p>
               <div className="flex text-red-600">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
@@ -255,68 +255,68 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Choose Your Competitive Advantage
+              Choose Your Plan
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              While your competitors fumble with complicated tools, you'll be launching campaigns that make them wonder how you did it.
+              Flexible options designed to grow with your business needs
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Free Plan */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-black mb-2">Taste the Magic</h3>
+                <h3 className="text-2xl font-bold text-black mb-2">Starter</h3>
                 <div className="text-4xl font-bold text-red-600 mb-2">$0</div>
                 <p className="text-black opacity-80">Forever free</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">1 mind-blowing AR experience</span>
+                  <span className="text-black">1 AR experience</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Essential analytics dashboard</span>
+                  <span className="text-black">Basic analytics</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Community of AR pioneers</span>
+                  <span className="text-black">Community support</span>
                 </li>
               </ul>
               <Link
                 href="/compiler"
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
-                Start Your Journey
+                Get Started Free
               </Link>
             </div>
 
             {/* Monthly Plan */}
             <div className="bg-red-600 rounded-2xl p-8 border-2 border-black relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-white text-red-600 px-4 py-2 rounded-full text-sm font-semibold border-2 border-black">Revenue Machine</span>
+                <span className="bg-white text-red-600 px-4 py-2 rounded-full text-sm font-semibold border-2 border-black">Most Popular</span>
               </div>
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Scale Mode</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
                 <div className="text-4xl font-bold text-white mb-2">$49</div>
-                <p className="text-white opacity-90">monthly momentum</p>
+                <p className="text-white opacity-90">per month</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">3 high-impact campaigns monthly</span>
+                  <span className="text-white">3 campaigns per month</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">Advanced performance insights</span>
+                  <span className="text-white">Advanced analytics</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">VIP support response</span>
+                  <span className="text-white">Priority support</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">White-label brand control</span>
+                  <span className="text-white">Custom branding</span>
                 </li>
               </ul>
               <a
@@ -326,7 +326,7 @@ function HomePage() {
                 data-customer-id={user?.id}
                 className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
-                Unleash the Power
+                Start Professional Plan
               </a>
             </div>
 
@@ -336,26 +336,26 @@ function HomePage() {
                 <div className="bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-semibold mb-4 inline-block border border-red-600">
                   Save $89 annually
                 </div>
-                <h3 className="text-2xl font-bold text-black mb-2">Domination Mode</h3>
+                <h3 className="text-2xl font-bold text-black mb-2">Enterprise</h3>
                 <div className="text-4xl font-bold text-red-600 mb-2">$499</div>
-                <p className="text-black opacity-80">yearly empire building</p>
+                <p className="text-black opacity-80">per year</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">36 campaigns to conquer markets</span>
+                  <span className="text-black">36 campaigns per year</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Elite performance analytics</span>
+                  <span className="text-black">Enterprise analytics</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">24/7 concierge support</span>
+                  <span className="text-black">24/7 support</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Complete white-label freedom</span>
+                  <span className="text-black">Full white-label options</span>
                 </li>
               </ul>
               <a
@@ -365,7 +365,7 @@ function HomePage() {
                 data-customer-id={user?.id}
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
-                Claim Your Territory
+                Choose Enterprise
               </a>
             </div>
           </div>
@@ -377,10 +377,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Why Everyone Else Is Playing Catch-Up
+              Why Choose QuickScanAR
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              While others promise "easy AR," we deliver on it. Here's what makes us the undisputed champion.
+              Built for businesses that need reliable, scalable AR solutions without the complexity
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -388,29 +388,29 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Zap className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Lightning Fast</h3>
+              <h3 className="text-xl font-bold text-black mb-4">Fast Setup</h3>
               <p className="text-black opacity-80">From concept to live AR in minutes, not months</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Genius Simple</h3>
-              <p className="text-black opacity-80">So easy, your intern could run circles around the competition</p>
+              <h3 className="text-xl font-bold text-black mb-4">Easy to Use</h3>
+              <p className="text-black opacity-80">Intuitive interface that requires no technical expertise</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Target className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Military Precision</h3>
-              <p className="text-black opacity-80">Stability so smooth, users think it's magic</p>
+              <h3 className="text-xl font-bold text-black mb-4">Reliable Tracking</h3>
+              <p className="text-black opacity-80">Stable AR experiences that work consistently across devices</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Rocket className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">ROI Rocket Ship</h3>
-              <p className="text-black opacity-80">Turn engagement into revenue faster than ever</p>
+              <h3 className="text-xl font-bold text-black mb-4">Measurable Results</h3>
+              <p className="text-black opacity-80">Comprehensive analytics to track engagement and ROI</p>
             </div>
           </div>
         </div>

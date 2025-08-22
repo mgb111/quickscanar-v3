@@ -4,7 +4,7 @@
 -- Create analytics events table
 CREATE TABLE IF NOT EXISTS ar_analytics_events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   user_id UUID REFERENCES auth.users(id),
   session_id VARCHAR(255) NOT NULL,
   event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('view', 'interaction', 'completion', 'error', 'conversion', 'target_recognition', 'session_start', 'session_end')),
@@ -12,20 +12,14 @@ CREATE TABLE IF NOT EXISTS ar_analytics_events (
   location_info JSONB,
   duration INTEGER,
   metadata JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_analytics_experience_id (experience_id),
-  INDEX idx_analytics_user_id (user_id),
-  INDEX idx_analytics_session_id (session_id),
-  INDEX idx_analytics_event_type (event_type),
-  INDEX idx_analytics_created_at (created_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create analytics sessions table
 CREATE TABLE IF NOT EXISTS ar_analytics_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   session_id VARCHAR(255) UNIQUE NOT NULL,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   user_id UUID REFERENCES auth.users(id),
   start_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   end_time TIMESTAMP WITH TIME ZONE,
@@ -33,18 +27,14 @@ CREATE TABLE IF NOT EXISTS ar_analytics_sessions (
   total_interactions INTEGER DEFAULT 0,
   completion_rate DECIMAL(5,2),
   device_info JSONB,
-  location_info JSONB,
-  
-  INDEX idx_sessions_experience_id (experience_id),
-  INDEX idx_sessions_user_id (user_id),
-  INDEX idx_sessions_start_time (start_time)
+  location_info JSONB
 );
 
 -- Create analytics aggregates table for performance
 CREATE TABLE IF NOT EXISTS ar_analytics_daily_aggregates (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   date DATE NOT NULL,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   total_views INTEGER DEFAULT 0,
   unique_viewers INTEGER DEFAULT 0,
   total_interactions INTEGER DEFAULT 0,
@@ -56,31 +46,24 @@ CREATE TABLE IF NOT EXISTS ar_analytics_daily_aggregates (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
-  UNIQUE(date, experience_id),
-  INDEX idx_aggregates_date (date),
-  INDEX idx_aggregates_experience_id (experience_id)
+  UNIQUE(date, experience_id)
 );
 
 -- Create analytics conversions table
 CREATE TABLE IF NOT EXISTS ar_analytics_conversions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   user_id UUID REFERENCES auth.users(id),
   session_id VARCHAR(255) NOT NULL,
   conversion_type VARCHAR(100) NOT NULL,
   conversion_value JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_conversions_experience_id (experience_id),
-  INDEX idx_conversions_user_id (user_id),
-  INDEX idx_conversions_type (conversion_type),
-  INDEX idx_conversions_created_at (created_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create analytics performance metrics table
 CREATE TABLE IF NOT EXISTS ar_analytics_performance (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   session_id VARCHAR(255) NOT NULL,
   target_recognition_time INTEGER,
   loading_time INTEGER,
@@ -88,17 +71,13 @@ CREATE TABLE IF NOT EXISTS ar_analytics_performance (
   error_type VARCHAR(100),
   error_message TEXT,
   device_compatibility_score DECIMAL(5,2),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_performance_experience_id (experience_id),
-  INDEX idx_performance_session_id (session_id),
-  INDEX idx_performance_created_at (created_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create analytics geographic data table
 CREATE TABLE IF NOT EXISTS ar_analytics_geographic (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  experience_id VARCHAR(255) NOT NULL,
+  experience_id UUID NOT NULL REFERENCES ar_experiences(id),
   session_id VARCHAR(255) NOT NULL,
   country VARCHAR(100),
   country_code VARCHAR(3),
@@ -107,12 +86,7 @@ CREATE TABLE IF NOT EXISTS ar_analytics_geographic (
   latitude DECIMAL(10, 8),
   longitude DECIMAL(11, 8),
   timezone VARCHAR(50),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_geographic_experience_id (experience_id),
-  INDEX idx_geographic_country (country),
-  INDEX idx_geographic_city (city),
-  INDEX idx_geographic_created_at (created_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create user subscriptions table for analytics limits
@@ -124,11 +98,39 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
   features JSONB DEFAULT '[]',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  INDEX idx_subscriptions_user_id (user_id),
-  INDEX idx_subscriptions_status (status)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_analytics_events_experience_id ON ar_analytics_events (experience_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON ar_analytics_events (user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session_id ON ar_analytics_events (session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type ON ar_analytics_events (event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON ar_analytics_events (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_experience_id ON ar_analytics_sessions (experience_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_user_id ON ar_analytics_sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_start_time ON ar_analytics_sessions (start_time);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_aggregates_date ON ar_analytics_daily_aggregates (date);
+CREATE INDEX IF NOT EXISTS idx_analytics_aggregates_experience_id ON ar_analytics_daily_aggregates (experience_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_conversions_experience_id ON ar_analytics_conversions (experience_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_conversions_user_id ON ar_analytics_conversions (user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_conversions_type ON ar_analytics_conversions (conversion_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_conversions_created_at ON ar_analytics_conversions (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_performance_experience_id ON ar_analytics_performance (experience_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_performance_session_id ON ar_analytics_performance (session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_performance_created_at ON ar_analytics_performance (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_geographic_experience_id ON ar_analytics_geographic (experience_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_geographic_country ON ar_analytics_geographic (country);
+CREATE INDEX IF NOT EXISTS idx_analytics_geographic_city ON ar_analytics_geographic (city);
+CREATE INDEX IF NOT EXISTS idx_analytics_geographic_created_at ON ar_analytics_geographic (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions (status);
 
 -- Create RLS (Row Level Security) policies
 ALTER TABLE ar_analytics_events ENABLE ROW LEVEL SECURITY;
@@ -269,12 +271,12 @@ SELECT
     ELSE 0 
   END as conversion_rate
 FROM ar_experiences e
-LEFT JOIN ar_analytics_events ae ON e.id::text = ae.experience_id
+LEFT JOIN ar_analytics_events ae ON e.id = ae.experience_id
 WHERE ae.created_at >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY e.user_id;
 
 -- Create unique index for materialized view
-CREATE UNIQUE INDEX IF NOT EXISTS ON analytics_dashboard_metrics (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_analytics_dashboard_metrics_user_id ON analytics_dashboard_metrics (user_id);
 
 -- Refresh materialized view function
 CREATE OR REPLACE FUNCTION refresh_analytics_dashboard()

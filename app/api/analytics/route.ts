@@ -120,7 +120,7 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
       return getEmptyAnalyticsData(subscriptionStatus)
     }
 
-    const experienceIds = experiences.map(exp => exp.id.toString())
+    const experienceIds = experiences.map(exp => exp.id)
 
     // Try to fetch analytics events for the date range
     let events = []
