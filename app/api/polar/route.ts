@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Use the available environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables for Polar API')
+}
+
+const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 // Polar.sh API configuration
 const POLAR_API_URL = process.env.POLAR_API_URL || 'https://api.polar.sh/api/v1'
@@ -41,6 +46,15 @@ interface PolarWebhookEvent {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase not configured for Polar API')
+      return NextResponse.json(
+        { error: 'Service not configured' },
+        { status: 503 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action')
     const userId = searchParams.get('userId')
@@ -70,13 +84,22 @@ export async function GET(request: NextRequest) {
     console.error('Polar API error:', error)
     return NextResponse.json(
       { error: 'Failed to process request' },
-      { status: 500 }
+      { status: 503 }
     )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase not configured for Polar API')
+      return NextResponse.json(
+        { error: 'Service not configured' },
+        { status: 503 }
+      )
+    }
+
     const body = await request.json()
     const { action, userId, priceId, customerId } = body
 
@@ -96,7 +119,7 @@ export async function POST(request: NextRequest) {
     console.error('Polar API error:', error)
     return NextResponse.json(
       { error: 'Failed to process request' },
-      { status: 500 }
+      { status: 503 }
     )
   }
 }

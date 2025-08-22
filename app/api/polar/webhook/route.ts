@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Use the available environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables for Polar webhook')
+}
+
+const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase not configured for Polar webhook')
+      return NextResponse.json(
+        { error: 'Service not configured' },
+        { status: 503 }
+      )
+    }
+
     const body = await request.text()
     // TODO: Implement proper signature verification using POLAR_WEBHOOK_SECRET
     // const signature = request.headers.get('polar-signature')
@@ -48,7 +62,7 @@ export async function POST(request: NextRequest) {
     console.error('Webhook error:', error)
     return NextResponse.json(
       { error: 'Webhook handler failed' },
-      { status: 400 }
+      { status: 503 }
     )
   }
 }

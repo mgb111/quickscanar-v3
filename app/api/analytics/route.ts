@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Use the available environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables')
+}
+
+const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase not configured for analytics API')
+      return NextResponse.json(
+        { error: 'Analytics service not configured' },
+        { status: 503 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const range = searchParams.get('range') || '7d'
     const userId = searchParams.get('userId')
@@ -92,10 +106,15 @@ async function getUserSubscriptionStatus(userId: string) {
 async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date, subscriptionStatus: any) {
   try {
     // Get user's AR experiences
-    const { data: experiences } = await supabase
+    const { data: experiences, error: experiencesError } = await supabase
       .from('ar_experiences')
-      .select('id, name, created_at')
+      .select('id, title, created_at')
       .eq('user_id', userId)
+
+    if (experiencesError) {
+      console.error('Error fetching experiences:', experiencesError)
+      return getEmptyAnalyticsData(subscriptionStatus)
+    }
 
     if (!experiences || experiences.length === 0) {
       return getEmptyAnalyticsData(subscriptionStatus)
@@ -103,44 +122,68 @@ async function fetchAnalyticsData(userId: string, startDate: Date, endDate: Date
 
     const experienceIds = experiences.map(exp => exp.id.toString())
 
-    // Fetch analytics events for the date range
-    const { data: events } = await supabase
-      .from('ar_analytics_events')
-    .select('*')
-      .in('experience_id', experienceIds)
-    .gte('created_at', startDate.toISOString())
-    .lte('created_at', endDate.toISOString())
+    // Try to fetch analytics events for the date range
+    let events = []
+    try {
+      const { data: eventsData } = await supabase
+        .from('ar_analytics_events')
+        .select('*')
+        .in('experience_id', experienceIds)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+      events = eventsData || []
+    } catch (error) {
+      console.log('Analytics events table not available yet, using empty data')
+    }
 
-    // Fetch daily aggregates
-    const { data: aggregates } = await supabase
-      .from('ar_analytics_daily_aggregates')
-    .select('*')
-      .in('experience_id', experienceIds)
-      .gte('date', startDate.toISOString().split('T')[0])
-      .lte('date', endDate.toISOString().split('T')[0])
+    // Try to fetch daily aggregates
+    let aggregates = []
+    try {
+      const { data: aggregatesData } = await supabase
+        .from('ar_analytics_daily_aggregates')
+        .select('*')
+        .in('experience_id', experienceIds)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0])
+      aggregates = aggregatesData || []
+    } catch (error) {
+      console.log('Analytics aggregates table not available yet, using empty data')
+    }
 
-    // Fetch geographic data
-    const { data: geographicData } = await supabase
-      .from('ar_analytics_geographic')
-      .select('country, city, country_code')
-      .in('experience_id', experienceIds)
-    .gte('created_at', startDate.toISOString())
-    .lte('created_at', endDate.toISOString())
+    // Try to fetch geographic data
+    let geographicData = []
+    try {
+      const { data: geoData } = await supabase
+        .from('ar_analytics_geographic')
+        .select('country, city, country_code')
+        .in('experience_id', experienceIds)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+      geographicData = geoData || []
+    } catch (error) {
+      console.log('Analytics geographic table not available yet, using empty data')
+    }
 
-    // Fetch performance data
-    const { data: performanceData } = await supabase
-      .from('ar_analytics_performance')
-    .select('*')
-      .in('experience_id', experienceIds)
-    .gte('created_at', startDate.toISOString())
-    .lte('created_at', endDate.toISOString())
+    // Try to fetch performance data
+    let performanceData = []
+    try {
+      const { data: perfData } = await supabase
+        .from('ar_analytics_performance')
+        .select('*')
+        .in('experience_id', experienceIds)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+      performanceData = perfData || []
+    } catch (error) {
+      console.log('Analytics performance table not available yet, using empty data')
+    }
 
     // Process and aggregate the data
     const processedData = processAnalyticsData(
-      events || [],
-      aggregates || [],
-      geographicData || [],
-      performanceData || [],
+      events,
+      aggregates,
+      geographicData,
+      performanceData,
       experiences,
       subscriptionStatus
     )
@@ -340,6 +383,15 @@ function getEmptyAnalyticsData(subscriptionStatus: any) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase not configured for analytics API')
+      return NextResponse.json(
+        { error: 'Analytics service not configured' },
+        { status: 503 }
+      )
+    }
+
     const body = await request.json()
     const { 
       experienceId, 
@@ -370,7 +422,7 @@ export async function POST(request: NextRequest) {
     console.error('Analytics tracking error:', error)
     return NextResponse.json(
       { error: 'Failed to track analytics event' },
-      { status: 500 }
+      { status: 503 }
     )
   }
 }

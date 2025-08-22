@@ -7,14 +7,14 @@ export const maxDuration = 300 // 5 minutes timeout
 export const runtime = 'nodejs'
 
 // Use service role key for server-side uploads to bypass RLS
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!serviceKey) {
-  console.error('❌ SUPABASE_SERVICE_ROLE_KEY is required for server-side uploads')
+if (!supabaseUrl || !serviceKey) {
+  console.error('❌ Supabase environment variables are required for server-side uploads')
 }
 
-const supabase = createClient(supabaseUrl, serviceKey!, {
+const supabase = createClient(supabaseUrl!, serviceKey!, {
   auth: { persistSession: false }
 })
 
@@ -32,6 +32,15 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Supabase not configured for marker image uploads')
+      return NextResponse.json(
+        { error: 'Upload service not configured' },
+        { status: 503 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const path = (formData.get('path') as string) || `marker-${Date.now()}-${file?.name || 'image.jpg'}`
