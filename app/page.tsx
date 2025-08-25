@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { Camera, Upload, ArrowRight, BarChart3, Video, Users, Globe, Smartphone, CheckCircle, Star, ArrowLeft, Zap, Rocket, Target } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
+import { useAnalytics } from '@/lib/useAnalytics'
 
 function HomePage() {
   const { user, loading, signOut } = useAuth()
+  const { trackEvent, trackUserEngagement } = useAnalytics()
 
   const isSupabaseConfigured = () => {
     return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -57,6 +59,10 @@ function HomePage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/compiler"
+                  onClick={() => {
+                    trackEvent('click', 'cta', 'hero_create_ar_experience')
+                    trackUserEngagement('cta_click', 'hero_section', 'button')
+                  }}
                   className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black group"
                 >
                   Create Your First AR Experience
@@ -277,6 +283,10 @@ function HomePage() {
               </ul>
               <Link
                 href="/compiler"
+                onClick={() => {
+                  trackEvent('click', 'pricing', 'free_plan')
+                  trackUserEngagement('pricing_click', 'free_plan', 'button')
+                }}
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Get Started Free
@@ -308,6 +318,11 @@ function HomePage() {
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
+                onClick={() => {
+                  trackEvent('click', 'pricing', 'professional_plan')
+                  trackUserEngagement('pricing_click', 'professional_plan', 'button')
+                  trackEvent('begin_checkout', 'ecommerce', 'professional_plan', 49)
+                }}
                 className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
                 Start Professional Plan
@@ -336,6 +351,11 @@ function HomePage() {
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
+                onClick={() => {
+                  trackEvent('click', 'pricing', 'enterprise_plan')
+                  trackUserEngagement('pricing_click', 'enterprise_plan', 'button')
+                  trackEvent('begin_checkout', 'ecommerce', 'enterprise_plan', 499)
+                }}
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
                 Choose Enterprise
@@ -504,6 +524,10 @@ function HomePage() {
           </p>
           <Link
             href="/compiler"
+            onClick={() => {
+              trackEvent('click', 'cta', 'final_section_create_ar')
+              trackUserEngagement('cta_click', 'final_section', 'button')
+            }}
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >
             Start Creating AR Experiences
