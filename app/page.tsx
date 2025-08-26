@@ -234,50 +234,20 @@ function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">J</div>
-                <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-black">Arnav Kumar</h4>
-                  <p className="text-black opacity-80">Marketing Director</p>
-                </div>
-              </div>
-              <p className="text-black opacity-80 mb-6 text-lg">
-                "Our trade show booth engagement increased significantly. We generated 3x more qualified leads compared to previous events, and the AR experience became a key talking point for our sales team."
-              </p>
-              <div className="flex text-red-600">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
-              </div>
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
+              <div className="text-4xl font-bold text-red-600 mb-2">Free Plan</div>
+              <div className="text-2xl font-bold text-black mb-4">→ 1 AR Experience</div>
+              <p className="text-black opacity-80">Perfect for trying out AR</p>
             </div>
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">S</div>
-                <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-black">Sarah Johnson</h4>
-                  <p className="text-black opacity-80">Brand Manager</p>
-                </div>
-              </div>
-              <p className="text-black opacity-80 mb-6 text-lg">
-                "The AR campaigns delivered measurable results within the first month. We saw a 67% increase in engagement rates and improved conversion on our landing pages."
-              </p>
-              <div className="flex text-red-600">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
-              </div>
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
+              <div className="text-4xl font-bold text-red-600 mb-2">Professional</div>
+              <div className="text-2xl font-bold text-black mb-4">→ 3 Campaigns</div>
+              <p className="text-black opacity-80">$49/month</p>
             </div>
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <div className="flex items-center mb-6">
-                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-black">M</div>
-                <div className="ml-4">
-                  <h4 className="text-xl font-semibold text-black">Mike Chen</h4>
-                  <p className="text-black opacity-80">Events Organisaer</p>
-                </div>
-              </div>
-              <p className="text-black opacity-80 mb-6 text-lg">
-                "Clients are specifically requesting AR campaigns now. We've been able to increase our service pricing by 40% while maintaining strong demand from our client base."
-              </p>
-              <div className="flex text-red-600">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
-              </div>
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
+              <div className="text-4xl font-bold text-red-600 mb-2">Enterprise</div>
+              <div className="text-2xl font-bold text-black mb-4">→ 36 Campaigns</div>
+              <p className="text-black opacity-80">$499/year</p>
             </div>
           </div>
         </div>
@@ -544,10 +514,10 @@ function HomePage() {
       <section className="py-20 bg-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Marketing?
+            🎯 Call to Action
           </h2>
           <p className="text-xl text-white opacity-90 mb-8">
-            Join businesses already using AR to engage customers and drive results. Start creating your first experience today.
+            Turn every image into an AR experience today.
           </p>
           <Link
             href="/compiler"
@@ -557,7 +527,7 @@ function HomePage() {
             }}
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >
-            Start Creating AR Experiences
+            👉 Create Your First AR Experience
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
