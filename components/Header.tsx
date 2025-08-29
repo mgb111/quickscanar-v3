@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface HeaderProps {
   showCreateAR?: boolean
@@ -32,7 +33,14 @@ export default function Header({
           <div className="flex items-center">
             {/* Brand Logo - Always links to homepage */}
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <span className="text-xl font-bold text-white">QuickScanAR</span>
+              <Image
+                src="/logo.png"
+                alt="QuickScanAR logo"
+                width={28}
+                height={28}
+                priority
+              />
+              <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </Link>
           </div>
           
