@@ -520,7 +520,7 @@ export async function GET(
       /* Optional external link button */
       #externalLinkBtn {
         position: fixed;
-        bottom: 56px; /* moved a little more up */
+        bottom: 160px; /* move way up on desktop */
         left: 50%; /* Center horizontally */
         transform: translateX(-50%); /* Correct for centering */
         z-index: 1004;
@@ -546,7 +546,7 @@ export async function GET(
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
       @media (max-width: 768px) { 
-        #externalLinkBtn { bottom: 40px; }
+        #externalLinkBtn { bottom: 120px; }
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
     </style>
