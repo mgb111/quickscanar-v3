@@ -99,7 +99,7 @@ function HomePage() {
           <div className="relative w-full">
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
               <iframe
-                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1"
+                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1&autoplay=1&mute=1"
                 title="Create and Launch a Custom AR Experience"
                 frameBorder="0"
                 loading="lazy"
