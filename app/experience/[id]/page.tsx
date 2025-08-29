@@ -216,24 +216,6 @@ export default function ExperienceViewer() {
           </div>
         </div>
 
-        {/* Marker + QR Section */}
-        <div className="absolute top-28 right-6 bg-white border-2 border-black rounded-xl p-3 shadow-lg hidden md:block">
-          <div className="text-black text-xs font-semibold mb-2 text-center">Marker & QR</div>
-          <div className="flex items-center space-x-3">
-            <div className="w-28 h-28 bg-cream border border-black flex items-center justify-center overflow-hidden">
-              {experience.marker_image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={experience.marker_image_url} alt="Marker" className="max-w-full max-h-full" />
-              ) : (
-                <span className="text-xs text-black opacity-70 p-2 text-center">No marker image</span>
-              )}
-            </div>
-            <div className="w-28 h-28 flex items-center justify-center">
-              <QRCode value={`${window.location.origin}/api/ar/${experience.id}`} size={112} />
-            </div>
-          </div>
-        </div>
-
         {/* QR Code Modal */}
         {showQR && (
           <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">

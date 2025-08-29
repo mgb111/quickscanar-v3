@@ -550,44 +550,9 @@ export async function GET(
         #externalLinkBtn { bottom: 120px; }
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
-
-      /* Marker hint overlay */
-      #markerHint {
-        position: fixed;
-        top: 16px;
-        right: 16px;
-        background: rgba(255,255,255,0.95);
-        border: 2px solid #000;
-        border-radius: 12px;
-        padding: 10px;
-        z-index: 1005;
-        display: ${experience.marker_image_url ? 'flex' : 'none'};
-        align-items: center;
-        flex-direction: column;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.25);
-      }
-      #markerHint .label {
-        font-size: 12px;
-        font-weight: 700;
-        color: #111827;
-        margin-bottom: 8px;
-        text-align: center;
-      }
-      #markerHint img {
-        max-width: 120px;
-        max-height: 120px;
-        display: block;
-        border: 1px solid #000;
-        border-radius: 8px;
-      }
     </style>
   </head>
   <body>
-    <!-- Marker preview overlay; shown until tracking starts, re-shown when lost -->
-    <div id="markerHint">
-      <div class="label">Point camera at this image</div>
-      <img src="${experience.marker_image_url || ''}" alt="Marker preview" />
-    </div>
     <div class="status-indicator" id="status-indicator">
       <h3 id="status-title">Point camera at your marker</h3>
       <p id="status-message">Look for your uploaded image</p>
@@ -672,25 +637,6 @@ export async function GET(
     ` : ''}
 
     <script>
-      // Hide marker hint when target found; show when lost
-      (function(){
-        const hint = document.getElementById('markerHint');
-        function hideHint(){ if(hint) hint.style.display = 'none'; }
-        function showHint(){ if(hint) hint.style.display = 'flex'; }
-        function bindTargetEvents(){
-          const scene = document.querySelector('a-scene');
-          if (!scene) return;
-          const attach = () => {
-            const target = scene.querySelector('[mindar-image-target]');
-            if (!target) return;
-            target.addEventListener('targetFound', hideHint);
-            target.addEventListener('targetLost', showHint);
-          };
-          if (scene.hasLoaded) attach(); else scene.addEventListener('loaded', attach, { once: true });
-        }
-        document.addEventListener('DOMContentLoaded', bindTargetEvents);
-      })();
-
       async function preflightMind(url) {
         try {
           // Try with CORS mode first

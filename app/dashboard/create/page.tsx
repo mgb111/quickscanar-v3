@@ -23,7 +23,6 @@ export default function CreateExperience() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [markerImageFile, setMarkerImageFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
 
@@ -40,20 +39,7 @@ export default function CreateExperience() {
       }
 
       // Check file type
-      const allowedTypes = [
-        'video/mp4',
-        'video/webm',
-        'video/ogg',
-        'video/avi',
-        'video/x-msvideo',
-        'video/mov',
-        'video/quicktime',
-        'video/x-matroska',
-        'video/x-m4v',
-        'video/3gpp',
-        'video/3gpp2',
-        'video/x-ms-wmv'
-      ]
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
       if (!allowedTypes.includes(file.type)) {
         toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
         return
@@ -76,34 +62,13 @@ export default function CreateExperience() {
     }
   }, [])
 
-  const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const allowed = ['image/png', 'image/jpeg', 'image/webp']
-      if (!allowed.includes(file.type)) {
-        toast.error('Please upload a PNG, JPG, or WEBP image')
-        return
-      }
-      const maxSizeInBytes = 10 * 1024 * 1024
-      if (file.size > maxSizeInBytes) {
-        toast.error('Image too large. Max 10MB')
-        return
-      }
-      setMarkerImageFile(file)
-      toast.success('Marker image selected!')
-    }
-  }, [])
-
-  const removeFile = useCallback((type: 'video' | 'mind' | 'marker') => {
+  const removeFile = useCallback((type: 'video' | 'mind') => {
     if (type === 'video') {
       setVideoFile(null)
-    } else if (type === 'mind') {
-      setMindFile(null)
     } else {
-      setMarkerImageFile(null)
+      setMindFile(null)
     }
-    const label = type === 'video' ? 'Video' : type === 'mind' ? 'Mind file' : 'Marker image'
-    toast.success(`${label} removed`)
+    toast.success(`${type === 'video' ? 'Video' : 'Mind file'} removed`)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,40 +164,11 @@ export default function CreateExperience() {
         mindUrl = mindPresignedData.publicUrl
       }
 
-      // Upload marker image (optional)
-      let markerImageUrl = ''
-      if (markerImageFile) {
-        const markerPresignedResponse = await fetch('/api/upload/r2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: markerImageFile.name,
-            fileType: 'image',
-            contentType: markerImageFile.type,
-          }),
-        })
-        if (!markerPresignedResponse.ok) {
-          const err = await markerPresignedResponse.json().catch(() => null)
-          throw new Error(err?.error || 'Failed to get marker image upload URL')
-        }
-        const markerPresignedData = await markerPresignedResponse.json()
-        const markerUploadResponse = await fetch(markerPresignedData.signedUrl, {
-          method: 'PUT',
-          body: markerImageFile,
-          headers: { 'Content-Type': markerImageFile.type },
-        })
-        if (!markerUploadResponse.ok) {
-          throw new Error('Failed to upload marker image to R2')
-        }
-        markerImageUrl = markerPresignedData.publicUrl
-      }
-
       // Create AR experience record
       const experienceData = {
         title: title.trim(),
         video_file_url: videoUrl,
         mind_file_url: mindUrl || null,
-        marker_image_url: markerImageUrl || null,
         user_id: user!.id,
         link_url: linkUrl.trim() ? linkUrl.trim() : null
       }
@@ -407,7 +343,7 @@ export default function CreateExperience() {
             </div>
 
             {/* File Uploads */}
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload */}
             <div>
               <label className="block text-lg font-medium text-black mb-3">
@@ -484,46 +420,6 @@ export default function CreateExperience() {
                   className="hidden"
                 />
               </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Marker Image Upload (optional, shown in campaign and used as visual marker) */}
-              <div>
-                <label className="block text-lg font-medium text-black mb-3">
-                  Marker Image (optional)
-                </label>
-                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
-                  {markerImageFile ? (
-                    <div className="space-y-3">
-                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
-                      <p className="text-base text-black font-medium">{markerImageFile.name}</p>
-                      <button
-                        type="button"
-                        onClick={() => removeFile('marker')}
-                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
-                      <p className="text-base text-black">
-                        <label htmlFor="marker-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
-                          Upload marker image
-                        </label>
-                      </p>
-                      <p className="text-sm text-black opacity-70 mt-2">PNG, JPG, WEBP (max 10MB)</p>
-                      <input
-                        id="marker-upload"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={handleMarkerImageUpload}
-                        className="hidden"
-                      />
-                    </div>
                   )}
                 </div>
               </div>
