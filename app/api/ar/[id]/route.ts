@@ -528,7 +528,7 @@ export async function GET(
       }
       #externalLinkBtn a {
         text-decoration: none;
-        background: #1f2937; /* dark-blue-ish to match site */
+        background: #dc2626; /* red-600 */
         color: #ffffff;
         border: 2px solid #000000;
         border-radius: 9999px;
@@ -537,13 +537,14 @@ export async function GET(
         font-weight: 700;
         box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         opacity: 0.98;
-        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
       }
       /* Hover moves up slightly without shifting horizontally */
       #externalLinkBtn a:hover {
         transform: translateY(-2px);
         opacity: 1;
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+        background: #b91c1c; /* red-700 */
       }
       @media (max-width: 768px) { 
         #externalLinkBtn { bottom: 120px; }
