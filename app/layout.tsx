@@ -33,6 +33,8 @@ export default function RootLayout({
             gtag('config', 'G-V5HYM77G6Q');
           `}
         </Script>
+        <link rel="icon" href="/logo.png" sizes="any" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className={inter.className}>
         <AuthProvider>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Camera } from 'lucide-react'
+import Image from 'next/image'
 
 interface HeaderProps {
   showCreateAR?: boolean
@@ -31,9 +31,15 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            {/* QuickScanAR Logo - Always links to homepage */}
+            {/* Brand Logo - Always links to homepage */}
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <Camera className="h-8 w-8 text-white" />
+              <Image
+                src="/logo.png"
+                alt="QuickScanAR logo"
+                width={28}
+                height={28}
+                priority
+              />
               <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </Link>
           </div>
