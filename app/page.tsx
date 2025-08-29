@@ -96,10 +96,10 @@ function HomePage() {
               Upload an image, add your content, and launch instantly
             </p>
           </div>
-          <div className="relative w-full">
+          <div className="relative w-full lg:max-w-4xl mx-auto">
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
               <iframe
-                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1&autoplay=1&mute=1"
+                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1&autoplay=1&mute=1&loop=1&playlist=Xeka_dIevm4"
                 title="Create and Launch a Custom AR Experience"
                 frameBorder="0"
                 loading="lazy"
@@ -214,35 +214,7 @@ function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              📊 Business Model
-            </h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Choose the plan that fits your business needs
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
-              <div className="text-4xl font-bold text-red-600 mb-2">Free Plan</div>
-              <div className="text-2xl font-bold text-black mb-4">→ 1 AR Experience</div>
-              <p className="text-black opacity-80">Perfect for trying out AR</p>
-            </div>
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
-              <div className="text-4xl font-bold text-red-600 mb-2">Professional</div>
-              <div className="text-2xl font-bold text-black mb-4">→ 3 Campaigns</div>
-              <p className="text-black opacity-80">$49/month</p>
-            </div>
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black text-center">
-              <div className="text-4xl font-bold text-red-600 mb-2">Enterprise</div>
-              <div className="text-2xl font-bold text-black mb-4">→ 36 Campaigns</div>
-              <p className="text-black opacity-80">$499/year</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Pricing Section */}
       <section className="py-20 bg-cream">
