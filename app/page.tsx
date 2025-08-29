@@ -98,15 +98,14 @@ function HomePage() {
           </div>
           <div className="relative w-full">
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
-              <video
-                src="/demovideo.mp4"
+              <iframe
+                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1"
                 title="Create and Launch a Custom AR Experience"
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '1rem', border: '2px solid #000000', objectFit: 'cover' }}
-                controls
-                playsInline
-                muted
-                loop
-                autoPlay
+                frameBorder="0"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '1rem', border: '2px solid #000000' }}
               />
             </div>
           </div>
