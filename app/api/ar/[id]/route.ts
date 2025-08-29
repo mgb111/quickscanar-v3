@@ -520,7 +520,7 @@ export async function GET(
       /* Optional external link button */
       #externalLinkBtn {
         position: fixed;
-        bottom: 24px; /* Move up from the bottom */
+        bottom: 56px; /* moved a little more up */
         left: 50%; /* Center horizontally */
         transform: translateX(-50%); /* Correct for centering */
         z-index: 1004;
@@ -532,11 +532,11 @@ export async function GET(
         color: #ffffff;
         border: 2px solid #000000;
         border-radius: 9999px;
-        padding: 14px 22px; /* Increased padding for a bigger button */
-        font-size: 16px; /* Larger font size */
-        font-weight: 600;
+        padding: 18px 26px; /* bigger button */
+        font-size: 18px; /* larger font */
+        font-weight: 700;
         box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        opacity: 0.95;
+        opacity: 0.98;
         transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
       }
       /* Hover moves up slightly without shifting horizontally */
@@ -546,8 +546,8 @@ export async function GET(
         box-shadow: 0 12px 30px rgba(0,0,0,0.35);
       }
       @media (max-width: 768px) { 
-        #externalLinkBtn { bottom: 20px; }
-        #externalLinkBtn a { padding: 12px 20px; font-size: 14px; }
+        #externalLinkBtn { bottom: 40px; }
+        #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
     </style>
   </head>

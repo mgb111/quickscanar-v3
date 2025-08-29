@@ -182,17 +182,17 @@ export default function ExperienceViewer() {
       </nav>
 
       {/* AR Experience Launch */}
-      <div className="relative w-full h-screen flex items-center justify-center">
+      <div className="relative w-full h-screen flex items-center justify-center pt-8">
         <div className="text-center text-black">
           <Camera className="mx-auto h-16 w-16 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">{experience.title}</h1>
+          <h1 className="text-3xl font-bold mb-3">{experience.title}</h1>
           {experience.description && (
-            <p className="text-gray-600 mb-6">{experience.description}</p>
+            <p className="text-gray-600 mb-8 text-lg">{experience.description}</p>
           )}
           
           <button
             onClick={openARExperience}
-            className="bg-dark-blue text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-900 transition-colors"
+            className="bg-dark-blue text-white px-10 py-4 rounded-xl text-xl font-semibold hover:bg-blue-900 transition-colors border-2 border-black shadow-md"
           >
             Launch AR Experience
           </button>
