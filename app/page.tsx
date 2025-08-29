@@ -97,24 +97,16 @@ function HomePage() {
             </p>
           </div>
           <div className="relative w-full">
-            <div style={{ position: 'relative', paddingBottom: 'calc(47.5% + 41px)', height: 0, width: '100%' }}>
-              <iframe 
-                src="https://demo.arcade.software/Mowg28GkHXLAEAj0GPoF?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true" 
-                title="Create and Launch a Custom AR Experience" 
-                frameBorder="0" 
-                loading="lazy" 
-                allowFullScreen={true}
-                allow="clipboard-write"
-                style={{ 
-                  position: 'absolute', 
-                  top: 0, 
-                  left: 0, 
-                  width: '100%', 
-                  height: '100%', 
-                  colorScheme: 'light',
-                  borderRadius: '1rem',
-                  border: '2px solid #000000'
-                }}
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
+              <video
+                src="/demovideo.mp4"
+                title="Create and Launch a Custom AR Experience"
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '1rem', border: '2px solid #000000', objectFit: 'cover' }}
+                controls
+                playsInline
+                muted
+                loop
+                autoPlay
               />
             </div>
           </div>
