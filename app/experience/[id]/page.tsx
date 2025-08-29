@@ -192,7 +192,7 @@ export default function ExperienceViewer() {
           
           <button
             onClick={openARExperience}
-            className="bg-dark-blue text-white px-10 py-4 rounded-xl text-xl font-semibold hover:bg-blue-900 transition-colors border-2 border-black shadow-md"
+            className="bg-red-600 text-white px-10 py-4 rounded-xl text-xl font-semibold hover:bg-red-700 transition-colors border-2 border-black shadow-md"
           >
             Launch AR Experience
           </button>
