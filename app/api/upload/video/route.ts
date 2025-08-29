@@ -12,7 +12,18 @@ export async function POST(request: NextRequest) {
 
     // Validate file type (optional, but recommended)
     const allowedTypes = [
-      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'
+      'video/mp4',
+      'video/webm',
+      'video/ogg',
+      'video/avi',
+      'video/x-msvideo', // AVI common mime
+      'video/mov',
+      'video/quicktime',
+      'video/x-matroska', // MKV
+      'video/x-m4v',
+      'video/3gpp',
+      'video/3gpp2',
+      'video/x-ms-wmv'
     ];
     if (!allowedTypes.includes(contentType)) {
       return NextResponse.json({

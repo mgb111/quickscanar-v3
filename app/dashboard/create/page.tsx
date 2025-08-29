@@ -40,7 +40,20 @@ export default function CreateExperience() {
       }
 
       // Check file type
-      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+      const allowedTypes = [
+        'video/mp4',
+        'video/webm',
+        'video/ogg',
+        'video/avi',
+        'video/x-msvideo',
+        'video/mov',
+        'video/quicktime',
+        'video/x-matroska',
+        'video/x-m4v',
+        'video/3gpp',
+        'video/3gpp2',
+        'video/x-ms-wmv'
+      ]
       if (!allowedTypes.includes(file.type)) {
         toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
         return
