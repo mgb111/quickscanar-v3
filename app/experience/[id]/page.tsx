@@ -222,10 +222,10 @@ export default function ExperienceViewer() {
             <div className="bg-white p-6 rounded-lg">
               <h3 className="text-lg font-bold text-black mb-4">Scan QR Code</h3>
               <div className="flex justify-center mb-4">
-                <QRCode value={window.location.href} size={200} />
+                <QRCode value={`${window.location.origin}/api/ar/${experience.id}`} size={200} />
               </div>
               <p className="text-sm text-gray-600 text-center mb-4">
-                Scan this QR code with your mobile device to open the AR experience
+                Scan to open the camera link for this AR experience
               </p>
               <button
                 onClick={() => setShowQR(false)}

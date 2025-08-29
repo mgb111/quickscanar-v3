@@ -234,6 +234,13 @@ export default function Dashboard() {
                       View
                     </Link>
                     <button
+                      onClick={() => setShowQR(experience.id)}
+                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors flex items-center"
+                      title="Show QR"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" /> QR
+                    </button>
+                    <button
                       onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
                       className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
                     >
@@ -252,6 +259,25 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        {showQR && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg border-2 border-black w-[320px] max-w-[90vw]">
+              <h3 className="text-lg font-bold text-black mb-4 text-center">Scan to Open AR Camera</h3>
+              <div className="flex justify-center mb-4">
+                <QRCode value={`${window.location.origin}/api/ar/${showQR}`} size={220} />
+              </div>
+              <div className="text-sm text-black opacity-80 text-center mb-4">
+                This QR opens the camera link for your AR experience
+              </div>
+              <button
+                onClick={() => setShowQR(null)}
+                className="w-full bg-dark-blue text-white py-2 px-4 rounded-md hover:bg-blue-900 border border-black"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
