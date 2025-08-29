@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
 interface HeaderProps {
   showCreateAR?: boolean
@@ -26,6 +27,7 @@ export default function Header({
   onSignOut,
   className = ''
 }: HeaderProps) {
+  const [logoSrc, setLogoSrc] = useState<string>('/logo.png')
   return (
     <nav className={`bg-dark-blue shadow-sm ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,11 +36,12 @@ export default function Header({
             {/* Brand Logo - Always links to homepage */}
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
               <Image
-                src="/logo.png"
+                src={logoSrc}
                 alt="QuickScanAR logo"
                 width={28}
                 height={28}
                 priority
+                onError={() => setLogoSrc('/logo.svg')}
               />
               <span className="ml-2 text-xl font-bold text-white">QuickScanAR</span>
             </Link>
