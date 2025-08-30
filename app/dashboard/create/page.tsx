@@ -66,8 +66,14 @@ export default function CreateExperience() {
   const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      if (!file.name.endsWith('.png') && !file.name.endsWith('.jpg') && !file.name.endsWith('.jpeg')) {
-        toast.error('Please upload a .png, .jpg, or .jpeg file for the marker image')
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please upload a JPG, PNG, or WebP image file')
+        return
+      }
+      const maxSizeInBytes = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSizeInBytes) {
+        toast.error(`Image file too large. Maximum size is 10MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
         return
       }
       setMarkerImageFile(file)
@@ -482,45 +488,7 @@ export default function CreateExperience() {
                 </div>
               </div>
 
-              {/* Marker Image Upload */}
-              <div>
-                <label className="block text-lg font-medium text-black mb-3">
-                  Marker Image (.png, .jpg, .jpeg) *
-                </label>
-                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
-                  {markerImageFile ? (
-                    <div className="space-y-3">
-                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
-                      <p className="text-base text-black font-medium">{markerImageFile.name}</p>
-                      <button
-                        type="button"
-                        onClick={() => removeFile('markerImage')}
-                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-            <div>
-                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
-                      <p className="text-base text-black">
-                        <label htmlFor="marker-image-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
-                          Upload Marker Image
-              </label>
-              </p>
-                      <p className="text-sm text-black opacity-70 mt-2">For AR experience</p>
-                <input
-                        id="marker-image-upload"
-                  type="file"
-                        accept=".png, .jpg, .jpeg"
-                        onChange={handleMarkerImageUpload}
-                  className="hidden"
-                />
-              </div>
-                  )}
-                </div>
-              </div>
+
             </div>
 
             {/* Marker Image Upload */}
@@ -554,7 +522,7 @@ export default function CreateExperience() {
                     <input
                       id="marker-image-upload"
                       type="file"
-                      accept=".png,.jpg,.jpeg,.webp"
+                      accept=".png,.jpg,.jpeg,.webp,image/*"
                       onChange={handleMarkerImageUpload}
                       className="hidden"
                     />
