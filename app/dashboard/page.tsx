@@ -57,7 +57,7 @@ export default function Dashboard() {
         ctx.drawImage(markerImg, 0, 0)
 
         const qrCanvas = document.createElement('canvas')
-        const qrSize = Math.min(80, markerImg.width * 0.12)
+        const qrSize = Math.min(160, markerImg.width * 0.2)
 
         import('qrcode').then((QRCodeLib) => {
           QRCodeLib.toCanvas(qrCanvas, `${window.location.origin}/api/ar/${experience.id}`, {
@@ -185,7 +185,7 @@ export default function Dashboard() {
         
         // Create QR code for the AR camera link
         const qrCanvas = document.createElement('canvas')
-        const qrSize = Math.min(80, markerImg.width * 0.12) // 12% of marker width, max 80px
+        const qrSize = Math.min(160, markerImg.width * 0.2) // 20% of marker width, max 160px
         
         // Use QRCode.toCanvas for programmatic generation
         import('qrcode').then((QRCodeLib) => {
