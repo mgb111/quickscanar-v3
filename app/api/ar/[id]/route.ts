@@ -602,7 +602,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.01; freq: 120; mincutoff: 0.01; beta: 0.3; dcutoff: 1.0; posDeadzone: 0.08; rotDeadzoneDeg: 18.0; emaFactor: 0.04; throttleHz: 30; medianWindow: 15; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 120; mincutoff: 0.001; beta: 0.1; dcutoff: 1.0; posDeadzone: 0.15; rotDeadzoneDeg: 25.0; emaFactor: 0.02; throttleHz: 20; medianWindow: 21; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -933,8 +933,11 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'text/html',
-        'Cache-Control': 'no-store, max-age=0',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         'X-Content-Type-Options': 'nosniff',
+        'ETag': `"${Date.now()}"`,
       },
     })
   } catch (error) {
