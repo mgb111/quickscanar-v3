@@ -625,8 +625,14 @@ export default function Dashboard() {
 
         {/* Preview Modal: Marker + QR */}
         {showMarkerQR && markerQRDataUrl && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl border-2 border-black max-w-3xl w-full p-4 sm:p-6 shadow-xl relative">
+          <div
+            className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center p-4"
+            onClick={() => setShowMarkerQR(null)}
+          >
+            <div
+              className="bg-white rounded-xl border-2 border-black max-w-3xl w-full p-4 sm:p-6 shadow-xl relative"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4 className="text-lg font-semibold text-black mb-4">Marker + QR Preview</h4>
               <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
                 <img src={markerQRDataUrl} alt="Marker with QR" className="max-w-full h-auto" />
@@ -652,8 +658,14 @@ export default function Dashboard() {
 
         {/* Editor Modal: Draggable QR over Marker */}
         {qrEditorOpen && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl border-2 border-black max-w-4xl w-full p-4 sm:p-6 shadow-xl relative">
+          <div
+            className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center p-4"
+            onClick={() => setQrEditorOpen(false)}
+          >
+            <div
+              className="bg-white rounded-xl border-2 border-black max-w-4xl w-full p-4 sm:p-6 shadow-xl relative"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4 className="text-lg font-semibold text-black mb-2">Edit QR Position</h4>
               <p className="text-sm text-black/70 mb-4">Drag the QR to reposition. Works with mouse or touch.</p>
               <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
