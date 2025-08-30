@@ -123,7 +123,7 @@ export default function Dashboard() {
         
         // Create QR code for the AR camera link
         const qrCanvas = document.createElement('canvas')
-        const qrSize = Math.min(100, markerImg.width * 0.2) // 20% of marker width, max 100px
+        const qrSize = Math.min(80, markerImg.width * 0.12) // 12% of marker width, max 80px
         
         // Use QRCode.toCanvas for programmatic generation
         import('qrcode').then((QRCodeLib) => {
@@ -141,13 +141,13 @@ export default function Dashboard() {
             }
             
             // Calculate position for QR code (bottom-right corner with padding)
-            const padding = 20
+            const padding = 16
             const qrX = canvas.width - qrSize - padding
             const qrY = canvas.height - qrSize - padding
             
-            // Add white background for QR code
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-            ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10)
+            // Add white background for QR code (slightly tighter)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+            ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8)
             
             // Draw QR code
             ctx.drawImage(qrCanvas, qrX, qrY)
@@ -294,21 +294,10 @@ export default function Dashboard() {
                   key={experience.id}
                   className="bg-cream border-2 border-black rounded-xl p-6 hover:shadow-md transition-shadow relative"
                 >
-                  {/* QR Code Download in Top Corner */}
-                  <div className="absolute top-2 right-2">
-                    <button
-                      onClick={() => setShowQR(experience.id)}
-                      className="bg-white text-black border-2 border-black p-2 rounded-lg hover:bg-cream transition-colors flex items-center justify-center shadow-sm"
-                      title="Download QR Code"
-                    >
-                      <QrCode className="h-4 w-4" />
-                    </button>
-                  </div>
-
                   {/* Marker Photo Display */}
                   {experience.marker_image_url && (
                     <div className="mb-4">
-                      <div className="text-xs text-black opacity-60 mb-2 font-medium">Marker Image:</div>
+                      <div className="text-xs text-black opacity-60 mb-2 font-medium">Marker Image</div>
                       <div className="relative w-full h-32 bg-white border border-black rounded-lg overflow-hidden">
                         <img
                           src={experience.marker_image_url}
@@ -329,28 +318,17 @@ export default function Dashboard() {
                       <h4 className="font-semibold text-black mb-2">
                         {experience.title || 'Untitled Experience'}
                       </h4>
-                      <p className="text-sm text-black opacity-80 mb-3">
-                        {experience.description || 'No description'}
-                      </p>
-                      <div className="text-xs text-black opacity-60">
-                        Created: {new Date(experience.created_at).toLocaleDateString()}
-                      </div>
                     </div>
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Link
-                      href={`/experience/${experience.id}`}
-                      className="flex-1 bg-red-600 text-white text-center py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors border border-black"
-                    >
-                      View
-                    </Link>
-
                     <button
-                      onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
-                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
+                      onClick={() => setShowQR(experience.id)}
+                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors flex items-center justify-center"
+                      title="Preview & Download QR"
                     >
-                      Share
+                      <QrCode className="h-4 w-4 mr-2" />
+                      QR
                     </button>
                     <button
                       onClick={() => downloadMarkerWithQR(experience)}
