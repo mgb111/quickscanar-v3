@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type React from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -27,12 +28,197 @@ export default function Dashboard() {
   const [loadingExperiences, setLoadingExperiences] = useState(true)
   const [showMarkerQR, setShowMarkerQR] = useState<string | null>(null)
   const [markerQRDataUrl, setMarkerQRDataUrl] = useState<string | null>(null)
+  // Editor state for draggable QR over marker
+  const [qrEditorOpen, setQrEditorOpen] = useState(false)
+  const [editorExperience, setEditorExperience] = useState<ARExperience | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const markerImageRef = useRef<HTMLImageElement | null>(null)
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [qrPos, setQrPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [qrEditSize, setQrEditSize] = useState<number>(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/auth/signin')
     }
-  }, [user, loading, router])
+  }, [loading, user, router])
+
+  // Generate and download QR code only (no marker)
+  const downloadQrOnly = async (experience: ARExperience) => {
+    try {
+      const qrCanvas = document.createElement('canvas')
+      const size = 512 // high-res QR only
+      const url = `${window.location.origin}/api/ar/${experience.id}`
+      const QRCodeLib = await import('qrcode')
+      await new Promise<void>((resolve, reject) => {
+        QRCodeLib.toCanvas(
+          qrCanvas,
+          url,
+          {
+            width: size,
+            color: { dark: '#000000', light: '#FFFFFF' },
+            errorCorrectionLevel: 'H',
+            margin: 2,
+          },
+          (err: any) => (err ? reject(err) : resolve())
+        )
+      })
+      const link = document.createElement('a')
+      link.download = `qr-${experience.id}.png`
+      link.href = qrCanvas.toDataURL('image/png')
+      link.click()
+    } catch (e) {
+      toast.error('Failed to generate QR')
+    }
+  }
+
+  // Open draggable editor for positioning QR on marker
+  const openQrEditor = async (experience: ARExperience) => {
+    if (!experience.marker_image_url) {
+      toast.error('No marker image available')
+      return
+    }
+    setEditorExperience(experience)
+    setQrEditorOpen(true)
+
+    // Load marker
+    const markerImg = new Image()
+    markerImg.crossOrigin = 'anonymous'
+    markerImg.onload = async () => {
+      markerImageRef.current = markerImg
+      const canvas = canvasRef.current
+      if (!canvas) return
+      canvas.width = markerImg.width
+      canvas.height = markerImg.height
+
+      // Make QR for editor (same sizing baseline as preview)
+      const size = Math.min(220, markerImg.width * 0.25)
+      setQrEditSize(size)
+      const qrCanvas = document.createElement('canvas')
+      try {
+        const QRCodeLib = await import('qrcode')
+        await new Promise<void>((resolve, reject) => {
+          QRCodeLib.toCanvas(
+            qrCanvas,
+            `${window.location.origin}/api/ar/${experience.id}`,
+            { width: size, color: { dark: '#000000', light: '#FFFFFF' }, errorCorrectionLevel: 'H' },
+            (err: any) => (err ? reject(err) : resolve())
+          )
+        })
+      } catch (e) {
+        toast.error('Failed to load QR library')
+        return
+      }
+      qrCanvasRef.current = qrCanvas
+
+      // Default position: top-right with padding
+      const padding = 16
+      setQrPos({ x: canvas.width - size - padding, y: padding })
+      drawEditor()
+    }
+    markerImg.onerror = () => toast.error('Failed to load marker image')
+    markerImg.src = experience.marker_image_url!
+  }
+
+  const drawEditor = () => {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    const markerImg = markerImageRef.current
+    const qrCanvas = qrCanvasRef.current
+    if (!markerImg || !qrCanvas) return
+    // Draw marker
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(markerImg, 0, 0)
+    // Background + QR + label
+    const label = 'AR Experience'
+    const labelFontSize = Math.max(12, Math.round(qrEditSize * 0.14))
+    ctx.font = `${labelFontSize}px sans-serif`
+    ctx.textBaseline = 'top'
+    const labelHeight = labelFontSize + 6
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+    ctx.fillRect(qrPos.x - 4, qrPos.y - 4, qrEditSize + 8, qrEditSize + 8 + labelHeight)
+    ctx.drawImage(qrCanvas, qrPos.x, qrPos.y)
+    const textWidth = ctx.measureText(label).width
+    ctx.fillStyle = '#000'
+    const textX = qrPos.x + Math.max(0, (qrEditSize - textWidth) / 2)
+    const textY = qrPos.y + qrEditSize + 4
+    ctx.fillText(label, textX, textY)
+  }
+
+  const pointInQr = (x: number, y: number) => {
+    return (
+      x >= qrPos.x &&
+      y >= qrPos.y &&
+      x <= qrPos.x + qrEditSize &&
+      y <= qrPos.y + qrEditSize
+    )
+  }
+
+  const onEditorMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    if (pointInQr(x, y)) {
+      setIsDragging(true)
+      dragOffsetRef.current = { dx: x - qrPos.x, dy: y - qrPos.y }
+    }
+  }
+
+  const onEditorMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    let x = e.clientX - rect.left - dragOffsetRef.current.dx
+    let y = e.clientY - rect.top - dragOffsetRef.current.dy
+    // Constrain inside canvas
+    x = Math.max(0, Math.min(x, canvas.width - qrEditSize))
+    y = Math.max(0, Math.min(y, canvas.height - (qrEditSize + Math.max(12, Math.round(qrEditSize * 0.14)) + 8)))
+    setQrPos({ x, y })
+    drawEditor()
+  }
+
+  const onEditorMouseUp = () => setIsDragging(false)
+
+  const onEditorTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    const t = e.touches[0]
+    const x = t.clientX - rect.left
+    const y = t.clientY - rect.top
+    if (pointInQr(x, y)) {
+      setIsDragging(true)
+      dragOffsetRef.current = { dx: x - qrPos.x, dy: y - qrPos.y }
+    }
+  }
+  const onEditorTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    const t = e.touches[0]
+    let x = t.clientX - rect.left - dragOffsetRef.current.dx
+    let y = t.clientY - rect.top - dragOffsetRef.current.dy
+    x = Math.max(0, Math.min(x, canvas.width - qrEditSize))
+    y = Math.max(0, Math.min(y, canvas.height - (qrEditSize + Math.max(12, Math.round(qrEditSize * 0.14)) + 8)))
+    setQrPos({ x, y })
+    drawEditor()
+  }
+  const onEditorTouchEnd = () => setIsDragging(false)
+
+  const saveEditedComposite = () => {
+    // Current canvas already has marker + QR + label drawn
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const link = document.createElement('a')
+    link.download = `marker-with-qr-${editorExperience?.id}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+    toast.success('Edited marker with QR downloaded!')
+    setQrEditorOpen(false)
+  }
 
   const openMarkerQrPreview = async (experience: ARExperience) => {
     if (!experience.marker_image_url) {
@@ -391,7 +577,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => openMarkerQrPreview(experience)}
                       className="bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center border border-black"
@@ -399,6 +585,29 @@ export default function Dashboard() {
                     >
                       <QrCode className="h-4 w-4 mr-2" />
                       Marker+QR
+                    </button>
+                    <button
+                      onClick={() => downloadQrOnly(experience)}
+                      className="bg-white text-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center border border-black"
+                      title="Download QR only"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      QR Only
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(`${window.location.origin}/api/ar/${experience.id}`)}
+                      className="bg-white text-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center border border-black"
+                      title="Copy AR Link"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Link
+                    </button>
+                    <button
+                      onClick={() => openQrEditor(experience)}
+                      className="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center border border-black"
+                      title="Edit QR position on marker"
+                    >
+                      Edit QR on Marker
                     </button>
                     <button
                       onClick={() => deleteExperience(experience.id)}
@@ -413,36 +622,71 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Preview Modal: Marker + QR */}
         {showMarkerQR && markerQRDataUrl && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg border-2 border-black w-[640px] max-w-[95vw]">
-              <h3 className="text-lg font-bold text-black mb-4 text-center">Marker + QR Preview</h3>
-              <div className="w-full max-h-[70vh] overflow-auto border border-black rounded-md bg-gray-50 mb-4">
-                <img src={markerQRDataUrl} alt="Marker with QR" className="w-full h-auto" />
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border-2 border-black max-w-3xl w-full p-4 sm:p-6 shadow-xl relative">
+              <h4 className="text-lg font-semibold text-black mb-4">Marker + QR Preview</h4>
+              <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
+                <img src={markerQRDataUrl} alt="Marker with QR" className="max-w-full h-auto" />
               </div>
-              <div className="flex space-x-3">
+              <div className="mt-4 flex justify-end gap-2">
                 <button
-                  onClick={() => {
-                    const link = document.createElement('a')
-                    link.download = `marker-with-qr-${showMarkerQR}.png`
-                    link.href = markerQRDataUrl
-                    link.click()
-                  }}
-                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 border border-black"
-                >
-                  Download
-                </button>
-                <button
-                  onClick={() => { setShowMarkerQR(null); setMarkerQRDataUrl(null); }}
-                  className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 border border-black"
+                  onClick={() => setShowMarkerQR(null)}
+                  className="bg-white text-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors border border-black"
                 >
                   Close
+                </button>
+                <a
+                  href={markerQRDataUrl}
+                  download={`marker-with-qr-${showMarkerQR}.png`}
+                  className="bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors border border-black"
+                >
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Editor Modal: Draggable QR over Marker */}
+        {qrEditorOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border-2 border-black max-w-4xl w-full p-4 sm:p-6 shadow-xl relative">
+              <h4 className="text-lg font-semibold text-black mb-2">Edit QR Position</h4>
+              <p className="text-sm text-black/70 mb-4">Drag the QR to reposition. Works with mouse or touch.</p>
+              <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={onEditorMouseDown}
+                  onMouseMove={onEditorMouseMove}
+                  onMouseUp={onEditorMouseUp}
+                  onMouseLeave={onEditorMouseUp}
+                  onTouchStart={onEditorTouchStart}
+                  onTouchMove={onEditorTouchMove}
+                  onTouchEnd={onEditorTouchEnd}
+                />
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setQrEditorOpen(false)}
+                  className="bg-white text-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors border border-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEditedComposite}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors border border-black"
+                >
+                  Save & Download
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   )
-} 
+}
