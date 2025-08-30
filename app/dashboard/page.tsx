@@ -263,10 +263,17 @@ export default function Dashboard() {
 
         {/* Existing Experiences */}
         <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 shadow-lg">
-          <h3 className="text-xl font-semibold mb-6 text-black flex items-center">
-            <Camera className="h-5 w-5 mr-2 text-red-600" />
-            Your AR Experiences
-          </h3>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <h3 className="text-xl font-semibold text-black flex items-center">
+              <Camera className="h-5 w-5 mr-2 text-red-600" />
+              Your AR Experiences
+            </h3>
+            {experiences.some(e => !e.marker_image_url) && (
+              <div className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                ⚠️ Some experiences need marker images for AR scanning
+              </div>
+            )}
+          </div>
           
           {experiences.length === 0 ? (
             <div className="text-center py-12">
@@ -306,7 +313,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Marker Photo Display */}
-                  {experience.marker_image_url && (
+                  {experience.marker_image_url ? (
                     <div className="mb-4">
                       <div className="text-xs text-black opacity-60 mb-2 font-medium">Marker Image:</div>
                       <div className="relative w-full h-32 bg-white border border-black rounded-lg overflow-hidden">
@@ -321,6 +328,19 @@ export default function Dashboard() {
                           }}
                         />
                       </div>
+                    </div>
+                  ) : (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="text-xs text-yellow-800 mb-2 font-medium">⚠️ No Marker Image</div>
+                      <p className="text-xs text-yellow-700 mb-2">
+                        This experience needs a marker image to work with AR scanning.
+                      </p>
+                      <Link
+                        href={`/dashboard/create?edit=${experience.id}`}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+                      >
+                        Add marker image →
+                      </Link>
                     </div>
                   )}
 
@@ -352,14 +372,16 @@ export default function Dashboard() {
                     >
                       Share
                     </button>
-                    <button
-                      onClick={() => downloadMarkerWithQR(experience)}
-                      className="bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center border border-black"
-                      title="Download Marker with QR"
-                    >
-                      <QrCode className="h-4 w-4 mr-2" />
-                      Marker+QR
-                    </button>
+                    {experience.marker_image_url && (
+                      <button
+                        onClick={() => downloadMarkerWithQR(experience)}
+                        className="bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center border border-black"
+                        title="Download Marker with QR"
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        Marker+QR
+                      </button>
+                    )}
                     <button
                       onClick={() => deleteExperience(experience.id)}
                       className="bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center border border-black"
