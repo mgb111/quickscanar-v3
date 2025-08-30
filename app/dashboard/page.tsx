@@ -210,8 +210,38 @@ export default function Dashboard() {
               {experiences.map((experience) => (
                 <div
                   key={experience.id}
-                  className="bg-cream border-2 border-black rounded-xl p-6 hover:shadow-md transition-shadow"
+                  className="bg-cream border-2 border-black rounded-xl p-6 hover:shadow-md transition-shadow relative"
                 >
+                  {/* QR Code Download in Top Corner */}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={() => setShowQR(experience.id)}
+                      className="bg-white text-black border-2 border-black p-2 rounded-lg hover:bg-cream transition-colors flex items-center justify-center shadow-sm"
+                      title="Download QR Code"
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Marker Photo Display */}
+                  {experience.marker_image_url && (
+                    <div className="mb-4">
+                      <div className="text-xs text-black opacity-60 mb-2 font-medium">Marker Image:</div>
+                      <div className="relative w-full h-32 bg-white border border-black rounded-lg overflow-hidden">
+                        <img
+                          src={experience.marker_image_url}
+                          alt="Marker for AR experience"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full text-black opacity-40 text-sm">Marker Image</div>';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-black mb-2">
@@ -233,13 +263,7 @@ export default function Dashboard() {
                     >
                       View
                     </Link>
-                    <button
-                      onClick={() => setShowQR(experience.id)}
-                      className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors flex items-center"
-                      title="Show QR"
-                    >
-                      <QrCode className="h-4 w-4 mr-2" /> QR
-                    </button>
+
                     <button
                       onClick={() => copyToClipboard(`${window.location.origin}/experience/${experience.id}`)}
                       className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
@@ -261,20 +285,53 @@ export default function Dashboard() {
         </div>
         {showQR && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg border-2 border-black w-[320px] max-w-[90vw]">
-              <h3 className="text-lg font-bold text-black mb-4 text-center">Scan to Open AR Camera</h3>
+            <div className="bg-white p-6 rounded-lg border-2 border-black w-[400px] max-w-[90vw]">
+              <h3 className="text-lg font-bold text-black mb-4 text-center">AR Experience QR Code</h3>
+              
+              {/* Show Marker Image if available */}
+              {experiences.find(e => e.id === showQR)?.marker_image_url && (
+                <div className="mb-4 text-center">
+                  <div className="text-sm text-black opacity-60 mb-2">Marker Image:</div>
+                  <div className="w-24 h-24 mx-auto bg-gray-100 border border-gray-300 rounded-lg overflow-hidden">
+                    <img
+                      src={experiences.find(e => e.id === showQR)?.marker_image_url!}
+                      alt="Marker"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-center mb-4">
                 <QRCode value={`${window.location.origin}/api/ar/${showQR}`} size={220} />
               </div>
+              
               <div className="text-sm text-black opacity-80 text-center mb-4">
-                This QR opens the camera link for your AR experience
+                Scan this QR code to open the AR camera for your experience
               </div>
-              <button
-                onClick={() => setShowQR(null)}
-                className="w-full bg-dark-blue text-white py-2 px-4 rounded-md hover:bg-blue-900 border border-black"
-              >
-                Close
-              </button>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    const canvas = document.querySelector('canvas');
+                    if (canvas) {
+                      const link = document.createElement('a');
+                      link.download = `ar-qr-${showQR}.png`;
+                      link.href = canvas.toDataURL();
+                      link.click();
+                    }
+                  }}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 border border-black"
+                >
+                  Download QR
+                </button>
+                <button
+                  onClick={() => setShowQR(null)}
+                  className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 border border-black"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

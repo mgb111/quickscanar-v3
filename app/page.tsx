@@ -54,7 +54,7 @@ function HomePage() {
                 <span className="block text-red-600">AR for Real Estate</span>
               </h1>
               <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
-                Turn Any Property Photo into an Interactive AR Video in 2 Steps
+                Turn Any Property Photo into an Interactive AR Video in 3 Steps
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
@@ -90,12 +90,40 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              ✨ How It Works (Simple 2-Step Flow)
+              ✨ How It Works (Simple 3-Step Flow)
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Upload an image, add your content, and launch instantly
+              Upload a marker image, add your content, and launch instantly
             </p>
           </div>
+          
+          {/* 3-Step Process */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <div className="text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
+                <span className="text-2xl font-bold text-white">1</span>
+              </div>
+              <h3 className="text-xl font-bold text-black mb-4">Upload Marker Image</h3>
+              <p className="text-black opacity-80">Choose any property photo — brochure, flyer, or listing image</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
+                <span className="text-2xl font-bold text-white">2</span>
+              </div>
+              <h3 className="text-xl font-bold text-black mb-4">Add Your Content</h3>
+              <p className="text-black opacity-80">Upload video walkthrough, promo, or virtual tour</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
+                <span className="text-2xl font-bold text-white">3</span>
+              </div>
+              <h3 className="text-xl font-bold text-black mb-4">Launch & Share</h3>
+              <p className="text-black opacity-80">Get QR code and share your AR experience instantly</p>
+            </div>
+          </div>
+          
           <div className="relative w-full lg:max-w-4xl mx-auto">
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
               <iframe
@@ -375,7 +403,7 @@ function HomePage() {
             🎯 Ready to Make Your Listings Unforgettable?
           </h2>
           <p className="text-xl text-white opacity-90 mb-8">
-            Turn static property images into AR video experiences that drive leads and close deals — in just 2 steps.
+            Turn static property images into AR video experiences that drive leads and close deals — in just 3 steps.
           </p>
           <Link
             href="/compiler"
