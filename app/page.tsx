@@ -345,7 +345,7 @@ function HomePage() {
                 </li>
               </ul>
               <a
-                href="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
+                href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
@@ -378,7 +378,7 @@ function HomePage() {
                 </li>
               </ul>
               <a
-                href="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
+                href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
