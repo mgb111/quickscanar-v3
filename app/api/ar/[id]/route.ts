@@ -578,7 +578,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.2; filterBeta: 0.5; missTolerance: 6; warmupTolerance: 5;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.45; filterBeta: 0.25; missTolerance: 10; warmupTolerance: 5;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -602,7 +602,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.03; freq: 120; mincutoff: 0.05; beta: 1.0; dcutoff: 1.0; posDeadzone: 0.035; rotDeadzoneDeg: 8.0; emaFactor: 0.08; throttleHz: 60; medianWindow: 9; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.02; freq: 120; mincutoff: 0.02; beta: 0.8; dcutoff: 1.0; posDeadzone: 0.05; rotDeadzoneDeg: 12.0; emaFactor: 0.06; throttleHz: 45; medianWindow: 11; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
