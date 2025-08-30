@@ -94,6 +94,88 @@ export default function Dashboard() {
     }
   }
 
+  const downloadMarkerWithQR = async (experience: ARExperience) => {
+    if (!experience.marker_image_url) {
+      toast.error('No marker image available for this experience')
+      return
+    }
+
+    try {
+      // Create a canvas to combine marker image and QR code
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        toast.error('Canvas not supported in this browser')
+        return
+      }
+
+      // Load the marker image
+      const markerImg = new Image()
+      markerImg.crossOrigin = 'anonymous'
+      
+      markerImg.onload = () => {
+        // Set canvas size to match marker image
+        canvas.width = markerImg.width
+        canvas.height = markerImg.height
+        
+        // Draw the marker image
+        ctx.drawImage(markerImg, 0, 0)
+        
+        // Create QR code for the AR camera link
+        const qrCanvas = document.createElement('canvas')
+        const qrSize = Math.min(100, markerImg.width * 0.2) // 20% of marker width, max 100px
+        
+        // Use QRCode.toCanvas for programmatic generation
+        import('qrcode').then((QRCodeLib) => {
+          QRCodeLib.toCanvas(qrCanvas, `${window.location.origin}/api/ar/${experience.id}`, {
+            width: qrSize,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            },
+            errorCorrectionLevel: 'H'
+          }, (error: any) => {
+            if (error) {
+              toast.error('Failed to generate QR code')
+              return
+            }
+            
+            // Calculate position for QR code (bottom-right corner with padding)
+            const padding = 20
+            const qrX = canvas.width - qrSize - padding
+            const qrY = canvas.height - qrSize - padding
+            
+            // Add white background for QR code
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+            ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10)
+            
+            // Draw QR code
+            ctx.drawImage(qrCanvas, qrX, qrY)
+            
+            // Download the combined image
+            const link = document.createElement('a')
+            link.download = `marker-with-qr-${experience.id}.png`
+            link.href = canvas.toDataURL('image/png')
+            link.click()
+            
+            toast.success('Marker with QR code downloaded!')
+          })
+        }).catch(() => {
+          toast.error('Failed to load QR code library')
+        })
+      }
+      
+      markerImg.onerror = () => {
+        toast.error('Failed to load marker image')
+      }
+      
+      markerImg.src = experience.marker_image_url
+    } catch (error) {
+      console.error('Error generating combined image:', error)
+      toast.error('Failed to generate combined image')
+    }
+  }
+
   if (loading || loadingExperiences) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -269,6 +351,14 @@ export default function Dashboard() {
                       className="bg-white text-black border-2 border-black py-2 px-4 rounded-lg text-sm font-medium hover:bg-cream transition-colors"
                     >
                       Share
+                    </button>
+                    <button
+                      onClick={() => downloadMarkerWithQR(experience)}
+                      className="bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center border border-black"
+                      title="Download Marker with QR"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Marker+QR
                     </button>
                     <button
                       onClick={() => deleteExperience(experience.id)}
