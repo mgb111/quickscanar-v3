@@ -605,8 +605,8 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 120; mincutoff: 0.001; beta: 0.1; dcutoff: 1.0; posDeadzone: 0.15; rotDeadzoneDeg: 25.0; emaFactor: 0.02; throttleHz: 20; medianWindow: 21; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
-          width="1"
-          height="0.5625"
+          width="1.5"
+          height="0.84375"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -615,8 +615,8 @@ export async function GET(
 
         <a-plane
           id="videoPlane"
-          width="1"
-          height="0.5625"
+          width="1.5"
+          height="0.84375"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
@@ -744,12 +744,13 @@ export async function GET(
           video.addEventListener('loadedmetadata', () => {
             console.log('Video metadata loaded');
             const ratio = video.videoWidth / video.videoHeight || (16/9);
-            const planeHeight = 1 / ratio;
+            const baseWidth = 1.5; // 150% of marker width
+            const planeHeight = baseWidth / ratio;
             
             // Set video plane dimensions to match video aspect ratio
-            videoPlane.setAttribute('width', 1);
+            videoPlane.setAttribute('width', baseWidth);
             videoPlane.setAttribute('height', planeHeight);
-            backgroundPlane.setAttribute('width', 1);
+            backgroundPlane.setAttribute('width', baseWidth);
             backgroundPlane.setAttribute('height', planeHeight);
             
             console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight, 'ratio:', ratio, 'plane height:', planeHeight);
