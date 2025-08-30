@@ -21,7 +21,7 @@ export default function Home() {
             Engage buyers, showcase listings, and close deals faster — no coding required.
           </p>
           <button 
-            onClick={() => trackEvent('hero_cta_click', { section: 'hero' })}
+            onClick={() => trackEvent('hero_cta_click', 'cta', 'hero_section')}
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
           >
             Create Your First AR Listing
@@ -306,7 +306,7 @@ export default function Home() {
                 </li>
               </ul>
               <button 
-                onClick={() => trackEvent('pricing_cta_click', { plan: 'free' })}
+                onClick={() => trackEvent('pricing_cta_click', 'pricing', 'free_plan')}
                 className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
               >
                 Get Started Free
@@ -341,7 +341,7 @@ export default function Home() {
                 </li>
               </ul>
               <button 
-                onClick={() => trackEvent('pricing_cta_click', { plan: 'professional' })}
+                onClick={() => trackEvent('pricing_cta_click', 'pricing', 'professional_plan')}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
               >
                 Start Professional
@@ -373,7 +373,7 @@ export default function Home() {
                 </li>
               </ul>
               <button 
-                onClick={() => trackEvent('pricing_cta_click', { plan: 'enterprise' })}
+                onClick={() => trackEvent('pricing_cta_click', 'pricing', 'enterprise_plan')}
                 className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
               >
                 Contact Sales
@@ -393,7 +393,7 @@ export default function Home() {
             Turn static property images into AR video experiences that drive leads and close deals — in just 2 steps.
           </p>
           <button 
-            onClick={() => trackEvent('final_cta_click', { section: 'final_cta' })}
+            onClick={() => trackEvent('final_cta_click', 'cta', 'final_section')}
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg shadow-lg transform hover:scale-105 transition-all duration-200"
           >
             Create Your First AR Listing
