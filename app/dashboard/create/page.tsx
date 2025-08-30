@@ -24,6 +24,7 @@ export default function CreateExperience() {
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
+  const [markerImageFile, setMarkerImageFile] = useState<File | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
@@ -62,13 +63,27 @@ export default function CreateExperience() {
     }
   }, [])
 
-  const removeFile = useCallback((type: 'video' | 'mind') => {
+  const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.name.endsWith('.png') && !file.name.endsWith('.jpg') && !file.name.endsWith('.jpeg')) {
+        toast.error('Please upload a .png, .jpg, or .jpeg file for the marker image')
+        return
+      }
+      setMarkerImageFile(file)
+      toast.success('Marker image uploaded successfully!')
+    }
+  }, [])
+
+  const removeFile = useCallback((type: 'video' | 'mind' | 'markerImage') => {
     if (type === 'video') {
       setVideoFile(null)
-    } else {
+    } else if (type === 'mind') {
       setMindFile(null)
+    } else if (type === 'markerImage') {
+      setMarkerImageFile(null)
     }
-    toast.success(`${type === 'video' ? 'Video' : 'Mind file'} removed`)
+    toast.success(`${type === 'video' ? 'Video' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,6 +101,11 @@ export default function CreateExperience() {
 
     if (!mindFile) {
       toast.error('Please upload a mind file')
+      return
+    }
+
+    if (!markerImageFile) {
+      toast.error('Please upload a marker image')
       return
     }
 
@@ -164,11 +184,49 @@ export default function CreateExperience() {
         mindUrl = mindPresignedData.publicUrl
       }
 
+      // Upload marker image to R2 (two-step: presign then upload)
+      let markerImageUrl = ''
+      if (markerImageFile) {
+        // Step 1: Get presigned URL for marker image upload
+        const markerImagePresignedResponse = await fetch('/api/upload/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: markerImageFile.name,
+            fileType: 'markerImage',
+            contentType: markerImageFile.type,
+          }),
+        })
+
+        if (!markerImagePresignedResponse.ok) {
+          const err = await markerImagePresignedResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get marker image upload URL')
+        }
+
+        const markerImagePresignedData = await markerImagePresignedResponse.json()
+
+        // Step 2: Upload marker image directly to R2 using presigned URL
+        const markerImageUploadResponse = await fetch(markerImagePresignedData.signedUrl, {
+          method: 'PUT',
+          body: markerImageFile,
+          headers: {
+            'Content-Type': markerImageFile.type,
+          },
+        })
+
+        if (!markerImageUploadResponse.ok) {
+          throw new Error('Failed to upload marker image to R2')
+        }
+
+        markerImageUrl = markerImagePresignedData.publicUrl
+      }
+
       // Create AR experience record
       const experienceData = {
         title: title.trim(),
         video_file_url: videoUrl,
         mind_file_url: mindUrl || null,
+        marker_image_url: markerImageUrl || null,
         user_id: user!.id,
         link_url: linkUrl.trim() ? linkUrl.trim() : null
       }
@@ -422,6 +480,86 @@ export default function CreateExperience() {
               </div>
                   )}
                 </div>
+              </div>
+
+              {/* Marker Image Upload */}
+              <div>
+                <label className="block text-lg font-medium text-black mb-3">
+                  Marker Image (.png, .jpg, .jpeg) *
+                </label>
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                  {markerImageFile ? (
+                    <div className="space-y-3">
+                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                      <p className="text-base text-black font-medium">{markerImageFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => removeFile('markerImage')}
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+            <div>
+                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                      <p className="text-base text-black">
+                        <label htmlFor="marker-image-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                          Upload Marker Image
+              </label>
+              </p>
+                      <p className="text-sm text-black opacity-70 mt-2">For AR experience</p>
+                <input
+                        id="marker-image-upload"
+                  type="file"
+                        accept=".png, .jpg, .jpeg"
+                        onChange={handleMarkerImageUpload}
+                  className="hidden"
+                />
+              </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Marker Image Upload */}
+            <div className="col-span-full">
+              <label className="block text-lg font-medium text-black mb-3">
+                Marker Image (.png, .jpg, .jpeg) * <span className="text-sm font-normal text-black opacity-70">(Max 10MB)</span>
+              </label>
+              <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                {markerImageFile ? (
+                  <div className="space-y-3">
+                    <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                    <p className="text-base text-black font-medium">{markerImageFile.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeFile('markerImage')}
+                      className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                    <p className="text-base text-black">
+                      <label htmlFor="marker-image-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                        Click to upload marker image
+                      </label>
+                    </p>
+                    <p className="text-sm text-black opacity-70 mt-2">This is the image that will trigger your AR experience</p>
+                    <input
+                      id="marker-image-upload"
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.webp"
+                      onChange={handleMarkerImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
