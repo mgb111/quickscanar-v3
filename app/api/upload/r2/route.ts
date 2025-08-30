@@ -45,10 +45,23 @@ export async function POST(request: NextRequest) {
 
     // Validate content type
     const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     const isMind = fileType === 'mind'
-    if (!isMind && !allowedVideoTypes.includes(contentType)) {
+    const isMarkerImage = fileType === 'markerImage'
+    
+    if (!isMind && !isMarkerImage && !allowedVideoTypes.includes(contentType)) {
       return NextResponse.json({
-        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')}`
+        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')} or image files for marker images`
+      }, { status: 400 })
+    }
+    
+    if (isMind && !fileName.endsWith('.mind')) {
+      return NextResponse.json({ error: 'For mind files, fileName must end with .mind' }, { status: 400 })
+    }
+    
+    if (isMarkerImage && !allowedImageTypes.includes(contentType)) {
+      return NextResponse.json({
+        error: `Unsupported image type for marker. Allowed: ${allowedImageTypes.join(', ')}`
       }, { status: 400 })
     }
     if (isMind && !fileName.endsWith('.mind')) {
@@ -60,7 +73,16 @@ export async function POST(request: NextRequest) {
     const randomId = Math.random().toString(36).slice(2, 10)
     const ext = fileName.includes('.') ? fileName.split('.').pop() : undefined
     const safeExt = ext ? `.${ext}` : ''
-    const key = `${fileType || 'upload'}-${timestamp}-${randomId}${safeExt}`
+    
+    // Ensure proper extension for different file types
+    let finalExt = safeExt
+    if (isMind && !safeExt.endsWith('.mind')) {
+      finalExt = '.mind'
+    } else if (isMarkerImage && !safeExt.match(/\.(jpg|jpeg|png|webp)$/i)) {
+      finalExt = '.png' // Default to PNG for marker images
+    }
+    
+    const key = `${fileType || 'upload'}-${timestamp}-${randomId}${finalExt}`
 
     // Create a presigned PUT URL so the client can upload directly to R2
     const command = new PutObjectCommand({
