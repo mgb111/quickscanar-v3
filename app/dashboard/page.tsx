@@ -630,12 +630,12 @@ export default function Dashboard() {
             onClick={() => setShowMarkerQR(null)}
           >
             <div
-              className="bg-white rounded-xl border-2 border-black max-w-3xl w-full p-4 sm:p-6 shadow-xl relative"
+              className="bg-white rounded-xl border-2 border-black max-w-[95vw] w-full p-4 sm:p-6 shadow-xl relative"
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-lg font-semibold text-black mb-4">Marker + QR Preview</h4>
-              <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
-                <img src={markerQRDataUrl} alt="Marker with QR" className="max-w-full h-auto" />
+              <div className="w-full overflow-auto max-h-[85vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
+                <img src={markerQRDataUrl} alt="Marker with QR" className="max-w-[90vw] max-h-[82vh] object-contain" />
               </div>
               <div className="mt-4 flex justify-end gap-2">
                 <button
@@ -663,12 +663,12 @@ export default function Dashboard() {
             onClick={() => setQrEditorOpen(false)}
           >
             <div
-              className="bg-white rounded-xl border-2 border-black max-w-4xl w-full p-4 sm:p-6 shadow-xl relative"
+              className="bg-white rounded-xl border-2 border-black max-w-[95vw] w-full p-4 sm:p-6 shadow-xl relative"
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-lg font-semibold text-black mb-2">Edit QR Position</h4>
               <p className="text-sm text-black/70 mb-4">Drag the QR to reposition. Works with mouse or touch.</p>
-              <div className="w-full overflow-auto max-h-[70vh] flex items-center justify-center bg-cream border border-black rounded-lg p-2">
+              <div className="w-full overflow-auto max-h-[85vh] bg-cream border border-black rounded-lg p-2">
                 <canvas
                   ref={canvasRef}
                   onMouseDown={onEditorMouseDown}
@@ -678,6 +678,7 @@ export default function Dashboard() {
                   onTouchStart={onEditorTouchStart}
                   onTouchMove={onEditorTouchMove}
                   onTouchEnd={onEditorTouchEnd}
+                  className="block"
                 />
               </div>
               <div className="mt-4 flex justify-end gap-2">
