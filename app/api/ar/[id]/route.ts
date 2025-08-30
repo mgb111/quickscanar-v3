@@ -602,7 +602,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.03; freq: 120; mincutoff: 0.05; beta: 1.0; dcutoff: 1.0; posDeadzone: 0.02; rotDeadzoneDeg: 6.0; emaFactor: 0.08; throttleHz: 60; medianWindow: 7; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.03; freq: 120; mincutoff: 0.05; beta: 1.0; dcutoff: 1.0; posDeadzone: 0.035; rotDeadzoneDeg: 8.0; emaFactor: 0.08; throttleHz: 60; medianWindow: 9; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
