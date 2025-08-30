@@ -151,18 +151,10 @@ export async function GET(
           rotDeadzoneDeg: { type: 'number', default: 0.4 }, // degrees; ignore micro rotation noise
           emaFactor: { type: 'number', default: 0.15 }, // 0..1, additional EMA blend after One-Euro
           // Ultra lock controls
-          mode: { type: 'string', default: 'normal' }, // 'normal' | 'ultra_lock' | 'hard_lock'
+          mode: { type: 'string', default: 'normal' }, // 'normal' | 'ultra_lock'
           throttleHz: { type: 'number', default: 60 }, // apply transforms at most this often
           medianWindow: { type: 'number', default: 3 }, // median window size for position
           zeroRoll: { type: 'boolean', default: false }, // lock roll around marker normal
-          // Hard lock hysteresis thresholds
-          lockPosThresh: { type: 'number', default: 0.03 }, // meters; freeze if total delta is below
-          lockRotThreshDeg: { type: 'number', default: 8.0 }, // degrees; freeze if below
-          // Pin on stable: fully freeze after N consecutive stable frames; unfreeze only on large movement
-          pinOnStable: { type: 'boolean', default: true },
-          pinStableFrames: { type: 'number', default: 8 },
-          unlockPosThresh: { type: 'number', default: 0.09 },
-          unlockRotThreshDeg: { type: 'number', default: 20.0 },
         },
 
         init: function () {
@@ -183,17 +175,13 @@ export async function GET(
           // Position history for median filtering
           this._posHistory = [];
           this._lastApply = 0;
-          // Hard lock state
-          this._pinned = false;
-          this._stableCount = 0;
-          this._prevVisible = false;
         },
 
         tick: function (t, dt) {
           // Only run if the target is visible.
           if (!this.el.object3D.visible) return;
 
-          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll, lockPosThresh, lockRotThreshDeg, pinOnStable, pinStableFrames, unlockPosThresh, unlockRotThreshDeg } = this.data;
+          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
           // Throttle updates to reduce visible micro jitter
@@ -202,13 +190,6 @@ export async function GET(
             return;
           }
           this._lastApply = t;
-
-          // Reset pin when visibility toggles
-          if (this._prevVisible !== this.el.object3D.visible) {
-            this._pinned = false;
-            this._stableCount = 0;
-            this._prevVisible = this.el.object3D.visible;
-          }
 
           // 1. Get the raw matrix from the underlying MindAR object.
           // This matrix is updated by MindAR with the raw tracking data.
@@ -220,42 +201,7 @@ export async function GET(
           const rawScale = new THREE.Vector3();
           this.rawMatrix.decompose(rawPosition, rawQuaternion, rawScale);
 
-          // 3. Optional hard-lock hysteresis & pinning logic
-          if (mode === 'hard_lock') {
-            const curPos = this.el.object3D.position.clone();
-            const dx = Math.abs(rawPosition.x - curPos.x);
-            const dy = Math.abs(rawPosition.y - curPos.y);
-            const dz = Math.abs(rawPosition.z - curPos.z);
-            const posDelta = Math.max(dx, dy, dz);
-            const curQuat = this.el.object3D.quaternion;
-            const dotHL = THREE.MathUtils.clamp(curQuat.dot(rawQuaternion), -1, 1);
-            const angleRadHL = 2 * Math.acos(Math.abs(dotHL));
-            const angleDegHL = THREE.MathUtils.radToDeg(angleRadHL);
-            // If already pinned, only unfreeze when movement exceeds unlock thresholds
-            if (this._pinned) {
-              if (posDelta < unlockPosThresh && angleDegHL < unlockRotThreshDeg) {
-                return; // remain frozen
-              } else {
-                this._pinned = false; // unfreeze on large movement
-                this._stableCount = 0;
-              }
-            } else if (pinOnStable) {
-              // Count stable frames; pin once consistently stable
-              if (posDelta < lockPosThresh && angleDegHL < lockRotThreshDeg) {
-                this._stableCount++;
-                if (this._stableCount >= Math.max(3, Math.floor(pinStableFrames))) {
-                  this._pinned = true;
-                  return; // start frozen immediately on pin
-                }
-              } else {
-                this._stableCount = 0;
-              }
-            } else if (posDelta < lockPosThresh && angleDegHL < lockRotThreshDeg) {
-              return; // freeze transform frame-by-frame without pinning
-            }
-          }
-
-          // 4. Smooth the position using a median filter (optional) then One-Euro filter.
+          // 3. Smooth the position using a median filter (optional) then One-Euro filter.
           // This reduces translational jitter (shakiness).
           let usePos = rawPosition;
           if (mode === 'ultra_lock' && medianWindow > 1) {
@@ -284,7 +230,7 @@ export async function GET(
             z: this.positionSmoother.z.filter(usePos.z, timestamp),
           };
 
-          // 4b. Apply a deadzone and an extra EMA blend to damp tiny residual motions further.
+          // 3b. Apply a deadzone and an extra EMA blend to damp tiny residual motions further.
           const currentPos = this.el.object3D.position;
           // Deadzone: if movement is below threshold, keep current axis value
           const dz = posDeadzone;
@@ -296,7 +242,7 @@ export async function GET(
           // EMA blend: current := lerp(current, target, emaFactor)
           currentPos.lerp(targetPos, emaFactor);
 
-          // 5. Smooth the rotation using spherical linear interpolation (Slerp).
+          // 4. Smooth the rotation using spherical linear interpolation (Slerp).
           // This provides a much more stable and natural rotational smoothing than filtering Euler angles.
           // It smoothly interpolates from the object's current orientation to the new raw orientation.
           const currentQuaternion = this.el.object3D.quaternion;
@@ -318,96 +264,7 @@ export async function GET(
             currentQuaternion.setFromEuler(e);
           }
 
-          // 6. Position already updated via EMA lerp. Quaternion updated via slerp above.
-        }
-      });
-      // World-space hard lock stabilizer that freezes a child's world transform
-      // by compensating parent jitter. Attach this to a child under the tracked target.
-      AFRAME.registerComponent('hard-lock-stabilizer', {
-        schema: {
-          pinStableFrames: { type: 'number', default: 1 },
-          lockPosThresh: { type: 'number', default: 0.01 },
-          lockRotThreshDeg: { type: 'number', default: 5 },
-          unlockPosThresh: { type: 'number', default: 0.2 },
-          unlockRotThreshDeg: { type: 'number', default: 35 }
-        },
-        init: function() {
-          this._pinned = false;
-          this._stable = 0;
-          this._lockedWorld = new THREE.Matrix4();
-          this._lastWorld = new THREE.Matrix4();
-          this._parentInv = new THREE.Matrix4();
-          this._tmpPos = new THREE.Vector3();
-          this._tmpQuat = new THREE.Quaternion();
-          this._tmpScale = new THREE.Vector3();
-          this.el.object3D.matrixAutoUpdate = false;
-        },
-        _worldPoseDelta: function(a, b) { // returns {posDelta, rotDeg}
-          const pa = new THREE.Vector3(), pb = new THREE.Vector3();
-          const qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
-          const sa = new THREE.Vector3(), sb = new THREE.Vector3();
-          a.decompose(pa, qa, sa);
-          b.decompose(pb, qb, sb);
-          const posDelta = Math.max(Math.abs(pa.x-pb.x), Math.abs(pa.y-pb.y), Math.abs(pa.z-pb.z));
-          const dot = THREE.MathUtils.clamp(qa.dot(qb), -1, 1);
-          const ang = 2 * Math.acos(Math.abs(dot));
-          return { posDelta, rotDeg: THREE.MathUtils.radToDeg(ang) };
-        },
-        tick: function() {
-          const parent = this.el.object3D.parent;
-          if (!parent || !parent.visible) {
-            if (this._pinned) console.log('[AR] HardLock: parent not visible, reset');
-            this._pinned = false;
-            this._stable = 0;
-            return;
-          }
-
-          // Save last computed world pose
-          this._lastWorld.copy(this.el.object3D.matrixWorld);
-
-          // Compute current world from parent and local
-          const currentWorld = new THREE.Matrix4().multiplyMatrices(parent.matrixWorld, this.el.object3D.matrix);
-          const { pinStableFrames, lockPosThresh, lockRotThreshDeg, unlockPosThresh, unlockRotThreshDeg } = this.data;
-
-          // If pinned, check unlock thresholds
-          if (this._pinned) {
-            const du = this._worldPoseDelta(currentWorld, this._lockedWorld);
-            if (du.posDelta >= unlockPosThresh || du.rotDeg >= unlockRotThreshDeg) {
-              this._pinned = false;
-              this._stable = 0;
-              console.log('[AR] HardLock: UNPIN (Δpos=', du.posDelta.toFixed(4), ', Δrot=', du.rotDeg.toFixed(2), ')');
-            }
-          }
-
-          // If not pinned, test for stability and pin
-          if (!this._pinned) {
-            const ds = this._worldPoseDelta(currentWorld, this._lastWorld);
-            if (ds.posDelta < lockPosThresh && ds.rotDeg < lockRotThreshDeg) {
-              this._stable++;
-              if (this._stable >= Math.max(1, Math.floor(pinStableFrames))) {
-                this._pinned = true;
-                this._lockedWorld.copy(currentWorld);
-                console.log('[AR] HardLock: PIN (stableFrames=', this._stable, ', threshPos=', lockPosThresh, ', threshRot=', lockRotThreshDeg, ')');
-              }
-            } else {
-              this._stable = 0;
-              this._lockedWorld.copy(currentWorld);
-            }
-          }
-
-          // Desired world is lockedWorld when pinned, otherwise currentWorld
-          const desiredWorld = this._pinned ? this._lockedWorld : currentWorld;
-
-          // Compute local = parentInv * desiredWorld
-          this._parentInv.copy(parent.matrixWorld).invert();
-          const newLocal = new THREE.Matrix4().multiplyMatrices(this._parentInv, desiredWorld);
-
-          // Apply to object3D
-          this.el.object3D.matrix.copy(newLocal);
-          this.el.object3D.matrix.decompose(this._tmpPos, this._tmpQuat, this._tmpScale);
-          this.el.object3D.position.copy(this._tmpPos);
-          this.el.object3D.quaternion.copy(this._tmpQuat);
-          this.el.object3D.scale.copy(this._tmpScale);
+          // 5. Position already updated via EMA lerp. Quaternion updated via slerp above.
         }
       });
     </script>
@@ -721,7 +578,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.5; filterBeta: 0.2; missTolerance: 12; warmupTolerance: 5;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.8; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 8;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -745,8 +602,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-entity id="contentRoot" hard-lock-stabilizer="pinStableFrames: 6; lockPosThresh: 0.03; lockRotThreshDeg: 10; unlockPosThresh: 0.1; unlockRotThreshDeg: 22">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.01; freq: 120; mincutoff: 0.01; beta: 0.3; dcutoff: 1.0; posDeadzone: 0.08; rotDeadzoneDeg: 18.0; emaFactor: 0.04; throttleHz: 30; medianWindow: 15; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -769,7 +625,6 @@ export async function GET(
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
           animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
         ></a-plane>
-        </a-entity>
       </a-entity>
     </a-scene>
 
