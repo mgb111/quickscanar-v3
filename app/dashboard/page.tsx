@@ -57,7 +57,7 @@ export default function Dashboard() {
         ctx.drawImage(markerImg, 0, 0)
 
         const qrCanvas = document.createElement('canvas')
-        const qrSize = Math.min(160, markerImg.width * 0.2)
+        const qrSize = Math.min(220, markerImg.width * 0.25)
 
         import('qrcode').then((QRCodeLib) => {
           QRCodeLib.toCanvas(qrCanvas, `${window.location.origin}/api/ar/${experience.id}`, {
@@ -71,11 +71,25 @@ export default function Dashboard() {
             }
 
             const padding = 16
+            // Top-right placement
             const qrX = canvas.width - qrSize - padding
-            const qrY = canvas.height - qrSize - padding
+            const qrY = padding
+            // Background including space for label
+            const label = 'AR Experience'
+            const labelFontSize = Math.max(12, Math.round(qrSize * 0.14))
+            ctx.font = `${labelFontSize}px sans-serif`
+            ctx.textBaseline = 'top'
+            const labelHeight = labelFontSize + 6
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-            ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8)
+            ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8 + labelHeight)
+            // Draw QR
             ctx.drawImage(qrCanvas, qrX, qrY)
+            // Draw label centered under QR
+            const textWidth = ctx.measureText(label).width
+            ctx.fillStyle = '#000000'
+            const textX = qrX + Math.max(0, (qrSize - textWidth) / 2)
+            const textY = qrY + qrSize + 4
+            ctx.fillText(label, textX, textY)
 
             setMarkerQRDataUrl(canvas.toDataURL('image/png'))
             setShowMarkerQR(experience.id)
@@ -185,7 +199,7 @@ export default function Dashboard() {
         
         // Create QR code for the AR camera link
         const qrCanvas = document.createElement('canvas')
-        const qrSize = Math.min(160, markerImg.width * 0.2) // 20% of marker width, max 160px
+        const qrSize = Math.min(220, markerImg.width * 0.25) // 25% of marker width, max 220px
         
         // Use QRCode.toCanvas for programmatic generation
         import('qrcode').then((QRCodeLib) => {
@@ -202,17 +216,28 @@ export default function Dashboard() {
               return
             }
             
-            // Calculate position for QR code (bottom-right corner with padding)
+            // Position QR code (top-right corner with padding) and draw label
             const padding = 16
             const qrX = canvas.width - qrSize - padding
-            const qrY = canvas.height - qrSize - padding
-            
-            // Add white background for QR code (slightly tighter)
+            const qrY = padding
+
+            // Background including space for label
+            const label = 'AR Experience'
+            const labelFontSize = Math.max(12, Math.round(qrSize * 0.14))
+            ctx.font = `${labelFontSize}px sans-serif`
+            ctx.textBaseline = 'top'
+            const labelHeight = labelFontSize + 6
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-            ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8)
-            
+            ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8 + labelHeight)
+
             // Draw QR code
             ctx.drawImage(qrCanvas, qrX, qrY)
+            // Draw label centered under QR
+            const textWidth = ctx.measureText(label).width
+            ctx.fillStyle = '#000000'
+            const textX = qrX + Math.max(0, (qrSize - textWidth) / 2)
+            const textY = qrY + qrSize + 4
+            ctx.fillText(label, textX, textY)
             
             // Download the combined image
             const link = document.createElement('a')
