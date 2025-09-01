@@ -61,7 +61,10 @@ async function resolveUserIdByPolarCustomerId(polarCustomerId: string): Promise<
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if Supabase is configured
+    const body = await request.text()
+    const event = JSON.parse(body)
+    
+    console.log(`[WEBHOOK] Received event: ${event.type} at ${new Date().toISOString()}`)
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase not configured for Polar webhook')
       return NextResponse.json(
@@ -70,11 +73,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.text()
     // TODO: Implement proper signature verification using POLAR_WEBHOOK_SECRET
     // const signature = request.headers.get('polar-signature')
-    
-    const event = JSON.parse(body)
     console.log('Polar.sh webhook received:', event.type)
     // Minimal IDs to help correlate in logs
     try {
