@@ -25,13 +25,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get user's subscription to determine plan limits
+    // Get user's subscription to determine limits from new Zapier-managed table
     const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .in('status', ['active', 'trialing'])
-      .order('created_at', { ascending: false })
+      .from('subscriptions')
+      .select('plan, status')
+      .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+      .eq('status', 'active')
       .maybeSingle()
 
     // Count user's AR experiences (not campaigns)
@@ -62,29 +61,32 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine plan limits based on subscription
-    let limit = 1 // Free plan default
+    let usageLimit = 1 // Free plan default
     let planName = 'Free Plan'
 
     if (subscription && subscription.status === 'active') {
-      // Map price_id to plan details (hardcoded since subscription_plans table doesn't exist)
-      const priceId = subscription.price_id
+      const planType = subscription.plan?.toLowerCase() as keyof typeof planLimits
       
-      if (priceId === '911e3835-9350-440e-a4d3-86702b91f49f' || priceId === 'price_monthly') {
-        limit = 3 // Monthly plan: 3 campaigns
-        planName = 'QuickScanAR Monthly'
-      } else if (priceId === '70818a87-09b8-48a4-a44e-3ee0cfda4b17' || priceId === 'price_yearly' || priceId === 'price_annual') {
-        limit = 36 // Yearly plan: 36 campaigns (3 per month × 12)
-        planName = 'QuickScanAR Annual'
+      // Map plan names to limits
+      const planLimits = {
+        'monthly': { limit: 3, name: 'Monthly Plan' },
+        'annual': { limit: 36, name: 'Annual Plan' },
+        'pro': { limit: 10, name: 'Pro Plan' }
+      }
+      
+      if (planLimits[planType]) {
+        usageLimit = planLimits[planType].limit
+        planName = planLimits[planType].name
       } else {
-        // Default to monthly if unknown price_id
-        limit = 3
-        planName = 'QuickScanAR Monthly'
+        // Default to monthly if unknown plan
+        usageLimit = 3
+        planName = 'Monthly Plan'
       }
     }
 
     return NextResponse.json({
       used: experienceCount || 0,
-      limit: limit,
+      limit: usageLimit,
       plan_name: planName
     })
   } catch (error) {
