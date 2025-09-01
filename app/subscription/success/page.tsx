@@ -26,7 +26,7 @@ interface SubscriptionSuccess {
 }
 
 function SubscriptionSuccessContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionSuccess | null>(null)
@@ -48,14 +48,26 @@ function SubscriptionSuccessContent() {
       return
     }
 
-    if (user) {
+    if (user && supabase) {
       // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
         try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            toast.error("Authentication session not found. Please sign in again.");
+            setIsLoading(false);
+            return;
+          }
+
+          const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          };
+
           const linkPromise = fetch('/api/polar/link-subscription', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            headers,
+            credentials: 'include', // Keep for defense-in-depth
             body: JSON.stringify({
               checkout_id: checkoutId,
               user_id: user.id,
@@ -93,13 +105,28 @@ function SubscriptionSuccessContent() {
         }
       })()
     }
-  }, [checkoutId, user, router, subIdParam, custIdParam])
+  }, [checkoutId, user, router, subIdParam, custIdParam, supabase])
 
   const fetchSubscriptionDetails = async (): Promise<boolean> => {
-    if (!checkoutId || !user) return false
+    if (!checkoutId || !user || !supabase) return false
 
     try {
-      const response = await fetch(`/api/get-subscription`, { cache: 'no-store', credentials: 'include' })
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Don't toast here, as it might be an intermediate state during polling
+        console.warn('No session found while fetching subscription details.');
+        return false;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+
+      const response = await fetch(`/api/get-subscription`, { 
+        cache: 'no-store', 
+        credentials: 'include',
+        headers 
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
