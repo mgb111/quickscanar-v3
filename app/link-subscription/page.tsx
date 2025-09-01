@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-export default function LinkSubscriptionPage() {
+function LinkSubscriptionContent() {
   const [status, setStatus] = useState('Linking your subscription...')
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -92,5 +92,20 @@ export default function LinkSubscriptionPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LinkSubscriptionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LinkSubscriptionContent />
+    </Suspense>
   )
 }
