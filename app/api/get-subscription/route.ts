@@ -10,16 +10,28 @@ export async function GET(request: NextRequest) {
   let user = null;
 
   // Try to get user from cookies first
-  const { data: { user: cookieUser } } = await supabase.auth.getUser()
-  user = cookieUser;
+  try {
+    const { data: { user: cookieUser } } = await supabase.auth.getUser()
+    user = cookieUser;
+    console.log("Cookie user:", cookieUser?.id);
+  } catch (error) {
+    console.log("Cookie auth failed:", error);
+  }
 
   // If no user from cookies, try JWT token from Authorization header
   if (!user) {
     const authHeader = request.headers.get('authorization');
+    console.log("Auth header:", authHeader?.substring(0, 20) + "...");
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const { data: { user: jwtUser } } = await supabase.auth.getUser(token);
-      user = jwtUser;
+      try {
+        const { data: { user: jwtUser }, error: jwtError } = await supabase.auth.getUser(token);
+        console.log("JWT user:", jwtUser?.id, "JWT error:", jwtError);
+        user = jwtUser;
+      } catch (error) {
+        console.log("JWT auth failed:", error);
+      }
     }
   }
 
@@ -28,7 +40,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  console.log("Authenticated user:", user.id);
+
   try {
+    // First, let's check if there are any subscriptions for this user at all
+    const { data: allUserSubs, error: allSubsError } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+
+    console.log("All subscriptions for user:", allUserSubs);
+    console.log("All subscriptions error:", allSubsError);
+
     const { data, error } = await supabase
       .from('user_subscriptions')
       .select('*')
@@ -37,6 +60,9 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .maybeSingle()
 
+    console.log("Active subscription data:", data);
+    console.log("Active subscription error:", error);
+
     if (error) {
       console.error('Error fetching subscription:', error)
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 })
@@ -44,6 +70,7 @@ export async function GET(request: NextRequest) {
 
     // If no active subscription found, return null
     if (!data) {
+      console.log("No active subscription found for user:", user.id);
       return NextResponse.json({ subscription: null })
     }
 

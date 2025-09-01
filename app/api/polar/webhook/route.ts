@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
-// Use the available environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const POLAR_API_URL = process.env.POLAR_API_URL || 'https://api.polar.sh'
+const POLAR_API_KEY = process.env.POLAR_API_KEY!
+const POLAR_WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase environment variables for Polar webhook')
+// Webhook signature verification
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  if (!secret || !signature) return false
+  
+  try {
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload, 'utf8')
+      .digest('hex')
+    
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    )
+  } catch (error) {
+    console.error('Signature verification failed:', error)
+    return false
+  }
 }
-
-// Note: Schema does not include a plan_name column; we avoid storing it.
-
-// Polar API envs (support sandbox vs prod via env; default to sandbox in non-production)
-// Note: Polar moved API root from /api/v1 to /v1. Use /v1 for production by default.
-const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/v1' : 'https://sandbox-api.polar.sh/v1')
-const POLAR_API_KEY = process.env.POLAR_API_KEY
 
 async function fetchPolarCustomerUserId(polarCustomerId: string): Promise<string | null> {
   try {
@@ -91,20 +103,30 @@ async function resolveUserIdByPolarCustomerId(polarCustomerId: string): Promise<
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-    const event = JSON.parse(body)
     
-    console.log(`[WEBHOOK] Received event: ${event.type} at ${new Date().toISOString()}`)
+    // Verify webhook signature for security
+    if (POLAR_WEBHOOK_SECRET) {
+      const signature = request.headers.get('polar-signature') || request.headers.get('x-polar-signature')
+      if (!signature) {
+        console.error('Missing webhook signature')
+        return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+      }
+      
+      if (!verifyWebhookSignature(body, signature.replace('sha256=', ''), POLAR_WEBHOOK_SECRET)) {
+        console.error('Invalid webhook signature')
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+    } else {
+      console.warn('POLAR_WEBHOOK_SECRET not configured - webhook signature verification disabled')
+    }
+    
+    const event = JSON.parse(body)
+    console.log(`[WEBHOOK] Verified event: ${event.type} at ${new Date().toISOString()}`)
+    
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase not configured for Polar webhook')
-      return NextResponse.json(
-        { error: 'Service not configured' },
-        { status: 503 }
-      )
+      return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
     }
-
-    // TODO: Implement proper signature verification using POLAR_WEBHOOK_SECRET
-    // const signature = request.headers.get('polar-signature')
-    console.log('Polar.sh webhook received:', event.type)
     // Minimal IDs to help correlate in logs
     try {
       console.log('Payload IDs snapshot:', {
