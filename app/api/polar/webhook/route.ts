@@ -125,7 +125,11 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: any) {
   try {
-    let resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    // Resolve user_id: check top-level, then DB, then Polar customer metadata
+    let resolvedUserId = subscription.user_id
+    if (!resolvedUserId) {
+      resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    }
     if (!resolvedUserId) {
       // Try to fetch from Polar customer metadata as a fallback
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
@@ -164,7 +168,11 @@ async function handleSubscriptionCreated(subscription: any) {
 async function handleSubscriptionUpdated(subscription: any) {
   try {
     // Resolve user_id if possible for backfill
-    let resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    // Resolve user_id: check top-level, then DB, then Polar customer metadata
+    let resolvedUserId = subscription.user_id
+    if (!resolvedUserId) {
+      resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    }
     if (!resolvedUserId) {
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
     }
