@@ -59,10 +59,6 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action')
     const userId = searchParams.get('userId')
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
-    }
-
     switch (action) {
       case 'health':
         return NextResponse.json({ 
@@ -72,10 +68,12 @@ export async function GET(request: NextRequest) {
           polarApiUrl: POLAR_API_URL
         })
       case 'subscription':
+        if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         return await getSubscription(userId)
       case 'prices':
         return await getPrices()
       case 'customer':
+        if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         return await getCustomer(userId)
       default:
         // Gracefully handle missing/unknown actions to avoid noisy 400s from probes
