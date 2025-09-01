@@ -49,7 +49,7 @@ interface CampaignUsage {
 }
 
 function SubscriptionPageContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null)
   const [campaignUsage, setCampaignUsage] = useState<CampaignUsage | null>(null)
@@ -192,10 +192,18 @@ function SubscriptionPageContent() {
   }, [])
 
   const fetchCurrentSubscription = async () => {
-    if (!user) return
+    if (!user || !supabase) return
     
     try {
-      const response = await fetch('/api/get-subscription')
+      // Get JWT token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: Record<string, string> = {}
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+      
+      const response = await fetch('/api/get-subscription', { headers })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
