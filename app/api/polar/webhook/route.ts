@@ -127,14 +127,19 @@ async function handleSubscriptionCreated(subscription: any) {
       // Try to fetch from Polar customer metadata as a fallback
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
     }
+    const priceId = subscription?.price?.id
+      || subscription?.price_id
+      || subscription?.price?.polar_price_id
+      || 'unknown'
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
       plan_name: subscription?.price?.product?.name || 'Unknown Plan',
+      price_id: priceId, // REQUIRED by schema (NOT NULL)
       status: subscription.status,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end,
-      cancel_at_period_end: subscription.cancel_at_period_end,
+      canceled_at: null, // schema uses canceled_at TIMESTAMPTZ
       created_at: subscription.created_at,
       updated_at: new Date().toISOString()
     }
@@ -161,15 +166,21 @@ async function handleSubscriptionUpdated(subscription: any) {
     if (!resolvedUserId) {
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
     }
+    const priceId = subscription?.price?.id
+      || subscription?.price_id
+      || subscription?.price?.polar_price_id
+      || 'unknown'
 
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
       plan_name: subscription?.price?.product?.name || 'Unknown Plan',
+      price_id: priceId, // REQUIRED by schema (NOT NULL)
       status: subscription.status,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end,
-      cancel_at_period_end: subscription.cancel_at_period_end,
+      // keep canceled_at null unless we explicitly get a cancel event
+      canceled_at: subscription.canceled_at || null,
       updated_at: new Date().toISOString()
     }
     if (resolvedUserId) record.user_id = resolvedUserId
@@ -194,6 +205,7 @@ async function handleSubscriptionDeleted(subscription: any) {
       .from('user_subscriptions')
       .update({
         status: 'canceled',
+        canceled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('polar_subscription_id', subscription.id)
