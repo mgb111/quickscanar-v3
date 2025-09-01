@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 // Polar API envs (ensure these are set in your environment)
 // Note: Polar moved API root from /api/v1 to /v1.
@@ -9,12 +11,18 @@ const POLAR_API_KEY = process.env.POLAR_API_KEY
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const { checkout_id, user_id: bodyUserId, polar_subscription_id: bodySubId, polar_customer_id: bodyCustId } = body || {}
+  
+  // Use service role client for admin operations
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
   }
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+  
+  // Also get user from auth context
+  const supabase = createRouteHandlerClient({ cookies })
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
   if (!checkout_id || typeof checkout_id !== 'string') {
     return NextResponse.json({ error: 'checkout_id is required' }, { status: 400 })
@@ -23,21 +31,23 @@ export async function POST(request: NextRequest) {
   // We'll proceed even if POLAR_API_KEY is missing/invalid; we'll rely on webhook or provided IDs.
 
   try {
-    // Try to identify the user from auth cookie if possible; optional for service role
-    let authedUserId: string | null = bodyUserId || null
-    try {
-      if (!authedUserId) {
-        const { data } = await supabase.auth.getUser()
-        authedUserId = data?.user?.id ?? null
-      }
-    } catch {}
+    // Try to identify the user from auth cookie if possible
+    let authedUserId: string | null = bodyUserId || authUser?.id || null
+    console.log('Link subscription - User ID:', authedUserId, 'Checkout ID:', checkout_id)
+    
+    if (!authedUserId) {
+      console.warn('No user ID found for linking subscription')
+    }
 
     // 1. Determine subscription and customer IDs
     let subscription_id: string | null = bodySubId || null
     let customer_id: string | null = bodyCustId || null
     let checkoutSession: any = null
+    let price_id: string = 'unknown'
+    
     if (!subscription_id || !customer_id) {
       if (POLAR_API_KEY) {
+        console.log('Fetching checkout session from Polar API...')
         const polarResponse = await fetch(`${POLAR_API_URL}/checkouts/${checkout_id}`,
           {
             headers: {
@@ -76,6 +86,13 @@ export async function POST(request: NextRequest) {
         console.log('Available fields:', Object.keys(checkoutSession))
         subscription_id = checkoutSession.subscription_id
         customer_id = checkoutSession.customer_id
+        price_id = checkoutSession.product_price_id || checkoutSession.price_id || 'unknown'
+        
+        // If user_id is in checkout metadata, use it
+        if (!authedUserId && checkoutSession.metadata?.user_id) {
+          authedUserId = checkoutSession.metadata.user_id
+          console.log('Found user_id in checkout metadata:', authedUserId)
+        }
       } else {
         console.warn('POLAR_API_KEY missing; cannot fetch checkout. Relying on webhook to link later.')
         if (authedUserId) {
@@ -137,6 +154,7 @@ export async function POST(request: NextRequest) {
                 currency: latestSubscription.currency
               }
               console.log('Subscription details:', subscriptionDetails)
+              price_id = latestSubscription.price_id || 'unknown'
             }
           }
         } catch (e) {
@@ -157,8 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Upsert the subscription details into our database, linking it to the user
-    // Extract price_id from checkout session or use the one from subscription lookup
-    const price_id = checkoutSession?.product_price_id || 'unknown'
+    console.log('Linking subscription:', subscription_id, 'to user:', authedUserId, 'with price_id:', price_id)
     
     // Build the row; only include user_id when we have it
     const upsertRow: Record<string, any> = {
@@ -170,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
     if (authedUserId) upsertRow.user_id = authedUserId
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await supabaseAdmin
       .from('user_subscriptions')
       .upsert(
         upsertRow,
@@ -183,7 +200,26 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Successfully linked subscription ${subscription_id} to user ${authedUserId || 'unknown (no session)'}`)
-    return NextResponse.json({ success: true, subscription_id, linked: true })
+    
+    // Verify the link was successful
+    if (authedUserId) {
+      const { data: verifyData } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', authedUserId)
+        .eq('polar_subscription_id', subscription_id)
+        .maybeSingle()
+      
+      console.log('Verification - subscription linked:', verifyData ? 'YES' : 'NO')
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      subscription_id, 
+      linked: true, 
+      user_id: authedUserId,
+      price_id 
+    })
 
   } catch (error) {
     console.error('Unexpected error in link-subscription handler:', error)
