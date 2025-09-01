@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Polar API envs (ensure these are set in your environment)
-const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/api/v1' : 'https://sandbox-api.polar.sh/v1')
+// Note: Polar moved API root from /api/v1 to /v1.
+const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/v1' : 'https://sandbox-api.polar.sh/v1')
 const POLAR_API_KEY = process.env.POLAR_API_KEY
 
 export async function POST(request: NextRequest) {
@@ -48,7 +49,8 @@ export async function POST(request: NextRequest) {
         if (!polarResponse.ok) {
           const errorBody = await polarResponse.text()
           console.error(`Failed to fetch Polar checkout ${checkout_id}:`, errorBody)
-          // Gracefully degrade: record a placeholder pending row for the user (if available) and rely on webhook
+          // Gracefully degrade: do NOT insert placeholder rows (schema requires non-null IDs).
+          // If we know the user, attempt an update to an existing row only.
           if (authedUserId) {
             try {
               const now = new Date().toISOString()
@@ -56,14 +58,9 @@ export async function POST(request: NextRequest) {
                 .from('user_subscriptions')
                 .update({ status: 'pending_webhook', updated_at: now })
                 .eq('user_id', authedUserId)
-              if (updErr) console.warn('Pending placeholder update failed:', updErr)
-              // Try insert if no existing row
-              const { error: insErr } = await supabase
-                .from('user_subscriptions')
-                .insert({ user_id: authedUserId, status: 'pending_webhook', updated_at: now })
-              if (insErr) console.warn('Pending placeholder insert may have failed (often ok if row exists):', insErr)
+              if (updErr) console.warn('Pending placeholder update failed (non-fatal):', updErr)
             } catch (e) {
-              console.warn('Unable to create pending placeholder row:', e)
+              console.warn('Unable to update pending placeholder row:', e)
             }
           }
           return NextResponse.json({
@@ -85,13 +82,9 @@ export async function POST(request: NextRequest) {
               .from('user_subscriptions')
               .update({ status: 'pending_webhook', updated_at: now })
               .eq('user_id', authedUserId)
-            if (updErr) console.warn('Pending placeholder update failed:', updErr)
-            const { error: insErr } = await supabase
-              .from('user_subscriptions')
-              .insert({ user_id: authedUserId, status: 'pending_webhook', updated_at: now })
-            if (insErr) console.warn('Pending placeholder insert may have failed (often ok if row exists):', insErr)
+            if (updErr) console.warn('Pending placeholder update failed (non-fatal):', updErr)
           } catch (e) {
-            console.warn('Unable to create pending placeholder row:', e)
+            console.warn('Unable to update pending placeholder row:', e)
           }
         }
         return NextResponse.json({
