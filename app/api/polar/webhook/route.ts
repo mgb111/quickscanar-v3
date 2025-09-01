@@ -9,6 +9,31 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase environment variables for Polar webhook')
 }
 
+// Polar API envs (support sandbox vs prod via env; default to sandbox in non-production)
+const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/api/v1' : 'https://sandbox-api.polar.sh/v1')
+const POLAR_API_KEY = process.env.POLAR_API_KEY
+
+async function fetchPolarCustomerUserId(polarCustomerId: string): Promise<string | null> {
+  try {
+    if (!POLAR_API_KEY) {
+      return null
+    }
+    const resp = await fetch(`${POLAR_API_URL}/customers/${polarCustomerId}`, {
+      headers: {
+        Authorization: `Bearer ${POLAR_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    if (!resp.ok) return null
+    const customer = await resp.json()
+    const userId = customer?.metadata?.user_id || customer?.metadata?.supabase_user_id || null
+    return typeof userId === 'string' ? userId : null
+  } catch (e) {
+    console.warn('fetchPolarCustomerUserId failed:', e)
+    return null
+  }
+}
+
 const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 // Helper: resolve our auth user_id from a Polar customer_id stored in DB
@@ -97,7 +122,11 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: any) {
   try {
-    const resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    let resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    if (!resolvedUserId) {
+      // Try to fetch from Polar customer metadata as a fallback
+      resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
+    }
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
@@ -174,7 +203,10 @@ async function handlePaymentSucceeded(order: any) {
     // When an order is paid, the subscription is typically created or renewed.
     // Let's ensure the subscription status is active.
     if (order.subscription_id) {
-      const resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
+      let resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
+      if (!resolvedUserId && order.customer_id) {
+        resolvedUserId = await fetchPolarCustomerUserId(order.customer_id)
+      }
       const { error } = await supabase
         .from('user_subscriptions')
         .update({
@@ -204,7 +236,10 @@ async function handlePaymentSucceeded(order: any) {
     }
 
     // Log the successful payment in the payment_history table
-    const resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
+    let resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
+    if (!resolvedUserId && order.customer_id) {
+      resolvedUserId = await fetchPolarCustomerUserId(order.customer_id)
+    }
     const { error: paymentError } = await supabase
       .from('payment_history')
       .insert({
