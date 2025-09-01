@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/components/AuthProvider'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { 
   CreditCard, 
@@ -42,12 +42,13 @@ interface UserSubscription {
   is_active: boolean
 }
 
-export default function SubscriptionPage() {
+function SubscriptionPageContent() {
   const { user, loading } = useAuth()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Set plans immediately - only the 3 plans that actually exist
@@ -82,7 +83,7 @@ export default function SubscriptionPage() {
         ],
         popular: true, // Shows "Most Popular" badge
         ctaText: 'Start Monthly Plan',
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+        polarCheckoutUrl: process.env.NEXT_PUBLIC_POLAR_HOBBY_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=hobby',
       },
       {
         id: 'price_yearly',
@@ -99,7 +100,7 @@ export default function SubscriptionPage() {
         ],
         savingsText: 'Save $89/year',
         ctaText: 'Start Annual',
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+        polarCheckoutUrl: process.env.NEXT_PUBLIC_POLAR_PRO_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=pro',
       }
     ]
     console.log('🔍 Setting actual plans:', actualPlans)
@@ -110,6 +111,40 @@ export default function SubscriptionPage() {
       fetchCurrentSubscription()
     }
   }, [user])
+
+  useEffect(() => {
+    // This effect runs once on mount to link the subscription if returning from checkout
+    const linkSubscriptionFromCheckout = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const checkoutId = params.get('checkout_id')
+
+      if (checkoutId) {
+        try {
+          const response = await fetch('/api/polar/link-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ checkout_id: checkoutId }),
+          })
+
+          if (response.ok) {
+            console.log('Subscription linked successfully.')
+            // Refresh data to show the new subscription immediately
+            window.location.href = '/subscription' // Clear params and refetch
+          } else {
+            const errorData = await response.json()
+            setError(`Failed to link subscription: ${errorData.error}`)
+          }
+        } catch (err) {
+          console.error('Error calling link-subscription API:', err)
+          setError('An error occurred while finalizing your subscription.')
+        }
+      }
+    }
+
+    linkSubscriptionFromCheckout()
+  }, []) // Empty dependency array ensures it runs only once
 
   // Add Polar.sh checkout script when component mounts
   useEffect(() => {
@@ -411,5 +446,13 @@ export default function SubscriptionPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SubscriptionPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SubscriptionPageContent />
+    </Suspense>
   )
 }
