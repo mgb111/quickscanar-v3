@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Get user's subscription to determine plan limits
     const { data: subscription } = await supabase
       .from('user_subscriptions')
-      .select('*, subscription_plans!inner(*)')
+      .select('*')
       .eq('user_id', user.id)
       .in('status', ['active', 'trialing'])
       .order('created_at', { ascending: false })
@@ -66,28 +66,19 @@ export async function GET(request: NextRequest) {
     let planName = 'Free Plan'
 
     if (subscription && subscription.status === 'active') {
-      // Get limits from subscription_plans and subscription_limits tables
-      const { data: planLimits } = await supabase
-        .from('subscription_limits')
-        .select('*')
-        .eq('plan_id', subscription.subscription_plans.id)
-        .eq('feature', 'ar_experiences')
-        .maybeSingle()
-
-      if (planLimits) {
-        limit = planLimits.limit_value
-        planName = subscription.subscription_plans.name
+      // Map price_id to plan details (hardcoded since subscription_plans table doesn't exist)
+      const priceId = subscription.price_id
+      
+      if (priceId === '911e3835-9350-440e-a4d3-86702b91f49f' || priceId === 'price_monthly') {
+        limit = 3 // Monthly plan: 3 campaigns
+        planName = 'QuickScanAR Monthly'
+      } else if (priceId === '70818a87-09b8-48a4-a44e-3ee0cfda4b17' || priceId === 'price_yearly' || priceId === 'price_annual') {
+        limit = 36 // Yearly plan: 36 campaigns (3 per month × 12)
+        planName = 'QuickScanAR Annual'
       } else {
-        // Fallback to hardcoded mapping
-        const priceId = subscription.price_id
-        
-        if (priceId === '911e3835-9350-440e-a4d3-86702b91f49f' || priceId === 'price_monthly') {
-          limit = 3 // Monthly plan: 3 campaigns
-          planName = 'QuickScanAR Monthly'
-        } else if (priceId === 'price_yearly' || priceId === 'price_annual') {
-          limit = 36 // Yearly plan: 36 campaigns (3 per month × 12)
-          planName = 'QuickScanAR Annual'
-        }
+        // Default to monthly if unknown price_id
+        limit = 3
+        planName = 'QuickScanAR Monthly'
       }
     }
 
