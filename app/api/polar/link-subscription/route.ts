@@ -7,7 +7,7 @@ const POLAR_API_KEY = process.env.POLAR_API_KEY
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { checkout_id, polar_subscription_id: bodySubId, polar_customer_id: bodyCustId } = body || {}
+  const { checkout_id, user_id: bodyUserId, polar_subscription_id: bodySubId, polar_customer_id: bodyCustId } = body || {}
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseKey) {
@@ -23,10 +23,12 @@ export async function POST(request: NextRequest) {
 
   try {
     // Try to identify the user from auth cookie if possible; optional for service role
-    let authedUserId: string | null = null
+    let authedUserId: string | null = bodyUserId || null
     try {
-      const { data } = await supabase.auth.getUser()
-      authedUserId = data?.user?.id ?? null
+      if (!authedUserId) {
+        const { data } = await supabase.auth.getUser()
+        authedUserId = data?.user?.id ?? null
+      }
     } catch {}
 
     // 1. Determine subscription and customer IDs
@@ -46,7 +48,24 @@ export async function POST(request: NextRequest) {
         if (!polarResponse.ok) {
           const errorBody = await polarResponse.text()
           console.error(`Failed to fetch Polar checkout ${checkout_id}:`, errorBody)
-          // Gracefully degrade: rely on webhook to link later
+          // Gracefully degrade: record a placeholder pending row for the user (if available) and rely on webhook
+          if (authedUserId) {
+            try {
+              const now = new Date().toISOString()
+              const { error: updErr } = await supabase
+                .from('user_subscriptions')
+                .update({ status: 'pending_webhook', updated_at: now })
+                .eq('user_id', authedUserId)
+              if (updErr) console.warn('Pending placeholder update failed:', updErr)
+              // Try insert if no existing row
+              const { error: insErr } = await supabase
+                .from('user_subscriptions')
+                .insert({ user_id: authedUserId, status: 'pending_webhook', updated_at: now })
+              if (insErr) console.warn('Pending placeholder insert may have failed (often ok if row exists):', insErr)
+            } catch (e) {
+              console.warn('Unable to create pending placeholder row:', e)
+            }
+          }
           return NextResponse.json({
             linked: false,
             queued: true,
@@ -59,6 +78,22 @@ export async function POST(request: NextRequest) {
         customer_id = checkoutSession.customer_id
       } else {
         console.warn('POLAR_API_KEY missing; cannot fetch checkout. Relying on webhook to link later.')
+        if (authedUserId) {
+          try {
+            const now = new Date().toISOString()
+            const { error: updErr } = await supabase
+              .from('user_subscriptions')
+              .update({ status: 'pending_webhook', updated_at: now })
+              .eq('user_id', authedUserId)
+            if (updErr) console.warn('Pending placeholder update failed:', updErr)
+            const { error: insErr } = await supabase
+              .from('user_subscriptions')
+              .insert({ user_id: authedUserId, status: 'pending_webhook', updated_at: now })
+            if (insErr) console.warn('Pending placeholder insert may have failed (often ok if row exists):', insErr)
+          } catch (e) {
+            console.warn('Unable to create pending placeholder row:', e)
+          }
+        }
         return NextResponse.json({
           linked: false,
           queued: true,

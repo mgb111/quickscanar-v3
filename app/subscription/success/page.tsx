@@ -33,6 +33,9 @@ function SubscriptionSuccessContent() {
   const [isLoading, setIsLoading] = useState(true)
 
   const checkoutId = searchParams.get('checkout_id')
+  // Capture optional IDs that Polar may include in success URL
+  const subIdParam = searchParams.get('subscription_id') || searchParams.get('subscriptionId')
+  const custIdParam = searchParams.get('customer_id') || searchParams.get('customerId')
 
   useEffect(() => {
     if (!checkoutId) {
@@ -47,7 +50,13 @@ function SubscriptionSuccessContent() {
           const res = await fetch('/api/polar/link-subscription', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ checkout_id: checkoutId })
+            body: JSON.stringify({ 
+              checkout_id: checkoutId,
+              user_id: user.id,
+              // Forward optional IDs to help linking without Polar API
+              polar_subscription_id: subIdParam || undefined,
+              polar_customer_id: custIdParam || undefined,
+            })
           })
           if (!res.ok) {
             console.warn('link-subscription returned non-OK status', res.status)
@@ -65,7 +74,7 @@ function SubscriptionSuccessContent() {
     if (!checkoutId || !user) return
 
     try {
-      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`)
+      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`, { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {

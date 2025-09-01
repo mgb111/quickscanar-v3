@@ -138,7 +138,13 @@ async function getSubscription(userId: string) {
     }
 
     if (!subscription) {
-      return NextResponse.json({ subscription: null })
+      // No row yet; likely waiting for webhook/linking
+      return NextResponse.json({ subscription: { user_id: userId, status: 'pending_webhook' } })
+    }
+
+    // If we can't query Polar, just return the DB row
+    if (!process.env.POLAR_API_KEY || !subscription.polar_subscription_id) {
+      return NextResponse.json({ subscription })
     }
 
     // Fetch latest data from Polar.sh
