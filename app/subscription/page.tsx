@@ -233,17 +233,17 @@ function SubscriptionPageContent() {
 
   const getFeaturesFromPriceId = (priceId: string): string[] => {
     if (!priceId || priceId === 'unknown') {
-      return ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support']
+      return ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support']
     }
     
     // Map price IDs to features
     const featuresMap: Record<string, string[]> = {
-      '911e3835-9350-440e-a4d3-86702b91f49f': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_monthly': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_yearly': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+      '911e3835-9350-440e-a4d3-86702b91f49f': ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_monthly': ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_yearly': ['Up to 36 AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
     }
     
-    return featuresMap[priceId] || ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support']
+    return featuresMap[priceId] || ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support']
   }
 
   const fetchCampaignUsage = async () => {
@@ -446,12 +446,10 @@ function SubscriptionPageContent() {
                 <div className="text-black">
                   <span className="text-2xl font-bold text-red-600">{campaignUsage.used}</span>
                   <span className="text-black mx-2">/</span>
-                  <span className="text-lg">
-                    {campaignUsage.limit === -1 ? 'Unlimited' : campaignUsage.limit}
-                  </span>
+                  <span className="text-lg">{campaignUsage.limit}</span>
                   <span className="text-black ml-2">campaigns used</span>
                 </div>
-                {campaignUsage.limit !== -1 && (
+                {campaignUsage.limit > 0 && (
                   <div className="mt-3">
                     <div className="bg-gray-200 rounded-full h-2">
                       <div 
@@ -468,13 +466,7 @@ function SubscriptionPageContent() {
                 )}
               </div>
               <div className="flex items-center justify-center">
-                {campaignUsage.limit === -1 ? (
-                  <div className="text-center">
-                    <CheckCircle className="h-12 w-12 text-red-600 mx-auto mb-2" />
-                    <p className="text-black font-medium">Unlimited Access</p>
-                    <p className="text-sm text-gray-600">Create as many campaigns as you need</p>
-                  </div>
-                ) : campaignUsage.used >= campaignUsage.limit ? (
+                {campaignUsage.used >= campaignUsage.limit ? (
                   <div className="text-center">
                     <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-2" />
                     <p className="text-black font-medium">Limit Reached</p>

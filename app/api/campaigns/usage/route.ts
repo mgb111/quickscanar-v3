@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
       const priceId = subscription.price_id
       
       if (priceId === '911e3835-9350-440e-a4d3-86702b91f49f' || priceId === 'price_monthly') {
-        limit = -1 // Unlimited for paid plans
+        limit = 3 // Monthly plan: 3 campaigns
         planName = 'QuickScanAR Monthly'
       } else if (priceId === 'price_yearly') {
-        limit = -1 // Unlimited for paid plans
+        limit = 36 // Yearly plan: 36 campaigns
         planName = 'QuickScanAR Annual'
       }
     }
