@@ -95,9 +95,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!subscription_id || !customer_id) {
-      console.error('Checkout session is missing subscription_id or customer_id', { checkout_id })
-      return NextResponse.json({ error: 'Invalid checkout session data' }, { status: 400 })
+    // Handle race condition: if sub ID is missing post-payment, accept and rely on webhook
+    if (!customer_id) {
+      console.error('Checkout session is missing critical customer_id', { checkout_id })
+      return NextResponse.json({ error: 'Invalid checkout session: missing customer_id' }, { status: 400 })
+    }
+    if (!subscription_id) {
+      console.log(`Checkout ${checkout_id} is pending subscription_id; accepting and awaiting webhook.`)
+      // Gracefully accept and let the webhook handle the final linking.
+      // We can't create a placeholder row without subscription_id due to NOT NULL constraint.
+      return NextResponse.json({
+        linked: false,
+        queued: true,
+        message: 'Subscription creation is pending. It will be linked via webhook shortly.'
+      }, { status: 202 })
     }
 
     // 2. Upsert the subscription details into our database, linking it to the user

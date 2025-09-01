@@ -309,7 +309,7 @@ export default function Dashboard() {
   const fetchSubscription = async () => {
     if (!user) return
     try {
-      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`)
+      const response = await fetch('/api/get-subscription')
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
