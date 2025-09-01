@@ -41,7 +41,7 @@ function SubscriptionSuccessContent() {
     }
 
     if (user) {
-      // Proactively link subscription using checkout_id, then fetch details
+      // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
         try {
           const res = await fetch('/api/polar/link-subscription', {
@@ -55,7 +55,7 @@ function SubscriptionSuccessContent() {
         } catch (e) {
           console.warn('link-subscription call failed:', e)
         } finally {
-          fetchSubscriptionDetails()
+          pollSubscriptionDetails()
         }
       })()
     }
@@ -94,6 +94,15 @@ function SubscriptionSuccessContent() {
       toast.error('Failed to load subscription details')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Poll subscription details for a short period to allow webhook/linking to complete
+  const pollSubscriptionDetails = async (maxAttempts = 8, delayMs = 2500) => {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await fetchSubscriptionDetails()
+      if (subscriptionData) return
+      await new Promise((r) => setTimeout(r, delayMs))
     }
   }
 

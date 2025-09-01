@@ -6,7 +6,8 @@ const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'pr
 const POLAR_API_KEY = process.env.POLAR_API_KEY
 
 export async function POST(request: NextRequest) {
-  const { checkout_id } = await request.json()
+  const body = await request.json()
+  const { checkout_id, polar_subscription_id: bodySubId, polar_customer_id: bodyCustId } = body || {}
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseKey) {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'checkout_id is required' }, { status: 400 })
   }
 
-  // We'll proceed even if POLAR_API_KEY is missing, but we won't be able to fetch checkout details.
+  // We'll proceed even if POLAR_API_KEY is missing/invalid; we'll rely on webhook or provided IDs.
 
   try {
     // Try to identify the user from auth cookie if possible; optional for service role
@@ -28,28 +29,42 @@ export async function POST(request: NextRequest) {
       authedUserId = data?.user?.id ?? null
     } catch {}
 
-    // 1. Fetch checkout session from Polar to get subscription and customer IDs
-    let subscription_id: string | null = null
-    let customer_id: string | null = null
-    if (POLAR_API_KEY) {
-      const polarResponse = await fetch(`${POLAR_API_URL}/checkouts/${checkout_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${POLAR_API_KEY}`,
-            'Content-Type': 'application/json'
+    // 1. Determine subscription and customer IDs
+    let subscription_id: string | null = bodySubId || null
+    let customer_id: string | null = bodyCustId || null
+    if (!subscription_id || !customer_id) {
+      if (POLAR_API_KEY) {
+        const polarResponse = await fetch(`${POLAR_API_URL}/checkouts/${checkout_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${POLAR_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
           }
+        )
+
+        if (!polarResponse.ok) {
+          const errorBody = await polarResponse.text()
+          console.error(`Failed to fetch Polar checkout ${checkout_id}:`, errorBody)
+          // Gracefully degrade: rely on webhook to link later
+          return NextResponse.json({
+            linked: false,
+            queued: true,
+            message: 'Could not fetch checkout from Polar (unauthorized or unavailable). Will rely on webhook to link subscription.',
+          }, { status: 202 })
         }
-      )
 
-      if (!polarResponse.ok) {
-        const errorBody = await polarResponse.text()
-        console.error(`Failed to fetch Polar checkout ${checkout_id}:`, errorBody)
-        return NextResponse.json({ error: 'Failed to fetch checkout details from Polar' }, { status: polarResponse.status })
+        const checkoutSession = await polarResponse.json()
+        subscription_id = checkoutSession.subscription_id
+        customer_id = checkoutSession.customer_id
+      } else {
+        console.warn('POLAR_API_KEY missing; cannot fetch checkout. Relying on webhook to link later.')
+        return NextResponse.json({
+          linked: false,
+          queued: true,
+          message: 'POLAR_API_KEY not set. Will rely on webhook to link subscription after payment.'
+        }, { status: 202 })
       }
-
-      const checkoutSession = await polarResponse.json()
-      subscription_id = checkoutSession.subscription_id
-      customer_id = checkoutSession.customer_id
     }
 
     if (!subscription_id || !customer_id) {
@@ -58,21 +73,20 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Upsert the subscription details into our database, linking it to the user
+    // Build the row; only include user_id when we have it
+    const upsertRow: Record<string, any> = {
+      polar_subscription_id: subscription_id,
+      polar_customer_id: customer_id,
+      status: 'pending_webhook',
+      updated_at: new Date().toISOString(),
+    }
+    if (authedUserId) upsertRow.user_id = authedUserId
+
     const { error: upsertError } = await supabase
       .from('user_subscriptions')
       .upsert(
-        {
-          user_id: authedUserId,
-          polar_subscription_id: subscription_id,
-          polar_customer_id: customer_id,
-          // We don't know the status yet, webhook will update it to 'active'.
-          // Setting a temporary status can be helpful for UI.
-          status: 'pending_webhook',
-          updated_at: new Date().toISOString()
-        },
-        {
-          onConflict: 'polar_subscription_id' // If webhook runs first, this will just update the user_id
-        }
+        upsertRow,
+        { onConflict: 'polar_subscription_id' }
       )
 
     if (upsertError) {
@@ -80,8 +94,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save subscription details' }, { status: 500 })
     }
 
-    console.log(`Successfully linked subscription ${subscription_id} to user ${authedUserId}`)
-    return NextResponse.json({ success: true, subscription_id })
+    console.log(`Successfully linked subscription ${subscription_id} to user ${authedUserId || 'unknown (no session)'}`)
+    return NextResponse.json({ success: true, subscription_id, linked: true })
 
   } catch (error) {
     console.error('Unexpected error in link-subscription handler:', error)
