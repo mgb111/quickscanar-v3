@@ -182,11 +182,34 @@ async function getPrices() {
     
     // Check if API key exists
     if (!process.env.POLAR_API_KEY) {
-      console.error('❌ POLAR_API_KEY not found in environment variables')
-      return NextResponse.json(
-        { error: 'Polar.sh API key not configured' },
-        { status: 500 }
-      )
+      console.error('❌ POLAR_API_KEY not found in environment variables - returning fallback sandbox prices')
+      const fallbackPrices = [
+        {
+          id: 'price_monthly',
+          name: 'Monthly',
+          amount: 49,
+          currency: 'USD',
+          interval: 'month',
+          features: getFeaturesForPrice(4900, 'month'),
+          description: getDescriptionForPrice(4900, 'month'),
+          polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+          ctaText: 'Start Monthly Plan',
+          popular: true,
+        },
+        {
+          id: 'price_yearly',
+          name: 'Annual',
+          amount: 499,
+          currency: 'USD',
+          interval: 'year',
+          features: getFeaturesForPrice(49900, 'year'),
+          description: getDescriptionForPrice(49900, 'year'),
+          polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+          ctaText: 'Start Annual',
+          savingsText: 'Save $89/year',
+        },
+      ]
+      return NextResponse.json({ prices: fallbackPrices })
     }
 
     // Fetch available pricing tiers from Polar.sh
