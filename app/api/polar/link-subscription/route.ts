@@ -124,6 +124,18 @@ export async function POST(request: NextRequest) {
               const latestSubscription = subscriptionsData.items[0] // Assuming they're sorted by creation date
               subscription_id = latestSubscription.id
               console.log(`Found subscription ${subscription_id} for customer ${customer_id}`)
+              
+              // Also extract the price_id and other details we'll need for the database
+              const subscriptionDetails = {
+                id: latestSubscription.id,
+                price_id: latestSubscription.price_id,
+                status: latestSubscription.status,
+                current_period_start: latestSubscription.current_period_start,
+                current_period_end: latestSubscription.current_period_end,
+                amount: latestSubscription.amount,
+                currency: latestSubscription.currency
+              }
+              console.log('Subscription details:', subscriptionDetails)
             }
           }
         } catch (e) {
@@ -144,11 +156,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Upsert the subscription details into our database, linking it to the user
+    // Extract price_id from checkout session or use the one from subscription lookup
+    const price_id = checkoutSession.product_price_id || 'unknown'
+    
     // Build the row; only include user_id when we have it
     const upsertRow: Record<string, any> = {
       polar_subscription_id: subscription_id,
       polar_customer_id: customer_id,
-      status: 'pending_webhook',
+      price_id: price_id, // REQUIRED by schema (NOT NULL)
+      status: 'active', // Set to active since we found an active subscription
       updated_at: new Date().toISOString(),
     }
     if (authedUserId) upsertRow.user_id = authedUserId
