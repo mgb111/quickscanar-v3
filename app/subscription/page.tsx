@@ -51,62 +51,58 @@ function SubscriptionPageContent() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Set plans immediately - only the 3 plans that actually exist
-    const actualPlans = [
-      {
-        id: 'price_free',
-        name: 'Free',
-        description: 'Forever',
-        amount: 0,
-        currency: 'USD',
-        interval: 'month',
-        features: [
-          '1 AR Experience',
-          'Basic Tracking',
-          'Community Support',
-        ],
-        priceNote: 'Forever',
-        polarCheckoutUrl: undefined,
-      },
-      {
-        id: 'price_monthly',
-        name: 'Monthly',
-        description: '$49 per month',
-        amount: 49,
-        currency: 'USD',
-        interval: 'month',
-        features: [
-          '3 AR Campaigns',
-          'Advanced Tracking',
-          'Priority Support',
-          'Custom Branding',
-        ],
-        popular: true, // Shows "Most Popular" badge
-        ctaText: 'Start Monthly Plan',
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
-      },
-      {
-        id: 'price_yearly',
-        name: 'Annual',
-        description: '$499 per year',
-        amount: 499,
-        currency: 'USD',
-        interval: 'year',
-        features: [
-          'Unlimited AR Campaigns',
-          'Premium Tracking',
-          '24/7 Support',
-          'White-label Solutions',
-        ],
-        savingsText: 'Save $89/year',
-        ctaText: 'Start Annual',
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+    const fetchPlans = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/polar?action=prices')
+        if (!response.ok) {
+          throw new Error('Failed to fetch pricing plans')
+        }
+        const data = await response.json()
+
+        // Manually add the Free plan as it's not in Polar
+        const freePlan = {
+          id: 'price_free',
+          name: 'Free',
+          description: 'Forever',
+          amount: 0,
+          currency: 'USD',
+          interval: 'month',
+          features: [
+            '1 AR Experience',
+            'Basic Tracking',
+            'Community Support',
+          ],
+          priceNote: 'Forever',
+          polarCheckoutUrl: undefined,
+        }
+
+        // Combine free plan with plans from Polar
+        setPlans([freePlan, ...data.prices])
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching plans:', err)
+        setError(err instanceof Error ? err.message : 'Could not load plans.')
+        // Set default plans as a fallback
+        setPlans([
+          {
+            id: 'price_free',
+            name: 'Free',
+            description: 'Forever',
+            amount: 0,
+            currency: 'USD',
+            interval: 'month',
+            features: ['1 AR Experience', 'Basic Tracking', 'Community Support'],
+            priceNote: 'Forever',
+          },
+        ])
+      } finally {
+        setIsLoading(false)
       }
-    ]
-    console.log('🔍 Setting actual plans:', actualPlans)
-    setPlans(actualPlans)
-    setIsLoading(false)
-    
+    }
+
+    fetchPlans()
+
     if (user) {
       fetchCurrentSubscription()
     }
