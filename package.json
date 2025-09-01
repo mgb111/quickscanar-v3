@@ -18,6 +18,7 @@
     "@david18284/one-euro-filter": "^1.0.3",
     "@msgpack/msgpack": "^3.1.2",
     "@sparticuz/chromium": "^119.0.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.38.5",
     "@types/node": "^20",
