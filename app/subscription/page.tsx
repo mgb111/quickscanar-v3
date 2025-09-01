@@ -231,9 +231,9 @@ function SubscriptionPageContent() {
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
-          // Map price_id to plan name
-          const planName = getPlanNameFromPriceId(data.subscription.price_id)
-          const features = getFeaturesFromPriceId(data.subscription.price_id)
+          // Use enhanced subscription data from API
+          const planName = data.subscription.plan_name || getPlanNameFromPriceId(data.subscription.price_id)
+          const features = data.subscription.plan_features || getFeaturesFromPriceId(data.subscription.price_id)
           
           setCurrentSubscription({
             id: data.subscription.polar_subscription_id,
@@ -243,7 +243,14 @@ function SubscriptionPageContent() {
             current_period_end: data.subscription.current_period_end,
             is_active: data.subscription.status === 'active'
           })
+          console.log('Subscription loaded:', planName, 'Status:', data.subscription.status)
+        } else {
+          console.log('No active subscription found')
+          setCurrentSubscription(null)
         }
+      } else {
+        console.log('Failed to fetch subscription:', response.status)
+        setCurrentSubscription(null)
       }
     } catch (error) {
       console.error('Failed to fetch subscription:', error)
@@ -251,31 +258,35 @@ function SubscriptionPageContent() {
   }
 
   const getPlanNameFromPriceId = (priceId: string): string => {
-    if (!priceId || priceId === 'unknown') return 'QuickScanAR Monthly'
+    if (!priceId || priceId === 'unknown') return 'Free Plan'
     
     // Map known price IDs to plan names
     const priceMap: Record<string, string> = {
+      'price_free': 'Free Plan',
       '911e3835-9350-440e-a4d3-86702b91f49f': 'QuickScanAR Monthly',
       'price_monthly': 'QuickScanAR Monthly',
       'price_yearly': 'QuickScanAR Annual',
+      'price_annual': 'QuickScanAR Annual',
     }
     
-    return priceMap[priceId] || 'QuickScanAR Monthly'
+    return priceMap[priceId] || 'Free Plan'
   }
 
   const getFeaturesFromPriceId = (priceId: string): string[] => {
     if (!priceId || priceId === 'unknown') {
-      return ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support']
+      return ['1 AR Experience', 'Basic Analytics', 'Community Support']
     }
     
     // Map price IDs to features
     const featuresMap: Record<string, string[]> = {
-      '911e3835-9350-440e-a4d3-86702b91f49f': ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_monthly': ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_yearly': ['Up to 36 AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+      'price_free': ['1 AR Experience', 'Basic Analytics', 'Community Support'],
+      '911e3835-9350-440e-a4d3-86702b91f49f': ['3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_monthly': ['3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_yearly': ['36 AR Experiences (3/month)', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+      'price_annual': ['36 AR Experiences (3/month)', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
     }
     
-    return featuresMap[priceId] || ['Up to 3 AR Experiences', 'Advanced Analytics', 'Priority Support']
+    return featuresMap[priceId] || ['1 AR Experience', 'Basic Analytics', 'Community Support']
   }
 
   const fetchCampaignUsage = async () => {
@@ -325,6 +336,26 @@ function SubscriptionPageContent() {
         plan_name: 'Free Plan'
       })
     }
+  }
+
+  // Helper function to get campaign limit from plan name
+  const getCampaignLimitFromPlan = (planName: string): number => {
+    if (planName.includes('Annual') || planName.includes('Yearly')) {
+      return 36 // 3 per month × 12 months
+    } else if (planName.includes('Monthly')) {
+      return 3
+    }
+    return 1 // Free plan
+  }
+
+  // Helper function to format campaign usage display
+  const formatCampaignUsage = (used: number, limit: number, planName: string): string => {
+    if (planName.includes('Annual') || planName.includes('Yearly')) {
+      return `${used} out of ${limit} campaigns used this year`
+    } else if (planName.includes('Monthly')) {
+      return `${used} out of ${limit} campaigns used this month`
+    }
+    return `${used} out of ${limit} campaigns used`
   }
 
   const handleSubscribe = async (planId: string, polarCheckoutUrl?: string) => {
@@ -506,9 +537,12 @@ function SubscriptionPageContent() {
                 <h3 className="text-lg font-medium text-black mb-2">Current Plan: {campaignUsage.plan_name}</h3>
                 <div className="text-black">
                   <span className="text-2xl font-bold text-red-600">{campaignUsage.used}</span>
-                  <span className="text-black mx-2">/</span>
-                  <span className="text-lg">{campaignUsage.limit}</span>
+                  <span className="text-black mx-2">out of</span>
+                  <span className="text-lg font-semibold">{campaignUsage.limit}</span>
                   <span className="text-black ml-2">campaigns used</span>
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {formatCampaignUsage(campaignUsage.used, campaignUsage.limit, campaignUsage.plan_name)}
                 </div>
                 {campaignUsage.limit > 0 && (
                   <div className="mt-3">
@@ -521,7 +555,7 @@ function SubscriptionPageContent() {
                       ></div>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      {campaignUsage.limit - campaignUsage.used} campaigns remaining
+                      {Math.max(0, campaignUsage.limit - campaignUsage.used)} campaigns remaining
                     </p>
                   </div>
                 )}

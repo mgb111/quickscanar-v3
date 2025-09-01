@@ -31,9 +31,10 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')
-      .select('*')
+      .select('*, subscription_plans(*)')
       .eq('user_id', user.id)
       .in('status', ['active', 'trialing'])
+      .order('created_at', { ascending: false })
       .maybeSingle()
 
     if (error) {
@@ -41,7 +42,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 })
     }
 
-    return NextResponse.json({ subscription: data })
+    // If no active subscription found, return null
+    if (!data) {
+      return NextResponse.json({ subscription: null })
+    }
+
+    // Enhance subscription data with plan information
+    const enhancedSubscription = {
+      ...data,
+      plan_name: data.subscription_plans?.name || 'Unknown Plan',
+      plan_features: data.subscription_plans?.features || [],
+      plan_amount: data.subscription_plans?.amount || 0,
+      plan_currency: data.subscription_plans?.currency || 'USD',
+      plan_interval: data.subscription_plans?.interval || 'month'
+    }
+
+    return NextResponse.json({ subscription: enhancedSubscription })
   } catch (error) {
     console.error('Unexpected error fetching subscription:', error)
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })

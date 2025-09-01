@@ -37,6 +37,35 @@ async function fetchPolarCustomerUserId(polarCustomerId: string): Promise<string
   }
 }
 
+// Helper function to get price_id from subscription data
+function extractPriceId(subscription: any): string {
+  return subscription?.price?.id 
+    || subscription?.price_id 
+    || subscription?.price?.polar_price_id
+    || subscription?.product_price_id
+    || 'unknown'
+}
+
+// Helper function to get user_id from checkout session
+async function getUserIdFromCheckout(checkoutId: string): Promise<string | null> {
+  if (!POLAR_API_KEY) return null
+  
+  try {
+    const resp = await fetch(`${POLAR_API_URL}/checkouts/${checkoutId}`, {
+      headers: {
+        Authorization: `Bearer ${POLAR_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    if (!resp.ok) return null
+    const checkout = await resp.json()
+    return checkout?.metadata?.user_id || checkout?.metadata?.supabase_user_id || null
+  } catch (e) {
+    console.warn('getUserIdFromCheckout failed:', e)
+    return null
+  }
+}
+
 const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 // Helper: resolve our auth user_id from a Polar customer_id stored in DB
@@ -125,6 +154,8 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: any) {
   try {
+    console.log('Processing subscription.created:', subscription.id)
+    
     // Resolve user_id: check top-level, then DB, then Polar customer metadata
     let resolvedUserId = subscription.user_id
     if (!resolvedUserId) {
@@ -134,10 +165,15 @@ async function handleSubscriptionCreated(subscription: any) {
       // Try to fetch from Polar customer metadata as a fallback
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
     }
-    const priceId = subscription?.price?.id
-      || subscription?.price_id
-      || subscription?.price?.polar_price_id
-      || 'unknown'
+    
+    // If still no user_id, try to get it from checkout metadata
+    if (!resolvedUserId && subscription.checkout_id) {
+      resolvedUserId = await getUserIdFromCheckout(subscription.checkout_id)
+    }
+    
+    const priceId = extractPriceId(subscription)
+    console.log('Extracted price_id:', priceId, 'for subscription:', subscription.id)
+    
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
@@ -149,16 +185,21 @@ async function handleSubscriptionCreated(subscription: any) {
       created_at: subscription.created_at,
       updated_at: new Date().toISOString()
     }
-    if (resolvedUserId) record.user_id = resolvedUserId
+    if (resolvedUserId) {
+      record.user_id = resolvedUserId
+      console.log('Linking subscription to user:', resolvedUserId)
+    } else {
+      console.warn('No user_id found for subscription:', subscription.id, 'customer:', subscription.customer_id)
+    }
 
     const { error } = await supabase
       .from('user_subscriptions')
-      .upsert(record)
+      .upsert(record, { onConflict: 'polar_subscription_id' })
 
     if (error) {
       console.error('Error creating subscription in Supabase:', error)
     } else {
-      console.log('Subscription created in Supabase:', subscription.id)
+      console.log('Subscription created in Supabase:', subscription.id, 'linked to user:', resolvedUserId || 'none')
     }
   } catch (error) {
     console.error('Error handling subscription.created:', error)
@@ -167,8 +208,9 @@ async function handleSubscriptionCreated(subscription: any) {
 
 async function handleSubscriptionUpdated(subscription: any) {
   try {
+    console.log('Processing subscription.updated:', subscription.id)
+    
     // Resolve user_id if possible for backfill
-    // Resolve user_id: check top-level, then DB, then Polar customer metadata
     let resolvedUserId = subscription.user_id
     if (!resolvedUserId) {
       resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
@@ -176,10 +218,14 @@ async function handleSubscriptionUpdated(subscription: any) {
     if (!resolvedUserId) {
       resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
     }
-    const priceId = subscription?.price?.id
-      || subscription?.price_id
-      || subscription?.price?.polar_price_id
-      || 'unknown'
+    
+    // If still no user_id, try to get it from checkout metadata
+    if (!resolvedUserId && subscription.checkout_id) {
+      resolvedUserId = await getUserIdFromCheckout(subscription.checkout_id)
+    }
+    
+    const priceId = extractPriceId(subscription)
+    console.log('Updated subscription price_id:', priceId, 'status:', subscription.status)
 
     const record: any = {
       polar_subscription_id: subscription.id,
@@ -192,7 +238,10 @@ async function handleSubscriptionUpdated(subscription: any) {
       canceled_at: subscription.canceled_at || null,
       updated_at: new Date().toISOString()
     }
-    if (resolvedUserId) record.user_id = resolvedUserId
+    if (resolvedUserId) {
+      record.user_id = resolvedUserId
+      console.log('Updating subscription for user:', resolvedUserId)
+    }
 
     const { error } = await supabase
       .from('user_subscriptions')
@@ -231,31 +280,30 @@ async function handleSubscriptionDeleted(subscription: any) {
 
 async function handlePaymentSucceeded(order: any) {
   try {
+    console.log('Processing order.paid:', order.id, 'subscription:', order.subscription_id)
+    
     // When an order is paid, the subscription is typically created or renewed.
-    // Let's ensure the subscription status is active.
     if (order.subscription_id) {
       let resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
       if (!resolvedUserId && order.customer_id) {
         resolvedUserId = await fetchPolarCustomerUserId(order.customer_id)
       }
-
-      // Try update first
-      const { error: updateErr } = await supabase
-        .from('user_subscriptions')
-        .update({
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('polar_subscription_id', order.subscription_id)
-
-      if (updateErr) {
-        console.error('Error updating subscription status after payment:', updateErr)
+      
+      // If still no user_id, try to get it from checkout metadata
+      if (!resolvedUserId && order.checkout_id) {
+        resolvedUserId = await getUserIdFromCheckout(order.checkout_id)
       }
+      
+      console.log('Payment succeeded for user:', resolvedUserId, 'subscription:', order.subscription_id)
 
-      // Ensure the row exists: upsert if missing or to backfill user/customer
+      // Get the price_id from the order or subscription
+      const priceId = extractPriceId(order) !== 'unknown' ? extractPriceId(order) : 'price_monthly' // default fallback
+      
+      // Ensure the row exists with proper price_id: upsert if missing or to backfill user/customer
       const upsertRecord: any = {
         polar_subscription_id: order.subscription_id,
         polar_customer_id: order.customer_id,
+        price_id: priceId, // REQUIRED by schema
         status: 'active',
         updated_at: new Date().toISOString()
       }
@@ -268,7 +316,7 @@ async function handlePaymentSucceeded(order: any) {
       if (upsertErr) {
         console.error('Error upserting subscription after payment:', upsertErr)
       } else {
-        console.log('Subscription ensured active via upsert after payment:', order.subscription_id)
+        console.log('Subscription ensured active after payment:', order.subscription_id, 'user:', resolvedUserId)
       }
 
       // If we resolved a user and the row is missing user_id, try to set it
@@ -290,11 +338,15 @@ async function handlePaymentSucceeded(order: any) {
     if (!resolvedUserId && order.customer_id) {
       resolvedUserId = await fetchPolarCustomerUserId(order.customer_id)
     }
+    if (!resolvedUserId && order.checkout_id) {
+      resolvedUserId = await getUserIdFromCheckout(order.checkout_id)
+    }
+    
     const { error: paymentError } = await supabase
       .from('payment_history')
       .insert({
-        polar_order_id: order.id, // Using order ID instead of invoice ID
-        user_id: resolvedUserId || order.customer_id,
+        polar_order_id: order.id,
+        user_id: resolvedUserId,
         amount: order.amount,
         currency: order.currency,
         status: 'succeeded',
@@ -304,7 +356,7 @@ async function handlePaymentSucceeded(order: any) {
     if (paymentError) {
       console.error('Error logging payment in Supabase:', paymentError)
     } else {
-      console.log('Successful payment logged in Supabase for order:', order.id)
+      console.log('Payment logged for user:', resolvedUserId, 'order:', order.id)
     }
   } catch (error) {
     console.error('Error handling order.paid:', error)
