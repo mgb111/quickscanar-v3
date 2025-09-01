@@ -78,7 +78,12 @@ export async function GET(request: NextRequest) {
       case 'customer':
         return await getCustomer(userId)
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+        // Gracefully handle missing/unknown actions to avoid noisy 400s from probes
+        return NextResponse.json({ 
+          status: 'ok',
+          info: 'Specify ?action=health|subscription|prices|customer',
+          polarApiUrl: POLAR_API_URL
+        })
     }
   } catch (error) {
     console.error('Polar API error:', error)

@@ -156,22 +156,32 @@ async function handleSubscriptionCreated(subscription: any) {
 
 async function handleSubscriptionUpdated(subscription: any) {
   try {
+    // Resolve user_id if possible for backfill
+    let resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    if (!resolvedUserId) {
+      resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
+    }
+
+    const record: any = {
+      polar_subscription_id: subscription.id,
+      polar_customer_id: subscription.customer_id,
+      plan_name: subscription?.price?.product?.name || 'Unknown Plan',
+      status: subscription.status,
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      updated_at: new Date().toISOString()
+    }
+    if (resolvedUserId) record.user_id = resolvedUserId
+
     const { error } = await supabase
       .from('user_subscriptions')
-      .update({
-        plan_name: subscription?.price?.product?.name || 'Unknown Plan',
-        status: subscription.status,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        updated_at: new Date().toISOString()
-      })
-      .eq('polar_subscription_id', subscription.id)
+      .upsert(record, { onConflict: 'polar_subscription_id' })
 
     if (error) {
-      console.error('Error updating subscription in Supabase:', error)
+      console.error('Error upserting subscription in Supabase:', error)
     } else {
-      console.log('Subscription updated in Supabase:', subscription.id)
+      console.log('Subscription upserted in Supabase:', subscription.id)
     }
   } catch (error) {
     console.error('Error handling subscription.updated:', error)
@@ -207,7 +217,9 @@ async function handlePaymentSucceeded(order: any) {
       if (!resolvedUserId && order.customer_id) {
         resolvedUserId = await fetchPolarCustomerUserId(order.customer_id)
       }
-      const { error } = await supabase
+
+      // Try update first
+      const { error: updateErr } = await supabase
         .from('user_subscriptions')
         .update({
           status: 'active',
@@ -215,10 +227,27 @@ async function handlePaymentSucceeded(order: any) {
         })
         .eq('polar_subscription_id', order.subscription_id)
 
-      if (error) {
-        console.error('Error updating subscription status after payment:', error)
+      if (updateErr) {
+        console.error('Error updating subscription status after payment:', updateErr)
+      }
+
+      // Ensure the row exists: upsert if missing or to backfill user/customer
+      const upsertRecord: any = {
+        polar_subscription_id: order.subscription_id,
+        polar_customer_id: order.customer_id,
+        status: 'active',
+        updated_at: new Date().toISOString()
+      }
+      if (resolvedUserId) upsertRecord.user_id = resolvedUserId
+
+      const { error: upsertErr } = await supabase
+        .from('user_subscriptions')
+        .upsert(upsertRecord, { onConflict: 'polar_subscription_id' })
+
+      if (upsertErr) {
+        console.error('Error upserting subscription after payment:', upsertErr)
       } else {
-        console.log('Subscription status updated to active after successful payment:', order.subscription_id)
+        console.log('Subscription ensured active via upsert after payment:', order.subscription_id)
       }
 
       // If we resolved a user and the row is missing user_id, try to set it

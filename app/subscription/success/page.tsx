@@ -41,7 +41,23 @@ function SubscriptionSuccessContent() {
     }
 
     if (user) {
-      fetchSubscriptionDetails()
+      // Proactively link subscription using checkout_id, then fetch details
+      ;(async () => {
+        try {
+          const res = await fetch('/api/polar/link-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checkout_id: checkoutId })
+          })
+          if (!res.ok) {
+            console.warn('link-subscription returned non-OK status', res.status)
+          }
+        } catch (e) {
+          console.warn('link-subscription call failed:', e)
+        } finally {
+          fetchSubscriptionDetails()
+        }
+      })()
     }
   }, [checkoutId, user])
 
