@@ -71,6 +71,8 @@ export async function POST(request: NextRequest) {
         }
 
         const checkoutSession = await polarResponse.json()
+        console.log('Checkout session data from Polar:', JSON.stringify(checkoutSession, null, 2))
+        console.log('Available fields:', Object.keys(checkoutSession))
         subscription_id = checkoutSession.subscription_id
         customer_id = checkoutSession.customer_id
       } else {
