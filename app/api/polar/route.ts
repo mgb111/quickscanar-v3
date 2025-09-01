@@ -235,7 +235,38 @@ async function getPrices() {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ Polar.sh API error:', response.status, errorText, '- falling back to sandbox prices')
+      console.error('❌ Polar.sh API error:', response.status, errorText)
+      // In sandbox, /prices may not be available. Try /checkout-links to provide working checkout URLs.
+      if (response.status === 404) {
+        try {
+          console.log('🔁 Falling back to checkout-links for sandbox')
+          const clResp = await fetch(`${POLAR_API_URL}/checkout-links`, {
+            headers: {
+              'Authorization': `Bearer ${process.env.POLAR_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          if (clResp.ok) {
+            const clJson = await clResp.json()
+            const items: any[] = clJson?.items || clJson?.data || []
+            // Build redirect URLs and merge into our fallback cards
+            const redirectUrls = items
+              .slice(0, 2)
+              .map((it: any) => `${POLAR_API_URL}/checkout-links/${it.id}/redirect`)
+            const merged = [...fallbackPrices]
+            if (redirectUrls[0]) merged[0].polarCheckoutUrl = redirectUrls[0]
+            if (redirectUrls[1]) merged[1].polarCheckoutUrl = redirectUrls[1]
+            console.log('✅ Using checkout-links fallback with redirect URLs')
+            return NextResponse.json({ prices: merged })
+          } else {
+            const t = await clResp.text()
+            console.warn('⚠️ checkout-links fallback failed:', clResp.status, t)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error while fetching checkout-links fallback:', e)
+        }
+      }
+      console.error('➡️ Returning hardcoded sandbox fallback prices')
       return NextResponse.json({ prices: fallbackPrices })
     }
 
