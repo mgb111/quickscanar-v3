@@ -88,17 +88,66 @@ export async function POST(request: NextRequest) {
     const checkoutSession = await polarResponse.json()
     console.log('Checkout session data:', JSON.stringify(checkoutSession, null, 2))
 
-    // Extract subscription details
-    const subscription_id = checkoutSession?.subscription_id
-    const customer_id = checkoutSession?.customer_id
+    // Extract subscription details - try multiple possible paths
+    const subscription_id = checkoutSession?.subscription_id || 
+                           checkoutSession?.subscription?.id ||
+                           checkoutSession?.data?.subscription_id ||
+                           checkoutSession?.data?.subscription?.id
+
+    const customer_id = checkoutSession?.customer_id || 
+                       checkoutSession?.customer?.id ||
+                       checkoutSession?.data?.customer_id ||
+                       checkoutSession?.data?.customer?.id
+
     const price_id = checkoutSession?.product_price?.id || 
                      checkoutSession?.price?.id || 
-                     checkoutSession?.product?.price_id || 
+                     checkoutSession?.product?.price_id ||
+                     checkoutSession?.data?.product_price?.id ||
+                     checkoutSession?.data?.price?.id ||
+                     checkoutSession?.line_items?.[0]?.price?.id ||
                      'unknown'
 
     console.log('Extracted data:', { subscription_id, customer_id, price_id })
+    console.log('Full checkout session structure:', JSON.stringify(checkoutSession, null, 2))
 
     if (!subscription_id) {
+      // If no subscription_id, check if this is a one-time payment or different structure
+      console.warn('No subscription_id found. Checkout session might be for one-time payment or different structure')
+      
+      // Try to create a manual subscription record if we have enough data
+      if (customer_id && price_id !== 'unknown') {
+        console.log('Attempting to create manual subscription record...')
+        
+        const manualSubscriptionId = `manual_${checkout_id}_${Date.now()}`
+        const upsertData = {
+          polar_subscription_id: manualSubscriptionId,
+          polar_customer_id: customer_id,
+          user_id: authedUserId,
+          price_id: price_id,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+
+        const { error: manualError } = await supabaseAdmin
+          .from('user_subscriptions')
+          .upsert(upsertData, { onConflict: 'polar_subscription_id' })
+
+        if (manualError) {
+          console.error('Failed to create manual subscription:', manualError)
+          return NextResponse.json({ error: 'Failed to create subscription record' }, { status: 500 })
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Manual subscription created successfully',
+          subscription_id: manualSubscriptionId,
+          user_id: authedUserId,
+          price_id: price_id,
+          type: 'manual'
+        })
+      }
+      
       return NextResponse.json({ error: 'No subscription found in checkout session' }, { status: 400 })
     }
 
