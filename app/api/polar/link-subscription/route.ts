@@ -103,14 +103,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid checkout session: missing customer_id' }, { status: 400 })
     }
     if (!subscription_id) {
-      console.log(`Checkout ${checkout_id} is pending subscription_id; accepting and awaiting webhook.`)
-      // Gracefully accept and let the webhook handle the final linking.
-      // We can't create a placeholder row without subscription_id due to NOT NULL constraint.
-      return NextResponse.json({
-        linked: false,
-        queued: true,
-        message: 'Subscription creation is pending. It will be linked via webhook shortly.'
-      }, { status: 202 })
+      console.log(`Checkout ${checkout_id} is pending subscription_id; trying to fetch subscriptions for customer ${customer_id}`)
+      
+      // Try to fetch subscriptions for this customer as a fallback
+      if (POLAR_API_KEY) {
+        try {
+          const subscriptionsResponse = await fetch(`${POLAR_API_URL}/subscriptions?customer_id=${customer_id}`, {
+            headers: {
+              Authorization: `Bearer ${POLAR_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (subscriptionsResponse.ok) {
+            const subscriptionsData = await subscriptionsResponse.json()
+            console.log('Customer subscriptions:', JSON.stringify(subscriptionsData, null, 2))
+            
+            // Look for the most recent subscription for this customer
+            if (subscriptionsData.items && subscriptionsData.items.length > 0) {
+              const latestSubscription = subscriptionsData.items[0] // Assuming they're sorted by creation date
+              subscription_id = latestSubscription.id
+              console.log(`Found subscription ${subscription_id} for customer ${customer_id}`)
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch customer subscriptions:', e)
+        }
+      }
+      
+      if (!subscription_id) {
+        console.log(`Checkout ${checkout_id} is still pending subscription_id; accepting and awaiting webhook.`)
+        // Gracefully accept and let the webhook handle the final linking.
+        // We can't create a placeholder row without subscription_id due to NOT NULL constraint.
+        return NextResponse.json({
+          linked: false,
+          queued: true,
+          message: 'Subscription creation is pending. It will be linked via webhook shortly.'
+        }, { status: 202 })
+      }
     }
 
     // 2. Upsert the subscription details into our database, linking it to the user
