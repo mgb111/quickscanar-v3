@@ -12,7 +12,8 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 // Polar.sh API configuration (default to sandbox in non-production)
-const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/api/v1' : 'https://sandbox-api.polar.sh/v1')
+// Note: Polar moved API root from /api/v1 to /v1. Use /v1 for production by default.
+const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/v1' : 'https://sandbox-api.polar.sh/v1')
 const POLAR_WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET
 const POLAR_SUCCESS_URL = process.env.POLAR_SUCCESS_URL || 'https://yourdomain.com/subscription/success?checkout_id={CHECKOUT_ID}'
 const POLAR_CANCEL_URL = process.env.POLAR_CANCEL_URL || 'https://yourdomain.com/subscription/cancel'

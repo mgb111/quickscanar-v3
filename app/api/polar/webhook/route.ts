@@ -9,8 +9,11 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase environment variables for Polar webhook')
 }
 
+// Note: Schema does not include a plan_name column; we avoid storing it.
+
 // Polar API envs (support sandbox vs prod via env; default to sandbox in non-production)
-const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/api/v1' : 'https://sandbox-api.polar.sh/v1')
+// Note: Polar moved API root from /api/v1 to /v1. Use /v1 for production by default.
+const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/v1' : 'https://sandbox-api.polar.sh/v1')
 const POLAR_API_KEY = process.env.POLAR_API_KEY
 
 async function fetchPolarCustomerUserId(polarCustomerId: string): Promise<string | null> {
@@ -134,7 +137,6 @@ async function handleSubscriptionCreated(subscription: any) {
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
-      plan_name: subscription?.price?.product?.name || 'Unknown Plan',
       price_id: priceId, // REQUIRED by schema (NOT NULL)
       status: subscription.status,
       current_period_start: subscription.current_period_start,
@@ -174,7 +176,6 @@ async function handleSubscriptionUpdated(subscription: any) {
     const record: any = {
       polar_subscription_id: subscription.id,
       polar_customer_id: subscription.customer_id,
-      plan_name: subscription?.price?.product?.name || 'Unknown Plan',
       price_id: priceId, // REQUIRED by schema (NOT NULL)
       status: subscription.status,
       current_period_start: subscription.current_period_start,
