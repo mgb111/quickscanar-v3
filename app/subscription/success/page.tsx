@@ -13,6 +13,7 @@ import {
   Share2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@supabase/supabase-js'
 
 interface SubscriptionSuccess {
   checkout_id: string
@@ -26,11 +27,18 @@ interface SubscriptionSuccess {
 }
 
 function SubscriptionSuccessContent() {
-  const { user, loading, supabase } = useAuth()
+  const { user, loading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionSuccess | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Create Supabase client for getting session token
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   const checkoutId = searchParams.get('checkout_id')
   // Capture optional IDs that Polar may include in success URL
@@ -48,26 +56,28 @@ function SubscriptionSuccessContent() {
       return
     }
 
-    if (user && supabase) {
+    if (user) {
       // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
         try {
+          // Get the current session to include JWT token
           const { data: { session } } = await supabase.auth.getSession();
+          
           if (!session) {
-            toast.error("Authentication session not found. Please sign in again.");
+            setError("Please log in to continue");
             setIsLoading(false);
             return;
           }
 
-          const headers = {
+          const authHeaders = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
           };
 
           const linkPromise = fetch('/api/polar/link-subscription', {
             method: 'POST',
-            headers,
-            credentials: 'include', // Keep for defense-in-depth
+            headers: authHeaders,
+            credentials: 'include',
             body: JSON.stringify({
               checkout_id: checkoutId,
               user_id: user.id,
@@ -94,12 +104,13 @@ function SubscriptionSuccessContent() {
           const res = await linkPromise;
           if (!res.ok) {
             console.error('Failed to link subscription:', res.status);
-            // Stop further execution if linking fails critically
+            setError("Failed to link subscription");
             setIsLoading(false);
             return;
           }
         } catch (e) {
           console.warn('link-subscription call failed:', e)
+          setError("Failed to process subscription");
         } finally {
           pollSubscriptionDetails()
         }
@@ -108,25 +119,26 @@ function SubscriptionSuccessContent() {
   }, [checkoutId, user, router, subIdParam, custIdParam, supabase])
 
   const fetchSubscriptionDetails = async (): Promise<boolean> => {
-    if (!checkoutId || !user || !supabase) return false
+    if (!checkoutId || !user) return false
 
     try {
+      // Get the current session to include JWT token
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
-        // Don't toast here, as it might be an intermediate state during polling
-        console.warn('No session found while fetching subscription details.');
+        setError("Authentication session expired");
+        setIsLoading(false);
         return false;
       }
-
-      const headers = {
-        'Authorization': `Bearer ${session.access_token}`
-      };
 
       const response = await fetch(`/api/get-subscription`, { 
         cache: 'no-store', 
         credentials: 'include',
-        headers 
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
       })
+      
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
@@ -181,6 +193,21 @@ function SubscriptionSuccessContent() {
   if (!user) {
     router.push('/auth/signin')
     return null
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Payment Successful, but...</h1>
+          <p className="text-gray-600 mb-4">Your payment was processed, but we're having trouble setting up your subscription.</p>
+          <p className="text-red-600 mb-6">Error: {error}</p>
+          <Link href="/subscription" className="bg-dark-blue text-white px-6 py-3 rounded-lg font-semibold">
+            Contact Support
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (!subscriptionData) {
