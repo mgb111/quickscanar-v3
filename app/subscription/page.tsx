@@ -56,8 +56,6 @@ function SubscriptionPageContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
-  const [showSubscriptionError, setShowSubscriptionError] = useState(false)
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -196,9 +194,6 @@ function SubscriptionPageContent() {
   const fetchCurrentSubscription = async () => {
     if (!user || !supabase) return
     
-    setSubscriptionLoading(true)
-    setShowSubscriptionError(false)
-    
     try {
       // Get JWT token from Supabase session
       const { data: { session } } = await supabase.auth.getSession()
@@ -224,33 +219,10 @@ function SubscriptionPageContent() {
             current_period_end: data.subscription.current_period_end,
             is_active: data.subscription.status === 'active'
           })
-          setShowSubscriptionError(false)
-        } else {
-          // Only show error after a delay to avoid flashing
-          setTimeout(() => {
-            if (!currentSubscription) {
-              setShowSubscriptionError(true)
-            }
-          }, 2000)
         }
-      } else {
-        // Only show error after a delay to avoid flashing
-        setTimeout(() => {
-          if (!currentSubscription) {
-            setShowSubscriptionError(true)
-          }
-        }, 2000)
       }
     } catch (error) {
       console.error('Failed to fetch subscription:', error)
-      // Only show error after a delay to avoid flashing
-      setTimeout(() => {
-        if (!currentSubscription) {
-          setShowSubscriptionError(true)
-        }
-      }, 2000)
-    } finally {
-      setSubscriptionLoading(false)
     }
   }
 

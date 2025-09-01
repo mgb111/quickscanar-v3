@@ -4,9 +4,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies })
-  
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+
+  // Try to get user from cookies first
+  const { data: { user: cookieUser } } = await supabase.auth.getUser()
+  user = cookieUser
+
+  // If no user from cookies, try JWT token from Authorization header
+  if (!user) {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const { data: { user: jwtUser } } = await supabase.auth.getUser(token)
+      user = jwtUser
+    }
+  }
   
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
