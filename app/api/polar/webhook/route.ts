@@ -60,141 +60,16 @@ function extractPriceId(subscription: any): string {
 
 // Helper function to get user_id from checkout session
 async function getUserIdFromCheckout(checkoutId: string): Promise<string | null> {
-  if (!POLAR_API_KEY) return null
-  
-  try {
-    const resp = await fetch(`${POLAR_API_URL}/checkouts/${checkoutId}`, {
-      headers: {
-        Authorization: `Bearer ${POLAR_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    if (!resp.ok) return null
-    const checkout = await resp.json()
-    return checkout?.metadata?.user_id || checkout?.metadata?.supabase_user_id || null
-  } catch (e) {
-    console.warn('getUserIdFromCheckout failed:', e)
-    return null
-  }
-}
-
-const supabase = createClient(supabaseUrl!, supabaseKey!)
-
-// Helper: resolve our auth user_id from a Polar customer_id stored in DB
-async function resolveUserIdByPolarCustomerId(polarCustomerId: string): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .select('user_id')
-      .eq('polar_customer_id', polarCustomerId)
-      .maybeSingle?.() ?? { data: null, error: null }
-
-    if ((error as any)?.code && (error as any).code !== 'PGRST116') {
-      console.error('Error resolving user by polar_customer_id:', error)
-      return null
-    }
-    return (data as any)?.user_id ?? null
-  } catch (e) {
-    console.error('Unexpected error resolving user by polar_customer_id:', e)
-    return null
-  }
-}
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.text()
-    
-    // Verify webhook signature for security
-    if (POLAR_WEBHOOK_SECRET) {
-      const signature = request.headers.get('polar-signature') || request.headers.get('x-polar-signature')
-      if (!signature) {
-        console.error('Missing webhook signature')
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
-      }
-      
-      if (!verifyWebhookSignature(body, signature.replace('sha256=', ''), POLAR_WEBHOOK_SECRET)) {
-        console.error('Invalid webhook signature')
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
-    } else {
-      console.warn('POLAR_WEBHOOK_SECRET not configured - webhook signature verification disabled')
-    }
-    
-    const event = JSON.parse(body)
-    console.log(`[WEBHOOK] Verified event: ${event.type} at ${new Date().toISOString()}`)
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase not configured for Polar webhook')
-      return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
-    }
-    // Minimal IDs to help correlate in logs
-    try {
-      console.log('Payload IDs snapshot:', {
-        subscription_id: event?.data?.id || event?.data?.subscription_id,
-        customer_id: event?.data?.customer_id,
-        order_id: event?.data?.id,
-      })
-    } catch {}
-
-    switch (event.type) {
-      // Subscription events
-      case 'subscription.created':
-        await handleSubscriptionCreated(event.data)
-        break
-      case 'subscription.updated':
-      case 'subscription.active':
-        await handleSubscriptionUpdated(event.data)
-        break
-      case 'subscription.canceled':
-      case 'subscription.revoked':
-        await handleSubscriptionDeleted(event.data)
-        break
-      
-      // Order/Payment events
-      case 'order.paid':
-        await handlePaymentSucceeded(event.data)
-        break
-      case 'order.updated':
-        // This event can signify many things. We might handle payment failures here.
-        // For now, let's just log it to see the payload.
-        console.log('Order updated event received:', JSON.stringify(event.data, null, 2))
-        break
-      
-      default:
-        console.log('Unhandled event type:', event.type)
-    }
-
-    return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error('Webhook error:', error)
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 503 }
-    )
-  }
-}
-
-async function handleSubscriptionCreated(subscription: any) {
-  try {
-    console.log('Processing subscription.created:', subscription.id)
-    
-    // Resolve user_id: check top-level, then DB, then Polar customer metadata
-    let resolvedUserId = subscription.user_id
-    if (!resolvedUserId) {
-      resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
-    }
-    if (!resolvedUserId) {
-      // Try to fetch from Polar customer metadata as a fallback
-      resolvedUserId = await fetchPolarCustomerUserId(subscription.customer_id)
-    }
-    
-    // If still no user_id, try to get it from checkout metadata
-    if (!resolvedUserId && subscription.checkout_id) {
-      resolvedUserId = await getUserIdFromCheckout(subscription.checkout_id)
-    }
-    
-    const priceId = extractPriceId(subscription)
-    console.log('Extracted price_id:', priceId, 'for subscription:', subscription.id)
+  console.log('⚠️  DEPRECATED: Polar webhook endpoint no longer used')
+  console.log('ℹ️  Subscriptions are now managed via Zapier integration')
+  console.log('📋 See ZAPIER_SETUP_GUIDE.md for configuration details')
+  
+  return NextResponse.json({ 
+    message: 'This endpoint is deprecated. Subscriptions are managed via Zapier.',
+    status: 'deprecated'
+  }, { status: 200 })
     
     const record: any = {
       polar_subscription_id: subscription.id,
