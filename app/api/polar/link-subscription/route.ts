@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     // 1. Determine subscription and customer IDs
     let subscription_id: string | null = bodySubId || null
     let customer_id: string | null = bodyCustId || null
+    let checkoutSession: any = null
     if (!subscription_id || !customer_id) {
       if (POLAR_API_KEY) {
         const polarResponse = await fetch(`${POLAR_API_URL}/checkouts/${checkout_id}`,
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
           }, { status: 202 })
         }
 
-        const checkoutSession = await polarResponse.json()
+        checkoutSession = await polarResponse.json()
         console.log('Checkout session data from Polar:', JSON.stringify(checkoutSession, null, 2))
         console.log('Available fields:', Object.keys(checkoutSession))
         subscription_id = checkoutSession.subscription_id
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Upsert the subscription details into our database, linking it to the user
     // Extract price_id from checkout session or use the one from subscription lookup
-    const price_id = checkoutSession.product_price_id || 'unknown'
+    const price_id = checkoutSession?.product_price_id || 'unknown'
     
     // Build the row; only include user_id when we have it
     const upsertRow: Record<string, any> = {
