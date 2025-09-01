@@ -134,11 +134,16 @@ function SubscriptionPageContent() {
 
     fetchPlans()
 
-    if (user) {
-      fetchCurrentSubscription()
-      fetchCampaignUsage()
+    // Wait for both user and supabase to be available, and ensure we're not loading
+    if (user && supabase && !loading) {
+      console.log('User and supabase available, fetching subscription data')
+      // Add a small delay to ensure session is fully established
+      setTimeout(() => {
+        fetchCurrentSubscription()
+        fetchCampaignUsage()
+      }, 500)
     }
-  }, [user])
+  }, [user, supabase, loading])
 
   useEffect(() => {
     // This effect runs once on mount to link the subscription if returning from checkout
@@ -197,13 +202,32 @@ function SubscriptionPageContent() {
     try {
       // Get JWT token from Supabase session
       const { data: { session } } = await supabase.auth.getSession()
-      const headers: Record<string, string> = {}
+      console.log('Session in fetchCurrentSubscription:', session ? 'Found' : 'Not found')
+      console.log('Session details:', session ? { user: session.user?.email, expires_at: session.expires_at } : 'null')
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
       
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
+        console.log('Added Authorization header with token (first 50 chars):', session.access_token.substring(0, 50) + '...')
+      } else {
+        console.log('No session or access_token found')
+        // Try to refresh the session
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+        if (refreshedSession?.access_token) {
+          headers['Authorization'] = `Bearer ${refreshedSession.access_token}`
+          console.log('Used refreshed session token')
+        }
       }
       
-      const response = await fetch('/api/get-subscription', { headers })
+      console.log('Making request to /api/get-subscription with headers:', Object.keys(headers))
+      const response = await fetch('/api/get-subscription', { 
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
@@ -260,16 +284,37 @@ function SubscriptionPageContent() {
     try {
       // Get JWT token from Supabase session
       const { data: { session } } = await supabase.auth.getSession()
-      const headers: Record<string, string> = {}
+      console.log('Session in fetchCampaignUsage:', session ? 'Found' : 'Not found')
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
       
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
+        console.log('Added Authorization header for campaign usage')
+      } else {
+        console.log('No session or access_token found for campaign usage')
+        // Try to refresh the session
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+        if (refreshedSession?.access_token) {
+          headers['Authorization'] = `Bearer ${refreshedSession.access_token}`
+          console.log('Used refreshed session token for campaign usage')
+        }
       }
       
-      const response = await fetch('/api/campaigns/usage', { headers })
+      console.log('Making request to /api/campaigns/usage with headers:', Object.keys(headers))
+      const response = await fetch('/api/campaigns/usage', { 
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('Campaign usage data received:', data)
         setCampaignUsage(data)
+      } else {
+        console.log('Campaign usage request failed:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Failed to fetch campaign usage:', error)
