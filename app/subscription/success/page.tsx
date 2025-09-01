@@ -47,19 +47,38 @@ function SubscriptionSuccessContent() {
       // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
         try {
-          const res = await fetch('/api/polar/link-subscription', {
+          const linkPromise = fetch('/api/polar/link-subscription', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               checkout_id: checkoutId,
               user_id: user.id,
-              // Forward optional IDs to help linking without Polar API
               polar_subscription_id: subIdParam || undefined,
               polar_customer_id: custIdParam || undefined,
-            })
-          })
+            }),
+          });
+
+          toast.promise(
+            linkPromise.then(async (res) => {
+              if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
+                throw new Error(errorData.error || `Request failed with status ${res.status}`);
+              }
+              return res.json();
+            }),
+            {
+              loading: 'Finalizing your subscription...',
+              success: 'Subscription linked successfully!',
+              error: (err) => `Error: ${err.message}`,
+            }
+          );
+
+          const res = await linkPromise;
           if (!res.ok) {
-            console.warn('link-subscription returned non-OK status', res.status)
+            console.error('Failed to link subscription:', res.status);
+            // Stop further execution if linking fails critically
+            setIsLoading(false);
+            return;
           }
         } catch (e) {
           console.warn('link-subscription call failed:', e)
@@ -68,13 +87,13 @@ function SubscriptionSuccessContent() {
         }
       })()
     }
-  }, [checkoutId, user])
+  }, [checkoutId, user, router, subIdParam, custIdParam])
 
-  const fetchSubscriptionDetails = async () => {
-    if (!checkoutId || !user) return
+  const fetchSubscriptionDetails = async (): Promise<boolean> => {
+    if (!checkoutId || !user) return false
 
     try {
-      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`, { cache: 'no-store' })
+      const response = await fetch(`/api/get-subscription`, { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
@@ -96,11 +115,14 @@ function SubscriptionSuccessContent() {
             current_period_end: data.subscription.current_period_end,
             campaign_limit: campaignLimit
           })
+          return true
         }
       }
+      return false
     } catch (error) {
       console.error('Failed to fetch subscription details:', error)
       toast.error('Failed to load subscription details')
+      return false
     } finally {
       setIsLoading(false)
     }
@@ -109,8 +131,8 @@ function SubscriptionSuccessContent() {
   // Poll subscription details for a short period to allow webhook/linking to complete
   const pollSubscriptionDetails = async (maxAttempts = 8, delayMs = 2500) => {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      await fetchSubscriptionDetails()
-      if (subscriptionData) return
+      const success = await fetchSubscriptionDetails()
+      if (success) return
       await new Promise((r) => setTimeout(r, delayMs))
     }
   }
