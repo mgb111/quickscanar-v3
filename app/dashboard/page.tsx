@@ -5,7 +5,7 @@ import type React from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video } from 'lucide-react'
+import { Camera, Plus, Eye, Trash2, QrCode, Copy, Upload, ArrowRight, Video, Crown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Header from '@/components/Header'
 
@@ -28,6 +28,9 @@ export default function Dashboard() {
   const [loadingExperiences, setLoadingExperiences] = useState(true)
   const [showMarkerQR, setShowMarkerQR] = useState<string | null>(null)
   const [markerQRDataUrl, setMarkerQRDataUrl] = useState<string | null>(null)
+  const [subscription, setSubscription] = useState<any>(null)
+  const [campaignLimit, setCampaignLimit] = useState(1) // Default for free users
+
   // Editor state for draggable QR over marker
   const [qrEditorOpen, setQrEditorOpen] = useState(false)
   const [editorExperience, setEditorExperience] = useState<ARExperience | null>(null)
@@ -299,8 +302,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchExperiences()
+      fetchSubscription()
     }
   }, [user])
+
+  const fetchSubscription = async () => {
+    if (!user) return
+    try {
+      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.subscription) {
+          setSubscription(data.subscription)
+          const planName = data.subscription.plan_name || ''
+          if (planName.toLowerCase().includes('monthly')) {
+            setCampaignLimit(3)
+          } else if (planName.toLowerCase().includes('annual')) {
+            setCampaignLimit(36) // Represents Pro/Unlimited
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscription details:', error)
+    }
+  }
 
   const fetchExperiences = async () => {
     if (!supabase) {
@@ -482,6 +507,39 @@ export default function Dashboard() {
           <p className="text-lg sm:text-xl opacity-80 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
             Create and manage your augmented reality experiences
           </p>
+        </div>
+
+        {/* Campaign Usage & Subscription Status */}
+        <div className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold mb-2 text-black flex items-center">
+                <Crown className="h-5 w-5 mr-2 text-yellow-500" />
+                Your Plan & Usage
+              </h3>
+              <p className="text-black opacity-80 mb-3">
+                Current Plan: <span className="font-semibold">{subscription ? subscription.plan_name : 'Free Plan'}</span>
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-red-600 h-2.5 rounded-full"
+                  style={{ width: `${Math.min((experiences.length / (campaignLimit === 36 ? 1 : campaignLimit)) * 100, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-black opacity-80 mt-1">
+                {experiences.length} / {campaignLimit === 36 ? 'Unlimited' : campaignLimit} campaigns used
+              </p>
+            </div>
+            {(!subscription || campaignLimit < 36) && (
+              <Link
+                href="/subscription"
+                className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
+              >
+                Upgrade Plan
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Step 1: Create AR Format */}

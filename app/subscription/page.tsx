@@ -83,7 +83,7 @@ function SubscriptionPageContent() {
         ],
         popular: true, // Shows "Most Popular" badge
         ctaText: 'Start Monthly Plan',
-        polarCheckoutUrl: process.env.NEXT_PUBLIC_POLAR_HOBBY_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=hobby',
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
       },
       {
         id: 'price_yearly',
@@ -100,7 +100,7 @@ function SubscriptionPageContent() {
         ],
         savingsText: 'Save $89/year',
         ctaText: 'Start Annual',
-        polarCheckoutUrl: process.env.NEXT_PUBLIC_POLAR_PRO_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=pro',
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
       }
     ]
     console.log('🔍 Setting actual plans:', actualPlans)

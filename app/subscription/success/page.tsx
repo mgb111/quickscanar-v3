@@ -22,6 +22,7 @@ interface SubscriptionSuccess {
   currency: string
   interval: string
   current_period_end: string
+  campaign_limit: string
 }
 
 function SubscriptionSuccessContent() {
@@ -52,14 +53,23 @@ function SubscriptionSuccessContent() {
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
+          const planName = data.subscription.plan_name || 'Premium Plan';
+          let campaignLimit = 'Unknown';
+          if (planName.toLowerCase().includes('monthly')) {
+            campaignLimit = '3 Campaigns';
+          } else if (planName.toLowerCase().includes('annual')) {
+            campaignLimit = 'Unlimited Campaigns';
+          }
+
           setSubscriptionData({
             checkout_id: checkoutId,
             subscription_id: data.subscription.id,
-            plan_name: data.subscription.plan_name || 'Premium Plan',
+            plan_name: planName,
             amount: data.subscription.amount || 0,
             currency: data.subscription.currency || 'USD',
             interval: data.subscription.interval || 'month',
-            current_period_end: data.subscription.current_period_end
+            current_period_end: data.subscription.current_period_end,
+            campaign_limit: campaignLimit
           })
         }
       }
@@ -123,6 +133,10 @@ function SubscriptionSuccessContent() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Plan:</span>
                   <span className="font-medium text-gray-900">{subscriptionData.plan_name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Campaigns Unlocked:</span>
+                  <span className="font-medium text-gray-900">{subscriptionData.campaign_limit}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Amount:</span>

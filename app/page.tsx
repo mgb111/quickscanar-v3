@@ -345,7 +345,7 @@ function HomePage() {
                 </li>
               </ul>
               <a
-                href={process.env.NEXT_PUBLIC_POLAR_HOBBY_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=hobby'}
+                href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
@@ -378,7 +378,7 @@ function HomePage() {
                 </li>
               </ul>
               <a
-                href={process.env.NEXT_PUBLIC_POLAR_PRO_CHECKOUT_URL || 'https://polar.sh/quickscanar/subscriptions?tier=pro'}
+                href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect"
                 data-polar-checkout
                 data-polar-checkout-theme="dark"
                 data-customer-id={user?.id}
