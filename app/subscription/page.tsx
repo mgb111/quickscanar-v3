@@ -54,7 +54,7 @@ function SubscriptionPageContent() {
     const fetchPlans = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/polar?action=prices')
+        const response = await fetch('/api/polar?action=prices', { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('Failed to fetch pricing plans')
         }
@@ -94,6 +94,30 @@ function SubscriptionPageContent() {
             interval: 'month',
             features: ['1 AR Experience', 'Basic Tracking', 'Community Support'],
             priceNote: 'Forever',
+          },
+          {
+            id: 'price_monthly',
+            name: 'Monthly',
+            description: 'Great for getting started',
+            amount: 49,
+            currency: 'USD',
+            interval: 'month',
+            features: ['Up to 3 AR Experiences / month', 'Standard Analytics', 'Email Support'],
+            polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+            ctaText: 'Start Monthly Plan',
+            popular: true,
+          },
+          {
+            id: 'price_yearly',
+            name: 'Annual',
+            description: 'Best value for teams',
+            amount: 499,
+            currency: 'USD',
+            interval: 'year',
+            features: ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+            polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+            ctaText: 'Start Annual',
+            savingsText: 'Save $89/year',
           },
         ])
       } finally {

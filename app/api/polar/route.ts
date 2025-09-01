@@ -46,15 +46,6 @@ interface PolarWebhookEvent {
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if Supabase is configured
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase not configured for Polar API')
-      return NextResponse.json(
-        { error: 'Service not configured' },
-        { status: 503 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action')
     const userId = searchParams.get('userId')
@@ -68,11 +59,17 @@ export async function GET(request: NextRequest) {
           polarApiUrl: POLAR_API_URL
         })
       case 'subscription':
+        if (!supabaseUrl || !supabaseKey) {
+          return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
+        }
         if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         return await getSubscription(userId)
       case 'prices':
         return await getPrices()
       case 'customer':
+        if (!supabaseUrl || !supabaseKey) {
+          return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
+        }
         if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         return await getCustomer(userId)
       default:
@@ -183,35 +180,37 @@ async function getPrices() {
     console.log('🔍 getPrices called - POLAR_API_KEY exists:', !!process.env.POLAR_API_KEY)
     console.log('🔍 POLAR_API_URL:', POLAR_API_URL)
     
-    // Check if API key exists
+    // Define fallback sandbox prices once (used for missing key or API failures)
+    const fallbackPrices = [
+      {
+        id: 'price_monthly',
+        name: 'Monthly',
+        amount: 49,
+        currency: 'USD',
+        interval: 'month',
+        features: getFeaturesForPrice(4900, 'month'),
+        description: getDescriptionForPrice(4900, 'month'),
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+        ctaText: 'Start Monthly Plan',
+        popular: true,
+      },
+      {
+        id: 'price_yearly',
+        name: 'Annual',
+        amount: 499,
+        currency: 'USD',
+        interval: 'year',
+        features: getFeaturesForPrice(49900, 'year'),
+        description: getDescriptionForPrice(49900, 'year'),
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+        ctaText: 'Start Annual',
+        savingsText: 'Save $89/year',
+      },
+    ]
+
+    // Check if API key exists; if not, serve fallback
     if (!process.env.POLAR_API_KEY) {
       console.error('❌ POLAR_API_KEY not found in environment variables - returning fallback sandbox prices')
-      const fallbackPrices = [
-        {
-          id: 'price_monthly',
-          name: 'Monthly',
-          amount: 49,
-          currency: 'USD',
-          interval: 'month',
-          features: getFeaturesForPrice(4900, 'month'),
-          description: getDescriptionForPrice(4900, 'month'),
-          polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
-          ctaText: 'Start Monthly Plan',
-          popular: true,
-        },
-        {
-          id: 'price_yearly',
-          name: 'Annual',
-          amount: 499,
-          currency: 'USD',
-          interval: 'year',
-          features: getFeaturesForPrice(49900, 'year'),
-          description: getDescriptionForPrice(49900, 'year'),
-          polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
-          ctaText: 'Start Annual',
-          savingsText: 'Save $89/year',
-        },
-      ]
       return NextResponse.json({ prices: fallbackPrices })
     }
 
@@ -229,8 +228,8 @@ async function getPrices() {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ Polar.sh API error:', response.status, errorText)
-      throw new Error(`Failed to fetch prices from Polar.sh: ${response.status} ${errorText}`)
+      console.error('❌ Polar.sh API error:', response.status, errorText, '- falling back to sandbox prices')
+      return NextResponse.json({ prices: fallbackPrices })
     }
 
     const prices = await response.json()
@@ -252,12 +251,35 @@ async function getPrices() {
     console.log('🎯 Formatted prices:', formattedPrices)
     return NextResponse.json({ prices: formattedPrices })
   } catch (error) {
-    console.error('💥 Error in getPrices:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json(
-      { error: 'Failed to fetch pricing information', details: errorMessage },
-      { status: 500 }
-    )
+    console.error('💥 Error in getPrices, serving fallback:', error)
+    // On any error, still serve fallback prices so UI shows paid plans
+    const fallbackPrices = [
+      {
+        id: 'price_monthly',
+        name: 'Monthly',
+        amount: 49,
+        currency: 'USD',
+        interval: 'month',
+        features: getFeaturesForPrice(4900, 'month'),
+        description: getDescriptionForPrice(4900, 'month'),
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+        ctaText: 'Start Monthly Plan',
+        popular: true,
+      },
+      {
+        id: 'price_yearly',
+        name: 'Annual',
+        amount: 499,
+        currency: 'USD',
+        interval: 'year',
+        features: getFeaturesForPrice(49900, 'year'),
+        description: getDescriptionForPrice(49900, 'year'),
+        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+        ctaText: 'Start Annual',
+        savingsText: 'Save $89/year',
+      },
+    ]
+    return NextResponse.json({ prices: fallbackPrices })
   }
 }
 
