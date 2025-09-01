@@ -255,10 +255,18 @@ function SubscriptionPageContent() {
   }
 
   const fetchCampaignUsage = async () => {
-    if (!user) return
+    if (!user || !supabase) return
     
     try {
-      const response = await fetch('/api/campaigns/usage')
+      // Get JWT token from Supabase session
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: Record<string, string> = {}
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+      
+      const response = await fetch('/api/campaigns/usage', { headers })
       if (response.ok) {
         const data = await response.json()
         setCampaignUsage(data)
