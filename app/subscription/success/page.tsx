@@ -27,18 +27,12 @@ interface SubscriptionSuccess {
 }
 
 function SubscriptionSuccessContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, supabase } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionSuccess | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Create Supabase client for getting session token
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   const checkoutId = searchParams.get('checkout_id')
   // Capture optional IDs that Polar may include in success URL
@@ -56,7 +50,7 @@ function SubscriptionSuccessContent() {
       return
     }
 
-    if (user) {
+    if (user && supabase) {
       // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
         try {
@@ -119,7 +113,7 @@ function SubscriptionSuccessContent() {
   }, [checkoutId, user, router, subIdParam, custIdParam, supabase])
 
   const fetchSubscriptionDetails = async (): Promise<boolean> => {
-    if (!checkoutId || !user) return false
+    if (!checkoutId || !user || !supabase) return false
 
     try {
       // Get the current session to include JWT token
