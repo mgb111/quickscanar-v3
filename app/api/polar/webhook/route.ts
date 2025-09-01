@@ -11,6 +11,26 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl!, supabaseKey!)
 
+// Helper: resolve our auth user_id from a Polar customer_id stored in DB
+async function resolveUserIdByPolarCustomerId(polarCustomerId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('user_id')
+      .eq('polar_customer_id', polarCustomerId)
+      .maybeSingle?.() ?? { data: null, error: null }
+
+    if ((error as any)?.code && (error as any).code !== 'PGRST116') {
+      console.error('Error resolving user by polar_customer_id:', error)
+      return null
+    }
+    return (data as any)?.user_id ?? null
+  } catch (e) {
+    console.error('Unexpected error resolving user by polar_customer_id:', e)
+    return null
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check if Supabase is configured
@@ -28,6 +48,14 @@ export async function POST(request: NextRequest) {
     
     const event = JSON.parse(body)
     console.log('Polar.sh webhook received:', event.type)
+    // Minimal IDs to help correlate in logs
+    try {
+      console.log('Payload IDs snapshot:', {
+        subscription_id: event?.data?.id || event?.data?.subscription_id,
+        customer_id: event?.data?.customer_id,
+        order_id: event?.data?.id,
+      })
+    } catch {}
 
     switch (event.type) {
       // Subscription events
@@ -69,19 +97,23 @@ export async function POST(request: NextRequest) {
 
 async function handleSubscriptionCreated(subscription: any) {
   try {
+    const resolvedUserId = await resolveUserIdByPolarCustomerId(subscription.customer_id)
+    const record: any = {
+      polar_subscription_id: subscription.id,
+      polar_customer_id: subscription.customer_id,
+      plan_name: subscription?.price?.product?.name || 'Unknown Plan',
+      status: subscription.status,
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      created_at: subscription.created_at,
+      updated_at: new Date().toISOString()
+    }
+    if (resolvedUserId) record.user_id = resolvedUserId
+
     const { error } = await supabase
       .from('user_subscriptions')
-      .upsert({
-        polar_subscription_id: subscription.id,
-        user_id: subscription.customer_id,
-        plan_name: subscription.price.product.name || 'Unknown Plan',
-        status: subscription.status,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        created_at: subscription.created_at,
-        updated_at: new Date().toISOString()
-      })
+      .upsert(record)
 
     if (error) {
       console.error('Error creating subscription in Supabase:', error)
@@ -98,7 +130,7 @@ async function handleSubscriptionUpdated(subscription: any) {
     const { error } = await supabase
       .from('user_subscriptions')
       .update({
-        plan_name: subscription.price.product.name || 'Unknown Plan',
+        plan_name: subscription?.price?.product?.name || 'Unknown Plan',
         status: subscription.status,
         current_period_start: subscription.current_period_start,
         current_period_end: subscription.current_period_end,
@@ -142,6 +174,7 @@ async function handlePaymentSucceeded(order: any) {
     // When an order is paid, the subscription is typically created or renewed.
     // Let's ensure the subscription status is active.
     if (order.subscription_id) {
+      const resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
       const { error } = await supabase
         .from('user_subscriptions')
         .update({
@@ -155,14 +188,28 @@ async function handlePaymentSucceeded(order: any) {
       } else {
         console.log('Subscription status updated to active after successful payment:', order.subscription_id)
       }
+
+      // If we resolved a user and the row is missing user_id, try to set it
+      if (resolvedUserId) {
+        try {
+          await supabase
+            .from('user_subscriptions')
+            .update({ user_id: resolvedUserId })
+            .is('user_id', null as any)
+            .eq('polar_subscription_id', order.subscription_id)
+        } catch (e) {
+          console.warn('Unable to backfill user_id on user_subscriptions:', e)
+        }
+      }
     }
 
     // Log the successful payment in the payment_history table
+    const resolvedUserId = order.customer_id ? await resolveUserIdByPolarCustomerId(order.customer_id) : null
     const { error: paymentError } = await supabase
       .from('payment_history')
       .insert({
         polar_order_id: order.id, // Using order ID instead of invoice ID
-        user_id: order.customer_id,
+        user_id: resolvedUserId || order.customer_id,
         amount: order.amount,
         currency: order.currency,
         status: 'succeeded',
