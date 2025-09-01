@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
+  console.log("get-subscription - cookies:", request.headers.get('cookie'));
+  console.log("get-subscription - headers:", Object.fromEntries(request.headers.entries()));
   const supabase = createRouteHandlerClient({ cookies })
 
   const { data: { user } } = await supabase.auth.getUser()

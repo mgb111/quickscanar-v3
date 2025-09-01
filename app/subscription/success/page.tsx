@@ -38,6 +38,11 @@ function SubscriptionSuccessContent() {
   const custIdParam = searchParams.get('customer_id') || searchParams.get('customerId')
 
   useEffect(() => {
+    console.log("Success page - document.cookie:", document.cookie);
+    console.log("Success page - user agent:", navigator.userAgent);
+  }, []);
+
+  useEffect(() => {
     if (!checkoutId) {
       router.push('/subscription')
       return
@@ -50,6 +55,7 @@ function SubscriptionSuccessContent() {
           const linkPromise = fetch('/api/polar/link-subscription', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               checkout_id: checkoutId,
               user_id: user.id,
@@ -93,7 +99,7 @@ function SubscriptionSuccessContent() {
     if (!checkoutId || !user) return false
 
     try {
-      const response = await fetch(`/api/get-subscription`, { cache: 'no-store' })
+      const response = await fetch(`/api/get-subscription`, { cache: 'no-store', credentials: 'include' })
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
