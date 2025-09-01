@@ -42,10 +42,17 @@ interface UserSubscription {
   is_active: boolean
 }
 
+interface CampaignUsage {
+  used: number
+  limit: number
+  plan_name: string
+}
+
 function SubscriptionPageContent() {
   const { user, loading } = useAuth()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null)
+  const [campaignUsage, setCampaignUsage] = useState<CampaignUsage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -129,6 +136,7 @@ function SubscriptionPageContent() {
 
     if (user) {
       fetchCurrentSubscription()
+      fetchCampaignUsage()
     }
   }, [user])
 
@@ -187,22 +195,74 @@ function SubscriptionPageContent() {
     if (!user) return
     
     try {
-      const response = await fetch(`/api/polar?action=subscription&userId=${user.id}`)
+      const response = await fetch('/api/get-subscription')
       if (response.ok) {
         const data = await response.json()
         if (data.subscription) {
+          // Map price_id to plan name
+          const planName = getPlanNameFromPriceId(data.subscription.price_id)
+          const features = getFeaturesFromPriceId(data.subscription.price_id)
+          
           setCurrentSubscription({
-            id: data.subscription.id,
+            id: data.subscription.polar_subscription_id,
             status: data.subscription.status,
-            plan_name: data.subscription.plan_name || 'Unknown Plan',
-            features: data.subscription.features || [],
+            plan_name: planName,
+            features: features,
             current_period_end: data.subscription.current_period_end,
-            is_active: data.subscription.is_active
+            is_active: data.subscription.status === 'active'
           })
         }
       }
     } catch (error) {
       console.error('Failed to fetch subscription:', error)
+    }
+  }
+
+  const getPlanNameFromPriceId = (priceId: string): string => {
+    if (!priceId || priceId === 'unknown') return 'QuickScanAR Monthly'
+    
+    // Map known price IDs to plan names
+    const priceMap: Record<string, string> = {
+      '911e3835-9350-440e-a4d3-86702b91f49f': 'QuickScanAR Monthly',
+      'price_monthly': 'QuickScanAR Monthly',
+      'price_yearly': 'QuickScanAR Annual',
+    }
+    
+    return priceMap[priceId] || 'QuickScanAR Monthly'
+  }
+
+  const getFeaturesFromPriceId = (priceId: string): string[] => {
+    if (!priceId || priceId === 'unknown') {
+      return ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support']
+    }
+    
+    // Map price IDs to features
+    const featuresMap: Record<string, string[]> = {
+      '911e3835-9350-440e-a4d3-86702b91f49f': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_monthly': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support'],
+      'price_yearly': ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+    }
+    
+    return featuresMap[priceId] || ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support']
+  }
+
+  const fetchCampaignUsage = async () => {
+    if (!user) return
+    
+    try {
+      const response = await fetch('/api/campaigns/usage')
+      if (response.ok) {
+        const data = await response.json()
+        setCampaignUsage(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch campaign usage:', error)
+      // Set default usage for free plan
+      setCampaignUsage({
+        used: 0,
+        limit: 1,
+        plan_name: 'Free Plan'
+      })
     }
   }
 
@@ -371,6 +431,62 @@ function SubscriptionPageContent() {
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Plan & Usage Section */}
+        {campaignUsage && (
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-black mb-8">
+            <h2 className="text-xl font-semibold text-black mb-4">Your Plan & Usage</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-medium text-black mb-2">Current Plan: {campaignUsage.plan_name}</h3>
+                <div className="text-black">
+                  <span className="text-2xl font-bold text-red-600">{campaignUsage.used}</span>
+                  <span className="text-black mx-2">/</span>
+                  <span className="text-lg">
+                    {campaignUsage.limit === -1 ? 'Unlimited' : campaignUsage.limit}
+                  </span>
+                  <span className="text-black ml-2">campaigns used</span>
+                </div>
+                {campaignUsage.limit !== -1 && (
+                  <div className="mt-3">
+                    <div className="bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-red-600 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min((campaignUsage.used / campaignUsage.limit) * 100, 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {campaignUsage.limit - campaignUsage.used} campaigns remaining
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-center">
+                {campaignUsage.limit === -1 ? (
+                  <div className="text-center">
+                    <CheckCircle className="h-12 w-12 text-red-600 mx-auto mb-2" />
+                    <p className="text-black font-medium">Unlimited Access</p>
+                    <p className="text-sm text-gray-600">Create as many campaigns as you need</p>
+                  </div>
+                ) : campaignUsage.used >= campaignUsage.limit ? (
+                  <div className="text-center">
+                    <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-2" />
+                    <p className="text-black font-medium">Limit Reached</p>
+                    <p className="text-sm text-gray-600">Upgrade to create more campaigns</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                    <p className="text-black font-medium">Active Plan</p>
+                    <p className="text-sm text-gray-600">You can create more campaigns</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
