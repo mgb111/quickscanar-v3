@@ -1,4 +1,4 @@
-# Zapier Integration Setup Guide
+# Make.com Integration Setup Guide
 
 ## Step 1: Supabase Setup
 
@@ -10,41 +10,41 @@
 2. **Get API Credentials**
    - Go to Supabase Dashboard → Settings → API
    - Copy your **Project URL** and **Service Role Key**
-   - Keep these safe for Zapier configuration
+   - Keep these safe for Make.com configuration
 
 ## Step 2: Polar Setup
 
 1. **Create Subscription Plans**
    - Go to Polar Dashboard → Products → Subscriptions
    - Create your plans (e.g., "monthly", "annual", "pro")
-   - Note the plan names - these will be used in Zapier
+   - Note the plan names - these will be used in Make.com
 
 2. **Get Checkout Links**
    - Create checkout links for each plan
    - Test with a sample user to ensure webhooks fire
 
-## Step 3: Zapier Configuration
+## Step 3: Make.com Configuration
 
-### Create the Zap
+### Create the Scenario
 
 1. **Trigger Setup**
-   - Create new Zap → Trigger: "Webhooks by Zapier"
-   - Choose "Catch Hook"
-   - Copy the webhook URL Zapier provides
+   - Create new Scenario → Trigger: "Webhooks"
+   - Choose "Custom webhook"
+   - Copy the webhook URL Make.com provides
 
 2. **Configure Polar Webhook**
    - Go to Polar → Developers → Webhooks
-   - Add new webhook with Zapier URL
+   - Add new webhook with Make.com URL
    - Select events: `subscription.created`, `subscription.updated`, `subscription.canceled`, `invoice.paid`
 
 3. **Test the Trigger**
    - Subscribe a test user in Polar
-   - Verify Zapier receives the webhook data
+   - Verify Make.com receives the webhook data
 
 ### Action Setup
 
-1. **Add Action: Custom Request**
-   - Action: "Webhooks by Zapier" → "Custom Request"
+1. **Add Module: HTTP Request**
+   - Module: "HTTP" → "Make a request"
    - Method: `POST`
    - URL: `https://YOUR_PROJECT.supabase.co/rest/v1/subscriptions`
 
@@ -59,12 +59,12 @@
 3. **Body (JSON)**
    ```json
    {
-     "email": "{{customer_email}}",
-     "polar_customer_id": "{{customer_id}}",
-     "plan": "{{plan_name}}",
+     "email": "{{customer.email}}",
+     "polar_customer_id": "{{customer.id}}",
+     "plan": "{{product.name}}",
      "status": "active",
      "start_date": "{{created_at}}",
-     "price_id": "{{price_id}}"
+     "price_id": "{{product.price.id}}"
    }
    ```
 
@@ -80,12 +80,12 @@ Map these Polar webhook fields to Supabase columns:
 
 ## Step 4: Handle Updates (Optional)
 
-### Subscription Cancellation Zap
+### Subscription Cancellation Scenario
 
 1. **Trigger**: Polar webhook for `subscription.canceled`
-2. **Action**: Custom Request
+2. **Action**: HTTP Request
    - Method: `PATCH`
-   - URL: `https://YOUR_PROJECT.supabase.co/rest/v1/subscriptions?polar_customer_id=eq.{{customer_id}}`
+   - URL: `https://YOUR_PROJECT.supabase.co/rest/v1/subscriptions?polar_customer_id=eq.{{customer.id}}`
    - Body:
    ```json
    {
@@ -137,10 +137,10 @@ curl -H "Authorization: Bearer YOUR_JWT" https://yourapp.com/api/campaigns/usage
 
 ## Environment Variables
 
-No additional environment variables needed - the app now uses the Zapier-managed `subscriptions` table instead of direct Polar integration.
+No additional environment variables needed - the app now uses the Make.com-managed `subscriptions` table instead of direct Polar integration.
 
 ## Migration Notes
 
 - Old `user_subscriptions` table is no longer used
 - Polar webhook endpoints (`/api/polar/webhook`, `/api/polar/link-subscription`) can be removed
-- Direct Polar API calls are replaced by Zapier automation
+- Direct Polar API calls are replaced by Make.com automation
