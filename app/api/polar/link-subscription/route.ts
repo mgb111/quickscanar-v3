@@ -88,50 +88,20 @@ export async function POST(request: NextRequest) {
     console.log("🔍 Extracted from checkout:", extractedData);
     
     // Calculate end_date based on plan interval
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    
-    // Get interval from checkout data
+    // 4. Determine plan limits and interval
+    const planName = (extractedData.product_name || '').toLowerCase();
     const interval = checkout.product?.recurring_interval || checkout.product_price?.recurring_interval || 'month';
-    console.log('📅 Subscription interval:', interval);
-    
-    if (interval === 'month') {
-      endDate.setMonth(endDate.getMonth() + 1);
-    } else if (interval === 'year') {
-      endDate.setFullYear(endDate.getFullYear() + 1);
-    } else {
-      // Default to 1 month if interval is unclear
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
-    
-    console.log('📅 Calculated dates:', { 
-      start: startDate.toISOString(), 
-      end: endDate.toISOString() 
-    });
 
-    const subscriptionData = {
-      user_id: user.id,
-      email: user.email || '',
-      polar_customer_id: extractedData.customer_id,
-      plan: extractedData.product_name,
-      price_id: extractedData.price_id,
-      status: 'active',
-      start_date: startDate.toISOString(),
-      end_date: endDate.toISOString(),
+    const getPlanLimit = (plan: string) => {
+      if (plan.includes('annual')) return 36;
+      if (plan.includes('monthly')) return 3;
+      return 1; // Default for free or unknown plans
     };
+    const newCampaignLimit = getPlanLimit(planName);
 
-    console.log("💾 Subscription data to save:", JSON.stringify(subscriptionData, null, 2));
+    console.log(`Plan: "${planName}", Interval: "${interval}", New Campaigns: ${newCampaignLimit}`);
 
-    // 4. Check if any critical data is missing
-    if (!subscriptionData.polar_customer_id) {
-      console.warn('⚠️ Missing polar_customer_id - checkout might be incomplete');
-    }
-    if (!subscriptionData.plan) {
-      console.warn('⚠️ Missing plan name - using default');
-      subscriptionData.plan = 'premium';
-    }
-
-    // 5. Save to database - first check if user already has a subscription
+    // 5. Save to database - check for existing subscription to stack benefits
     const { data: existingSubscription } = await supabaseAdmin
       .from('subscriptions')
       .select('*')
@@ -139,29 +109,85 @@ export async function POST(request: NextRequest) {
       .single();
 
     let data, error;
-    
-    if (existingSubscription) {
-      // Update existing subscription
-      console.log('📝 Updating existing subscription for user:', user.id);
+
+    // Check if the new purchase is for the same plan to stack them
+    if (existingSubscription && existingSubscription.plan.toLowerCase() === planName) {
+      console.log('🔄 Stacking subscription for user:', user.id);
+
+      const existingEndDate = new Date(existingSubscription.end_date);
+      const newEndDate = new Date(existingEndDate);
+
+      if (interval === 'month') {
+        newEndDate.setMonth(newEndDate.getMonth() + 1);
+      } else if (interval === 'year') {
+        newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+      } else {
+        newEndDate.setMonth(newEndDate.getMonth() + 1); // Default
+      }
+
+      const updatedSubscription = {
+        end_date: newEndDate.toISOString(),
+        campaign_limit: (existingSubscription.campaign_limit || 1) + newCampaignLimit,
+        status: 'active', // Ensure status is active
+        price_id: extractedData.price_id, // Update price_id in case it changed
+      };
+
+      console.log('📈 New stacked values:', updatedSubscription);
+
       const result = await supabaseAdmin
         .from('subscriptions')
-        .update(subscriptionData)
-        .eq('user_id', user.id)
+        .update(updatedSubscription)
+        .eq('id', existingSubscription.id)
         .select()
         .single();
       data = result.data;
       error = result.error;
+
     } else {
-      // Insert new subscription
-      console.log('➕ Creating new subscription for user:', user.id);
-      const result = await supabaseAdmin
-        .from('subscriptions')
-        .insert(subscriptionData)
-        .select()
-        .single();
-      data = result.data;
-      error = result.error;
+      // This handles both new subscriptions and plan changes (upgrades/downgrades)
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      if (interval === 'month') {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (interval === 'year') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      }
+
+      const subscriptionData = {
+        user_id: user.id,
+        email: user.email || '',
+        polar_customer_id: extractedData.customer_id,
+        plan: extractedData.product_name,
+        price_id: extractedData.price_id,
+        status: 'active',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        campaign_limit: newCampaignLimit,
+      };
+
+      if (existingSubscription) {
+        console.log('📝 Overwriting existing subscription for user (plan change):', user.id);
+        const result = await supabaseAdmin
+          .from('subscriptions')
+          .update(subscriptionData)
+          .eq('id', existingSubscription.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } else {
+        console.log('➕ Creating new subscription for user:', user.id);
+        const result = await supabaseAdmin
+          .from('subscriptions')
+          .insert(subscriptionData)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
     }
+
+
 
     if (error) {
       console.error("❌ Database error:", error);

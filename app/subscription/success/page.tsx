@@ -100,17 +100,19 @@ function SubscriptionSuccessContent() {
           );
 
           const res = await linkPromise;
-          if (!res.ok) {
+          if (res.ok) {
+            // Only poll if linking was successful
+            pollSubscriptionDetails();
+          } else {
             console.error('Failed to link subscription:', res.status);
-            setError("Failed to link subscription");
+            const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
+            setError(errorData.error || "Failed to link subscription");
             setIsLoading(false);
-            return;
           }
-        } catch (e) {
+        } catch (e: any) {
           console.warn('link-subscription call failed:', e)
-          setError("Failed to process subscription");
-        } finally {
-          pollSubscriptionDetails()
+          setError(e.message || "Failed to process subscription");
+          setIsLoading(false);
         }
       })()
     }

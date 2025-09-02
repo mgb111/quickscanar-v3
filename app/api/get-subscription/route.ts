@@ -61,17 +61,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const planType = data.plan?.toLowerCase() as keyof typeof planInfo
-    const plan = planInfo[planType] || {
+    const planType = data.plan?.toLowerCase() as keyof typeof planInfo;
+    let plan = planInfo[planType] || {
       name: data.plan || 'Custom Plan',
       features: ['Contact Support for details'],
-      limit: 3
+      limit: 1 // Default to 1 as a fallback
+    };
+
+    // IMPORTANT: Override the plan's default limit with the actual limit from the user's subscription record.
+    // This ensures that stacked subscriptions are correctly reflected.
+    if (data.campaign_limit && typeof data.campaign_limit === 'number') {
+      plan.limit = data.campaign_limit;
     }
 
     return NextResponse.json({
       subscription: data,
       plan: plan
-    })
+    });
 
   } catch (error) {
     console.error('Unexpected error fetching subscription:', error)

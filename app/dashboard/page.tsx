@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [markerQRDataUrl, setMarkerQRDataUrl] = useState<string | null>(null)
   const [subscription, setSubscription] = useState<any>(null)
   const [campaignLimit, setCampaignLimit] = useState(1) // Default for free users
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   // Editor state for draggable QR over marker
   const [qrEditorOpen, setQrEditorOpen] = useState(false)
@@ -307,22 +308,29 @@ export default function Dashboard() {
   }, [user])
 
   const fetchSubscription = async () => {
-    if (!user) return
+    if (!user) return;
+    setLoadingSubscription(true);
     try {
-      const response = await fetch('/api/get-subscription')
+      const response = await fetch('/api/get-subscription');
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.subscription) {
-          setSubscription(data.subscription)
+          setSubscription(data.subscription);
           if (data.plan && typeof data.plan.limit === 'number') {
-            setCampaignLimit(data.plan.limit)
+            setCampaignLimit(data.plan.limit);
           }
+        } else {
+          // Explicitly set free plan if no subscription found
+          setSubscription(null);
+          setCampaignLimit(1);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch subscription details:', error)
+      console.error('Failed to fetch subscription details:', error);
+    } finally {
+      setLoadingSubscription(false);
     }
-  }
+  };
 
   const fetchExperiences = async () => {
     if (!supabase) {
@@ -515,7 +523,7 @@ export default function Dashboard() {
                 Your Plan & Usage
               </h3>
               <p className="text-black opacity-80 mb-3">
-                Current Plan: <span className="font-semibold">{subscription ? subscription.plan_name : 'Free Plan'}</span>
+                Current Plan: <span className="font-semibold capitalize">{loadingSubscription ? 'Loading...' : (subscription?.plan || 'Free Plan')}</span>
               </p>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 

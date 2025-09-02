@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     status TEXT NOT NULL CHECK (status IN ('active', 'canceled', 'failed', 'trialing', 'past_due')),
     start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     end_date TIMESTAMP WITH TIME ZONE,
+    campaign_limit INTEGER DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
