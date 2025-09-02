@@ -87,6 +87,28 @@ export async function POST(request: NextRequest) {
     
     console.log("🔍 Extracted from checkout:", extractedData);
     
+    // Calculate end_date based on plan interval
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    
+    // Get interval from checkout data
+    const interval = checkout.product?.recurring_interval || checkout.product_price?.recurring_interval || 'month';
+    console.log('📅 Subscription interval:', interval);
+    
+    if (interval === 'month') {
+      endDate.setMonth(endDate.getMonth() + 1);
+    } else if (interval === 'year') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+      // Default to 1 month if interval is unclear
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+    
+    console.log('📅 Calculated dates:', { 
+      start: startDate.toISOString(), 
+      end: endDate.toISOString() 
+    });
+
     const subscriptionData = {
       user_id: user.id,
       email: user.email || '',
@@ -94,7 +116,8 @@ export async function POST(request: NextRequest) {
       plan: extractedData.product_name,
       price_id: extractedData.price_id,
       status: 'active',
-      start_date: new Date().toISOString(),
+      start_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
     };
 
     console.log("💾 Subscription data to save:", JSON.stringify(subscriptionData, null, 2));

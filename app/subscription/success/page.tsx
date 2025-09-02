@@ -50,6 +50,15 @@ function SubscriptionSuccessContent() {
       return
     }
 
+    // Wait for auth to load, then proceed
+    if (loading) return
+
+    if (!user) {
+      console.log('❌ No user found on success page, redirecting to signin')
+      router.push('/auth/signin?redirect=/subscription/success?checkout_id=' + checkoutId)
+      return
+    }
+
     if (user && supabase) {
       // Proactively link subscription using checkout_id, then poll for details
       ;(async () => {
