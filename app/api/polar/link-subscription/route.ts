@@ -13,17 +13,17 @@ export async function POST(request: NextRequest) {
   console.log('🚀 Link subscription endpoint called at:', new Date().toISOString());
   
   try {
-    const body = await request.json();
-    console.log('📥 Request body:', JSON.stringify(body, null, 2));
+    const { checkout_id } = await request.json();
     
-    const { checkout_id } = body;
-
     if (!checkout_id) {
-      console.error('❌ No checkout_id provided');
-      return NextResponse.json({ error: "checkout_id is required" }, { status: 400 });
+      return NextResponse.json({ error: 'checkout_id is required' }, { status: 400 });
     }
 
-    // 1. Get user from auth token
+    console.log("🔗 Starting subscription linking for checkout:", checkout_id);
+
+    // Check if this checkout_id has already been processed by looking for price_id match
+    // We'll do a more comprehensive check after fetching the checkout data
+
     const authHeader = request.headers.get('authorization');
     console.log('🔑 Auth header present:', !!authHeader);
     
@@ -87,6 +87,35 @@ export async function POST(request: NextRequest) {
     
     console.log("🔍 Extracted from checkout:", extractedData);
     
+    // Validate required data before proceeding
+    if (!extractedData.customer_id || !extractedData.price_id || !extractedData.product_name) {
+      console.error("❌ Missing required checkout data:", extractedData);
+      return NextResponse.json({ 
+        error: 'Invalid checkout data - missing customer_id, price_id, or product_name',
+        details: extractedData 
+      }, { status: 400 });
+    }
+    
+    // Check for duplicate subscription before processing
+    if (extractedData.customer_id && extractedData.price_id) {
+      const { data: existingSubscription } = await supabaseAdmin
+        .from('subscriptions')
+        .select('id, status')
+        .eq('polar_customer_id', extractedData.customer_id)
+        .eq('price_id', extractedData.price_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingSubscription) {
+        console.log("✅ Duplicate subscription detected, returning existing");
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Subscription already exists',
+          subscription: existingSubscription 
+        });
+      }
+    }
+    
     // Calculate end_date based on plan interval
     // 4. Determine plan limits and interval
     const rawPlanName = (extractedData.product_name || '').toLowerCase();
@@ -113,11 +142,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`Plan: "${planName}", Interval: "${interval}", New Campaigns: ${newCampaignLimit}`);
 
+    // Clean up any empty/invalid subscription records for this user first
+    await supabaseAdmin
+      .from('subscriptions')
+      .delete()
+      .eq('user_id', user.id)
+      .or('plan.is.null,plan.eq.,email.is.null,email.eq.');
+
+    console.log('🧹 Cleaned up empty subscription records');
+
     // 5. Save to database - check for existing subscription to stack benefits
     const { data: existingSubscription } = await supabaseAdmin
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
+      .eq('status', 'active')
       .single();
 
     let data, error;
