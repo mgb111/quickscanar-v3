@@ -108,12 +108,37 @@ export async function POST(request: NextRequest) {
       subscriptionData.plan = 'premium';
     }
 
-    // 5. Save to database
-    const { data, error } = await supabaseAdmin
+    // 5. Save to database - first check if user already has a subscription
+    const { data: existingSubscription } = await supabaseAdmin
       .from('subscriptions')
-      .upsert(subscriptionData, { onConflict: 'user_id' })
-      .select()
+      .select('*')
+      .eq('user_id', user.id)
       .single();
+
+    let data, error;
+    
+    if (existingSubscription) {
+      // Update existing subscription
+      console.log('📝 Updating existing subscription for user:', user.id);
+      const result = await supabaseAdmin
+        .from('subscriptions')
+        .update(subscriptionData)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new subscription
+      console.log('➕ Creating new subscription for user:', user.id);
+      const result = await supabaseAdmin
+        .from('subscriptions')
+        .insert(subscriptionData)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error("❌ Database error:", error);
