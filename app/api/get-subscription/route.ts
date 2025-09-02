@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Map plan names to plan info
+    // Map plan names to plan info - handle various plan name formats
     const planInfo = {
       'monthly': {
         name: 'Monthly Plan',
@@ -56,6 +56,11 @@ export async function GET(request: NextRequest) {
         features: ['36 AR Experiences per year', 'Priority Support', 'Advanced Analytics'],
         limit: 36
       },
+      'yearly': {
+        name: 'Annual Plan', 
+        features: ['36 AR Experiences per year', 'Priority Support', 'Advanced Analytics'],
+        limit: 36
+      },
       'pro': {
         name: 'Pro Plan',
         features: ['10 AR Experiences per month', 'Priority Support', 'Advanced Analytics'],
@@ -63,8 +68,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const planType = data.plan?.toLowerCase() as keyof typeof planInfo;
-    let plan = planInfo[planType] || {
+    // Enhanced plan detection logic
+    const planName = (data.plan || '').toLowerCase();
+    console.log('🔍 Raw plan name from DB:', data.plan, 'Lowercase:', planName);
+    
+    let planType: keyof typeof planInfo | null = null;
+    
+    // Check for exact matches first
+    if (planInfo[planName as keyof typeof planInfo]) {
+      planType = planName as keyof typeof planInfo;
+    } else {
+      // Check for partial matches
+      if (planName.includes('annual') || planName.includes('yearly') || planName.includes('year')) {
+        planType = 'annual';
+      } else if (planName.includes('monthly') || planName.includes('month')) {
+        planType = 'monthly';
+      } else if (planName.includes('pro')) {
+        planType = 'pro';
+      }
+    }
+    
+    console.log('🎯 Detected plan type:', planType);
+    
+    let plan = planType ? planInfo[planType] : {
       name: data.plan || 'Custom Plan',
       features: ['Contact Support for details'],
       limit: 1 // Default to 1 as a fallback

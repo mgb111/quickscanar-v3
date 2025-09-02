@@ -89,8 +89,20 @@ export async function POST(request: NextRequest) {
     
     // Calculate end_date based on plan interval
     // 4. Determine plan limits and interval
-    const planName = (extractedData.product_name || '').toLowerCase();
+    const rawPlanName = (extractedData.product_name || '').toLowerCase();
     const interval = checkout.product?.recurring_interval || checkout.product_price?.recurring_interval || 'month';
+    
+    // Normalize plan name for consistent storage
+    let planName = rawPlanName;
+    if (rawPlanName.includes('annual') || rawPlanName.includes('yearly') || rawPlanName.includes('year') || interval === 'year') {
+      planName = 'annual';
+    } else if (rawPlanName.includes('monthly') || rawPlanName.includes('month') || interval === 'month') {
+      planName = 'monthly';
+    } else if (rawPlanName.includes('pro')) {
+      planName = 'pro';
+    }
+    
+    console.log('🔄 Plan name normalization:', rawPlanName, '->', planName, 'Interval:', interval);
 
     const getPlanLimit = (plan: string) => {
       if (plan.includes('annual')) return 36;
