@@ -150,11 +150,22 @@ function SubscriptionPageContent() {
 
       if (checkoutId) {
         try {
+          // Include Supabase access token for backend auth
+          let headers: Record<string, string> = { 'Content-Type': 'application/json' }
+          try {
+            const { data: { session } } = await supabase!.auth.getSession()
+            if (session?.access_token) {
+              headers['Authorization'] = `Bearer ${session.access_token}`
+            } else {
+              const { data: { session: refreshed } } = await supabase!.auth.refreshSession()
+              if (refreshed?.access_token) {
+                headers['Authorization'] = `Bearer ${refreshed.access_token}`
+              }
+            }
+          } catch {}
           const response = await fetch('/api/polar/link-subscription', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({ checkout_id: checkoutId }),
           })
 

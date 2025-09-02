@@ -188,32 +188,37 @@ async function getPrices(request: NextRequest) {
     console.log('🔍 POLAR_API_URL:', POLAR_API_URL)
     
     // Define fallback sandbox prices once (used for missing key or API failures)
-    const fallbackPrices = [
-      {
-        id: 'price_monthly',
-        name: 'Monthly',
-        amount: 49,
-        currency: 'USD',
-        interval: 'month',
-        features: getFeaturesForPrice(4900, 'month'),
-        description: getDescriptionForPrice(4900, 'month'),
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
-        ctaText: 'Start Monthly Plan',
-        popular: true,
-      },
-      {
-        id: 'price_yearly',
-        name: 'Annual',
-        amount: 499,
-        currency: 'USD',
-        interval: 'year',
-        features: getFeaturesForPrice(49900, 'year'),
-        description: getDescriptionForPrice(49900, 'year'),
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
-        ctaText: 'Start Annual',
-        savingsText: 'Save $89/year',
-      },
-    ]
+    const fallbackPrices = (() => {
+      const origin = request.nextUrl.origin
+      const successUrl = `${origin}/subscription?checkout_id={CHECKOUT_ID}`
+      const appendSuccess = (url: string) => `${url}?success_url=${encodeURIComponent(successUrl)}`
+      return [
+        {
+          id: 'price_monthly',
+          name: 'Monthly',
+          amount: 49,
+          currency: 'USD',
+          interval: 'month',
+          features: getFeaturesForPrice(4900, 'month'),
+          description: getDescriptionForPrice(4900, 'month'),
+          polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect'),
+          ctaText: 'Start Monthly Plan',
+          popular: true,
+        },
+        {
+          id: 'price_yearly',
+          name: 'Annual',
+          amount: 499,
+          currency: 'USD',
+          interval: 'year',
+          features: getFeaturesForPrice(49900, 'year'),
+          description: getDescriptionForPrice(49900, 'year'),
+          polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect'),
+          ctaText: 'Start Annual',
+          savingsText: 'Save $89/year',
+        },
+      ]
+    })()
 
     // Check if API key exists; if not, serve fallback
     if (!process.env.POLAR_API_KEY) {
@@ -282,6 +287,9 @@ async function getPrices(request: NextRequest) {
   } catch (error) {
     console.error('💥 Error in getPrices, serving fallback:', error)
     // On any error, still serve fallback prices so UI shows paid plans
+    const origin = request.nextUrl.origin
+    const successUrl = `${origin}/subscription?checkout_id={CHECKOUT_ID}`
+    const appendSuccess = (url: string) => `${url}?success_url=${encodeURIComponent(successUrl)}`
     const fallbackPrices = [
       {
         id: 'price_monthly',
@@ -291,7 +299,7 @@ async function getPrices(request: NextRequest) {
         interval: 'month',
         features: getFeaturesForPrice(4900, 'month'),
         description: getDescriptionForPrice(4900, 'month'),
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
+        polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect'),
         ctaText: 'Start Monthly Plan',
         popular: true,
       },
@@ -303,7 +311,7 @@ async function getPrices(request: NextRequest) {
         interval: 'year',
         features: getFeaturesForPrice(49900, 'year'),
         description: getDescriptionForPrice(49900, 'year'),
-        polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
+        polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect'),
         ctaText: 'Start Annual',
         savingsText: 'Save $89/year',
       },

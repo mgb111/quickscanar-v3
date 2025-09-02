@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Camera, ArrowRight, BarChart3, Globe, CheckCircle, Zap } from 'lucide-react'
+import { Camera, ArrowRight, BarChart3, Globe, CheckCircle, Zap, User, FileText, Tag, Home as HomeIcon, Monitor, Files, Mail, Newspaper } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
 import { useAnalytics } from '@/lib/useAnalytics';
@@ -193,129 +193,84 @@ function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* 1. Business cards */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?business,card,branding"
-                alt="Business cards – AR-enabled agent intro or portfolio"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Business Cards</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Play an intro video, showcase a property, or link to your portfolio.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <User className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Business Cards</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Play an intro video, showcase a property, or link to your portfolio.</p>
             </div>
 
             {/* 2. Flyers & brochures */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?real-estate,brochure,flyer"
-                alt="Flyers and brochures – AR tours or highlight reels"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Flyers & Brochures</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Scanning pulls up an AR tour or property highlight reel.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <FileText className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Flyers & Brochures</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Scanning pulls up an AR tour or property highlight reel.</p>
             </div>
 
             {/* 3. Yard sign riders */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?real-estate,for-sale,sign"
-                alt="Yard sign riders – unique AR content like drone pool video"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Yard Sign Riders</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Each rider can trigger unique AR content (e.g., drone pool video).</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <Tag className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Yard Sign Riders</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Each rider can trigger unique AR content (e.g., drone pool video).</p>
             </div>
 
             {/* 4. Open house signs */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?open-house,real-estate,sign"
-                alt="Open house signs – reveal highlight video or booking"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Open House Signs</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Scan to see highlights, agent intro, or book a showing.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <HomeIcon className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Open House Signs</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Scan to see highlights, agent intro, or book a showing.</p>
             </div>
 
             {/* 5. Window posters / office displays */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?real-estate,window,poster"
-                alt="Window posters – after-hours AR walkthroughs"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Window Posters & Displays</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Passersby can scan after hours and view AR walkthroughs.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <Monitor className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Window Posters & Displays</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Passersby can scan after hours and view AR walkthroughs.</p>
             </div>
 
             {/* 6. Listing sheets */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?real-estate,listing,documents"
-                alt="Listing sheets – AR video tours or calculators"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Listing Sheets</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Scan to view AR video tours or a mortgage calculator.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <Files className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Listing Sheets</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Scan to view AR video tours or a mortgage calculator.</p>
             </div>
 
             {/* 7. Direct mail postcards */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?postcard,mail,real-estate"
-                alt="Direct mail postcards – 3D walkthroughs or agent pitch"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Direct Mail Postcards</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Trigger a 3D walkthrough or a compelling agent pitch.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <Mail className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Direct Mail Postcards</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Trigger a 3D walkthrough or a compelling agent pitch.</p>
             </div>
 
             {/* 8. Print ad photos */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?magazine,advertisement,property"
-                alt="Print ad photos – jump to AR experiences when scanned"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Property Photos in Print Ads</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Magazine or newspaper photos jump to AR experiences.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <Newspaper className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Property Photos in Print Ads</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Magazine or newspaper photos jump to AR experiences.</p>
             </div>
 
             {/* 9. Sold signs */}
-            <div className="bg-white rounded-2xl overflow-hidden border-2 border-black shadow">
-              <img
-                src="https://source.unsplash.com/800x600/?sold,real-estate,sign"
-                alt="Sold signs – show success reels or active listings"
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-black">Sold Signs</h3>
-                <p className="text-black opacity-80 text-sm mt-2">Show success reels, testimonials, or current listings.</p>
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+                <CheckCircle className="h-8 w-8 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-black">Sold Signs</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Show success reels, testimonials, or current listings.</p>
             </div>
           </div>
         </div>
