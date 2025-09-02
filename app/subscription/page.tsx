@@ -65,62 +65,102 @@ function SubscriptionPageContent() {
         }
         const data = await response.json()
 
-        // Manually add the Free plan as it's not in Polar
-        const freePlan = {
+        // Manually add the Free plan (not in Polar)
+        const freePlan: SubscriptionPlan = {
           id: 'price_free',
-          name: 'Free',
-          description: 'Forever',
+          name: 'Free Plan',
+          description: 'Forever free',
           amount: 0,
           currency: 'USD',
           interval: 'month',
           features: [
             '1 AR Experience',
-            'Basic Tracking',
-            'Community Support',
+            '2-Step Upload Creation',
+            'QR Code Added',
+            'Experience Dashboard',
+            'Customer Support',
           ],
           priceNote: 'Forever',
           polarCheckoutUrl: undefined,
+          ctaText: 'Get Started Free',
         }
 
-        // Combine free plan with plans from Polar
-        setPlans([freePlan, ...data.prices])
+        // Normalize Polar plans to Monthly and Annual with standardized features
+        const normalized = (data.prices || []).map((p: any) => {
+          const isMonthly = (p.interval || '').toLowerCase() === 'month' || /month/i.test(p.name || '')
+          const isAnnual = (p.interval || '').toLowerCase() === 'year' || /year|annual/i.test(p.name || '')
+          if (isMonthly) {
+            return {
+              ...p,
+              name: 'Monthly Plan',
+              description: 'Great for getting started',
+              features: [
+                '3 AR Experiences',
+                '2-Step Upload Creation',
+                'QR Code Added',
+                'Experience Dashboard',
+                'Priority Customer Support',
+              ],
+              ctaText: 'Start Monthly Plan',
+            }
+          }
+          if (isAnnual) {
+            return {
+              ...p,
+              name: 'Annual Plan',
+              description: 'Best value',
+              features: [
+                '36 AR Experiences',
+                '2-Step Upload Creation',
+                'QR Code Added',
+                'Experience Dashboard',
+                'Priority Customer Support',
+              ],
+              ctaText: 'Choose Annual Plan',
+            }
+          }
+          return p
+        })
+
+        // Combine free plan with normalized Polar plans
+        setPlans([freePlan, ...normalized])
       } catch (err) {
         console.error('Error fetching plans:', err)
         // Set default plans as a fallback
         setPlans([
           {
             id: 'price_free',
-            name: 'Free',
-            description: 'Forever',
+            name: 'Free Plan',
+            description: 'Forever free',
             amount: 0,
             currency: 'USD',
             interval: 'month',
-            features: ['1 AR Experience', 'Basic Tracking', 'Community Support'],
+            features: ['1 AR Experience', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Customer Support'],
             priceNote: 'Forever',
           },
           {
             id: 'price_monthly',
-            name: 'Monthly',
+            name: 'Monthly Plan',
             description: 'Great for getting started',
             amount: 49,
             currency: 'USD',
             interval: 'month',
-            features: ['Up to 3 AR Experiences / month', 'Standard Analytics', 'Email Support'],
+            features: ['3 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
             polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect',
             ctaText: 'Start Monthly Plan',
             popular: true,
           },
           {
             id: 'price_yearly',
-            name: 'Annual',
-            description: 'Best value for teams',
+            name: 'Annual Plan',
+            description: 'Best value',
             amount: 499,
             currency: 'USD',
             interval: 'year',
-            features: ['Unlimited AR Experiences', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+            features: ['36 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
             polarCheckoutUrl: 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect',
-            ctaText: 'Start Annual',
-            savingsText: 'Save $89/year',
+            ctaText: 'Choose Annual Plan',
+            savingsText: 'Save vs monthly',
           },
         ])
       } finally {
@@ -280,10 +320,10 @@ function SubscriptionPageContent() {
     // Map known price IDs to plan names
     const priceMap: Record<string, string> = {
       'price_free': 'Free Plan',
-      '911e3835-9350-440e-a4d3-86702b91f49f': 'QuickScanAR Monthly',
-      'price_monthly': 'QuickScanAR Monthly',
-      'price_yearly': 'QuickScanAR Annual',
-      'price_annual': 'QuickScanAR Annual',
+      '911e3835-9350-440e-a4d3-86702b91f49f': 'Monthly Plan',
+      'price_monthly': 'Monthly Plan',
+      'price_yearly': 'Annual Plan',
+      'price_annual': 'Annual Plan',
     }
     
     return priceMap[priceId] || 'Free Plan'
@@ -296,11 +336,11 @@ function SubscriptionPageContent() {
     
     // Map price IDs to features
     const featuresMap: Record<string, string[]> = {
-      'price_free': ['1 AR Experience', 'Basic Analytics', 'Community Support'],
-      '911e3835-9350-440e-a4d3-86702b91f49f': ['3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_monthly': ['3 AR Experiences', 'Advanced Analytics', 'Priority Support'],
-      'price_yearly': ['36 AR Experiences (3/month)', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
-      'price_annual': ['36 AR Experiences (3/month)', 'Advanced Analytics', 'Priority Support', 'Custom Branding'],
+      'price_free': ['1 AR Experience', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Customer Support'],
+      '911e3835-9350-440e-a4d3-86702b91f49f': ['3 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
+      'price_monthly': ['3 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
+      'price_yearly': ['36 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
+      'price_annual': ['36 AR Experiences', '2-Step Upload Creation', 'QR Code Added', 'Experience Dashboard', 'Priority Customer Support'],
     }
     
     return featuresMap[priceId] || ['1 AR Experience', 'Basic Analytics', 'Community Support']

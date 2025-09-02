@@ -337,7 +337,7 @@ function HomePage() {
             {/* Free Plan */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-black mb-2">Starter</h3>
+                <h3 className="text-2xl font-bold text-black mb-2">Free Plan</h3>
                 <div className="text-4xl font-bold text-red-600 mb-2">$0</div>
                 <p className="text-black opacity-80">Forever free</p>
               </div>
@@ -345,6 +345,22 @@ function HomePage() {
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
                   <span className="text-black">1 AR experience</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">2-Step Upload Creation</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">QR Code Added</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Experience Dashboard</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Customer Support</span>
                 </li>
               </ul>
               <Link
@@ -365,18 +381,30 @@ function HomePage() {
                 <span className="bg-white text-red-600 px-4 py-2 rounded-full text-sm font-semibold border-2 border-black">Most Popular</span>
               </div>
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Professional</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">Monthly Plan</h3>
                 <div className="text-4xl font-bold text-white mb-2">$49</div>
                 <p className="text-white opacity-90">per month</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">3 campaigns per month</span>
+                  <span className="text-white">3 AR Experiences</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">Priority support</span>
+                  <span className="text-white">2-Step Upload Creation</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
+                  <span className="text-white">QR Code Added</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
+                  <span className="text-white">Experience Dashboard</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-white mr-3" />
+                  <span className="text-white">Priority Customer Support</span>
                 </li>
               </ul>
               <a
@@ -391,25 +419,37 @@ function HomePage() {
                 }}
                 className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
               >
-                Start Professional Plan
+                Start Monthly Plan
               </a>
             </div>
 
             {/* Annual Plan */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-black mb-2">Enterprise</h3>
+                <h3 className="text-2xl font-bold text-black mb-2">Annual Plan</h3>
                 <div className="text-4xl font-bold text-red-600 mb-2">$499</div>
                 <p className="text-black opacity-80">per year</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">36 campaigns per year</span>
+                  <span className="text-black">36 AR Experiences</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">24/7 support</span>
+                  <span className="text-black">2-Step Upload Creation</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">QR Code Added</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Experience Dashboard</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
+                  <span className="text-black">Priority Customer Support</span>
                 </li>
               </ul>
               <a
@@ -424,7 +464,7 @@ function HomePage() {
                 }}
                 className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
               >
-                Choose Enterprise
+                Choose Annual Plan
               </a>
             </div>
           </div>
