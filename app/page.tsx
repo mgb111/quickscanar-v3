@@ -193,8 +193,8 @@ function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* 1. Business cards */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <User className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Business Cards</h3>
@@ -202,8 +202,8 @@ function HomePage() {
             </div>
 
             {/* 2. Flyers & brochures */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <FileText className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Flyers & Brochures</h3>
@@ -211,8 +211,8 @@ function HomePage() {
             </div>
 
             {/* 3. Yard sign riders */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Tag className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Yard Sign Riders</h3>
@@ -220,8 +220,8 @@ function HomePage() {
             </div>
 
             {/* 4. Open house signs */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <HomeIcon className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Open House Signs</h3>
@@ -229,8 +229,8 @@ function HomePage() {
             </div>
 
             {/* 5. Window posters / office displays */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Monitor className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Window Posters & Displays</h3>
@@ -238,8 +238,8 @@ function HomePage() {
             </div>
 
             {/* 6. Listing sheets */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Files className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Listing Sheets</h3>
@@ -247,8 +247,8 @@ function HomePage() {
             </div>
 
             {/* 7. Direct mail postcards */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Mail className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Direct Mail Postcards</h3>
@@ -256,8 +256,8 @@ function HomePage() {
             </div>
 
             {/* 8. Print ad photos */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Newspaper className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Property Photos in Print Ads</h3>
@@ -265,8 +265,8 @@ function HomePage() {
             </div>
 
             {/* 9. Sold signs */}
-            <div className="bg-white rounded-2xl border-2 border-black shadow p-6">
-              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black">
+            <div className="bg-white rounded-2xl border-2 border-black shadow p-6 text-center">
+              <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <CheckCircle className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Sold Signs</h3>
