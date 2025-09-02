@@ -167,7 +167,7 @@ export default function PricingCard({
             className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 inline-block ${
               isPopular || isRecommended
                 ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
-                : 'bg-black text-white hover:bg-red-600'
+                : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
             } ${isLoading || !user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
           >
             {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : (plan.ctaText || 'Subscribe Now')}
