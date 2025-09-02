@@ -313,7 +313,22 @@ export default function Dashboard() {
     setLoadingSubscription(true);
     try {
       // Use the same source of truth as the Subscription page
-      const response = await fetch('/api/campaigns/usage', { cache: 'no-store' });
+      // Include Authorization header to ensure server can identify the user
+      let headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      try {
+        const { data: { session } } = await supabase!.auth.getSession()
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        } else {
+          const { data: { session: refreshed } } = await supabase!.auth.refreshSession()
+          if (refreshed?.access_token) {
+            headers['Authorization'] = `Bearer ${refreshed.access_token}`
+          }
+        }
+      } catch (e) {
+        // Non-fatal, API may still work with cookies
+      }
+      const response = await fetch('/api/campaigns/usage', { cache: 'no-store', headers, credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Dashboard received usage data:', JSON.stringify(data, null, 2));

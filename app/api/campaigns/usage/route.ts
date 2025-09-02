@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Get user's subscription to determine limits from new Zapier-managed table
     const { data: subscription } = await supabase
       .from('subscriptions')
-      .select('plan, status')
+      .select('plan, status, campaign_limit')
       .or(`user_id.eq.${user.id},email.eq.${user.email}`)
       .eq('status', 'active')
       .maybeSingle()
@@ -65,22 +65,33 @@ export async function GET(request: NextRequest) {
     let planName = 'Free Plan'
 
     if (subscription && subscription.status === 'active') {
-      const planType = subscription.plan?.toLowerCase() as keyof typeof planLimits
-      
-      // Map plan names to limits
       const planLimits = {
-        'monthly': { limit: 3, name: 'Monthly Plan' },
-        'annual': { limit: 36, name: 'Annual Plan' },
-        'pro': { limit: 10, name: 'Pro Plan' }
+        monthly: { limit: 3, name: 'Monthly Plan' },
+        annual: { limit: 36, name: 'Annual Plan' },
+        yearly: { limit: 36, name: 'Annual Plan' },
+        pro: { limit: 10, name: 'Pro Plan' },
+      } as const
+
+      const rawPlan = (subscription.plan || '').toLowerCase()
+      let detected: keyof typeof planLimits | null = null
+      if (rawPlan in planLimits) {
+        detected = rawPlan as keyof typeof planLimits
+      } else if (rawPlan.includes('annual') || rawPlan.includes('yearly') || rawPlan.includes('year')) {
+        detected = 'annual'
+      } else if (rawPlan.includes('monthly') || rawPlan.includes('month')) {
+        detected = 'monthly'
+      } else if (rawPlan.includes('pro')) {
+        detected = 'pro'
       }
-      
-      if (planLimits[planType]) {
-        usageLimit = planLimits[planType].limit
-        planName = planLimits[planType].name
-      } else {
-        // Default to monthly if unknown plan
-        usageLimit = 3
-        planName = 'Monthly Plan'
+
+      if (detected) {
+        usageLimit = planLimits[detected].limit
+        planName = planLimits[detected].name
+      }
+
+      // IMPORTANT: override with per-user campaign_limit when present
+      if (typeof (subscription as any).campaign_limit === 'number' && (subscription as any).campaign_limit > 0) {
+        usageLimit = (subscription as any).campaign_limit
       }
     }
 
