@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Camera, ArrowRight, BarChart3, Globe, CheckCircle, Zap, User, FileText, Tag, Home as HomeIcon, Monitor, Files, Mail, Newspaper } from 'lucide-react'
+import { Camera, ArrowRight, BarChart3, Globe, CheckCircle, Zap, User, FileText, Tag, Home as HomeIcon, Monitor, Files, Mail, Newspaper, Quote } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
 import { useAnalytics } from '@/lib/useAnalytics';
@@ -288,31 +288,34 @@ function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Luxury Agent */}
-            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <p className="text-black italic leading-relaxed">
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg italic leading-8">
                 "My sellers expect innovation. When I showed them how their $12M listing sign could trigger an AR film of the property, they were blown away. It set me apart from every other agent in the area."
               </p>
-              <div className="mt-6">
+              <div className="mt-6 border-t border-black/10 pt-4">
                 <div className="text-black opacity-70 text-sm">Luxury Broker, Beverly Hills CA</div>
               </div>
             </div>
 
             {/* International Agent */}
-            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <p className="text-black italic leading-relaxed">
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg italic leading-8">
                 "In Dubai, competition is intense. With QuickScanAR, my listings stand out immediately. Clients scan and see a polished walkthrough without even booking a showing. It’s a powerful first impression."
               </p>
-              <div className="mt-6">
+              <div className="mt-6 border-t border-black/10 pt-4">
                 <div className="text-black opacity-70 text-sm">Real Estate Consultant, Dubai</div>
               </div>
             </div>
 
             {/* Brokerage Owner */}
-            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <p className="text-black italic leading-relaxed">
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg italic leading-8">
                 "We rolled QuickScanAR across 45 agents in my office. Now every business card, sign rider, and brochure is interactive. It’s consistent, simple, and makes our brand look cutting-edge."
               </p>
-              <div className="mt-6">
+              <div className="mt-6 border-t border-black/10 pt-4">
                 <div className="text-black opacity-70 text-sm">Brokerage Owner, Miami FL</div>
               </div>
             </div>
