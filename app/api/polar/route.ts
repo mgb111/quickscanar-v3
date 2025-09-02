@@ -13,7 +13,7 @@ const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 // Polar.sh API configuration (default to sandbox in non-production)
 // Note: Polar moved API root from /api/v1 to /v1. Use /v1 for production by default.
-const POLAR_API_URL = process.env.POLAR_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.polar.sh/v1' : 'https://sandbox-api.polar.sh/v1')
+const POLAR_API_URL = process.env.POLAR_API_URL || 'https://api.polar.sh/v1'
 const POLAR_WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET
 const POLAR_SUCCESS_URL = process.env.POLAR_SUCCESS_URL || 'https://yourdomain.com/subscription/success?checkout_id={CHECKOUT_ID}'
 const POLAR_CANCEL_URL = process.env.POLAR_CANCEL_URL || 'https://yourdomain.com/subscription/cancel'
@@ -201,7 +201,7 @@ async function getPrices(request: NextRequest) {
           interval: 'month',
           features: getFeaturesForPrice(4900, 'month'),
           description: getDescriptionForPrice(4900, 'month'),
-          polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect'),
+          polarCheckoutUrl: appendSuccess('https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'),
           ctaText: 'Start Monthly Plan',
           popular: true,
         },
@@ -213,7 +213,7 @@ async function getPrices(request: NextRequest) {
           interval: 'year',
           features: getFeaturesForPrice(49900, 'year'),
           description: getDescriptionForPrice(49900, 'year'),
-          polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect'),
+          polarCheckoutUrl: appendSuccess('https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'),
           ctaText: 'Start Annual',
           savingsText: 'Save $89/year',
         },
@@ -299,7 +299,7 @@ async function getPrices(request: NextRequest) {
         interval: 'month',
         features: getFeaturesForPrice(4900, 'month'),
         description: getDescriptionForPrice(4900, 'month'),
-        polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_omyhnY3XbF205MbBYiCHz2trQVp2xV38AezWv3hzK7h/redirect'),
+        polarCheckoutUrl: appendSuccess('https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d'),
         ctaText: 'Start Monthly Plan',
         popular: true,
       },
@@ -311,7 +311,7 @@ async function getPrices(request: NextRequest) {
         interval: 'year',
         features: getFeaturesForPrice(49900, 'year'),
         description: getDescriptionForPrice(49900, 'year'),
-        polarCheckoutUrl: appendSuccess('https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_HTsyBpbDXNy27FhhIKxcGfqAglfZ75r2Yg87U4IjbLH/redirect'),
+        polarCheckoutUrl: appendSuccess('https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO'),
         ctaText: 'Start Annual',
         savingsText: 'Save $89/year',
       },
