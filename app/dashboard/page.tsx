@@ -312,25 +312,31 @@ export default function Dashboard() {
     if (!user) return;
     setLoadingSubscription(true);
     try {
-      const response = await fetch('/api/get-subscription');
+      // Use the same source of truth as the Subscription page
+      const response = await fetch('/api/campaigns/usage', { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Dashboard received subscription data:', JSON.stringify(data, null, 2));
-        if (data.subscription) {
-          setSubscription(data.subscription);
-          setPlanInfo(data.plan);
-          if (data.plan && typeof data.plan.limit === 'number') {
-            setCampaignLimit(data.plan.limit);
-          }
+        console.log('📊 Dashboard received usage data:', JSON.stringify(data, null, 2));
+        // Align with subscription page fields
+        setPlanInfo({ name: data.plan_name });
+        if (typeof data.limit === 'number') {
+          setCampaignLimit(data.limit);
         } else {
-          // Explicitly set free plan if no subscription found
-          setSubscription(null);
-          setPlanInfo({ name: 'Free Plan', limit: 1 });
           setCampaignLimit(1);
         }
+        // We no longer rely on subscription object here
+        setSubscription(null);
+      } else {
+        // Fallback to Free if API fails
+        setSubscription(null);
+        setPlanInfo({ name: 'Free Plan', limit: 1 });
+        setCampaignLimit(1);
       }
     } catch (error) {
-      console.error('Failed to fetch subscription details:', error);
+      console.error('Failed to fetch usage details:', error);
+      setSubscription(null);
+      setPlanInfo({ name: 'Free Plan', limit: 1 });
+      setCampaignLimit(1);
     } finally {
       setLoadingSubscription(false);
     }
@@ -532,22 +538,23 @@ export default function Dashboard() {
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
                   className="bg-red-600 h-2.5 rounded-full"
-                  style={{ width: `${Math.min((experiences.length / (campaignLimit === 36 ? 1 : campaignLimit)) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((experiences.length / Math.max(1, campaignLimit)) * 100, 100)}%` }}
                 ></div>
               </div>
               <p className="text-sm text-black opacity-80 mt-1">
-                {experiences.length} / {campaignLimit === 36 ? 'Unlimited' : campaignLimit} campaigns used
+                {experiences.length} / {campaignLimit} campaigns used{planInfo?.name?.toLowerCase().includes('monthly') ? ' this month' : (planInfo?.name?.toLowerCase().includes('annual') || planInfo?.name?.toLowerCase().includes('year')) ? ' this year' : ''}
+              </p>
+              <p className="text-xs text-black opacity-70">
+                {Math.max(0, campaignLimit - experiences.length)} campaigns remaining
               </p>
             </div>
-            {(!subscription || campaignLimit < 36) && (
-              <Link
-                href="/subscription"
-                className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
-              >
-                Upgrade Plan
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            )}
+            <Link
+              href="/subscription"
+              className="bg-red-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-red-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 min-w-[200px] lg:min-w-0 touch-manipulation select-none border-2 border-black"
+            >
+              {experiences.length >= Math.max(1, campaignLimit) ? 'Upgrade Plan' : 'Manage Plan'}
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </div>
         </div>
 
