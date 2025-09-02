@@ -50,7 +50,7 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                Bring Every Property to Life with AR
+                Bring Every Property to Life <span className="text-red-600">with AR</span>
               </h1>
               <p className="text-xl text-black opacity-80 leading-relaxed">
                 Turn any sign, flyer, or photo into an interactive AR showcase in minutes.
