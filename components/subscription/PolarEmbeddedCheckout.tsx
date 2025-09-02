@@ -81,7 +81,7 @@ export function ProPlanCheckout() {
 export function AnnualPlanCheckout() {
   return (
     <PolarEmbeddedCheckout
-      checkoutUrl="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
+      checkoutUrl="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
       buttonText="Save 20% with Annual - $499.99/year"
       theme="dark"
       size="md"

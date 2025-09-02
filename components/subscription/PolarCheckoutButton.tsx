@@ -141,7 +141,7 @@ export function ExampleUsage() {
       
       {/* Outline Button */}
       <PolarCheckoutButton
-        checkoutUrl="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
+        checkoutUrl="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
         planName="Annual Plan"
         amount={499.99}
         currency="USD"
