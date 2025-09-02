@@ -276,6 +276,57 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">What Agents Say</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Real stories from top performers using QuickScanAR</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Luxury Agent */}
+            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
+              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
+                <span className="text-lg">🏙️</span>
+              </div>
+              <p className="text-black italic leading-relaxed">
+                "My sellers expect innovation. When I showed them how their $12M listing sign could trigger an AR film of the property, they were blown away. It set me apart from every other agent in the area."
+              </p>
+              <div className="mt-6">
+                <div className="text-black opacity-70 text-sm">Luxury Broker, Beverly Hills CA</div>
+              </div>
+            </div>
+
+            {/* International Agent */}
+            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
+              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
+                <span className="text-lg">🌐</span>
+              </div>
+              <p className="text-black italic leading-relaxed">
+                "In Dubai, competition is intense. With QuickScanAR, my listings stand out immediately. Clients scan and see a polished walkthrough without even booking a showing. It’s a powerful first impression."
+              </p>
+              <div className="mt-6">
+                <div className="text-black opacity-70 text-sm">Real Estate Consultant, Dubai</div>
+              </div>
+            </div>
+
+            {/* Brokerage Owner */}
+            <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
+              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
+                <span className="text-lg">📊</span>
+              </div>
+              <p className="text-black italic leading-relaxed">
+                "We rolled QuickScanAR across 45 agents in my office. Now every business card, sign rider, and brochure is interactive. It’s consistent, simple, and makes our brand look cutting-edge."
+              </p>
+              <div className="mt-6">
+                <div className="text-black opacity-70 text-sm">Brokerage Owner, Miami FL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
