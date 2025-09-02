@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 })
         return await getSubscription(userId)
       case 'prices':
-        return await getPrices()
+        return await getPrices(request)
       case 'customer':
         if (!supabaseUrl || !supabaseKey) {
           return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
@@ -182,7 +182,7 @@ async function getSubscription(userId: string) {
   }
 }
 
-async function getPrices() {
+async function getPrices(request: NextRequest) {
   try {
     console.log('🔍 getPrices called - POLAR_API_KEY exists:', !!process.env.POLAR_API_KEY)
     console.log('🔍 POLAR_API_URL:', POLAR_API_URL)
