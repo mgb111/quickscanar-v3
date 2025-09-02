@@ -10,7 +10,6 @@ import {
   XCircle, 
   AlertCircle,
   ArrowRight,
-  Settings,
   Crown
 } from 'lucide-react'
 import PricingCard from '@/components/subscription/PricingCard'
@@ -534,13 +533,6 @@ function SubscriptionPageContent() {
                 >
                   Cancel Subscription
                 </button>
-                <Link
-                  href="/subscription/settings"
-                  className="bg-cream text-black px-4 py-2 rounded-lg font-medium hover:bg-white transition-colors flex items-center border-2 border-black"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Link>
               </div>
             </div>
           </div>
