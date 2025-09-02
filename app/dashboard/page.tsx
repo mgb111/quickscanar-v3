@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [showMarkerQR, setShowMarkerQR] = useState<string | null>(null)
   const [markerQRDataUrl, setMarkerQRDataUrl] = useState<string | null>(null)
   const [subscription, setSubscription] = useState<any>(null)
+  const [planInfo, setPlanInfo] = useState<any>(null)
   const [campaignLimit, setCampaignLimit] = useState(1) // Default for free users
   const [loadingSubscription, setLoadingSubscription] = useState(true);
 
@@ -317,12 +318,14 @@ export default function Dashboard() {
         console.log('📊 Dashboard received subscription data:', JSON.stringify(data, null, 2));
         if (data.subscription) {
           setSubscription(data.subscription);
+          setPlanInfo(data.plan);
           if (data.plan && typeof data.plan.limit === 'number') {
             setCampaignLimit(data.plan.limit);
           }
         } else {
           // Explicitly set free plan if no subscription found
           setSubscription(null);
+          setPlanInfo({ name: 'Free Plan', limit: 1 });
           setCampaignLimit(1);
         }
       }
@@ -524,7 +527,7 @@ export default function Dashboard() {
                 Your Plan & Usage
               </h3>
               <p className="text-black opacity-80 mb-3">
-                Current Plan: <span className="font-semibold capitalize">{loadingSubscription ? 'Loading...' : (subscription?.plan || 'Free Plan')}</span>
+                Current Plan: <span className="font-semibold capitalize">{loadingSubscription ? 'Loading...' : (planInfo?.name || 'Free Plan')}</span>
               </p>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
