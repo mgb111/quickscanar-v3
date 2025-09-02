@@ -72,12 +72,7 @@ function SubscriptionSuccessContent() {
             method: 'POST',
             headers: authHeaders,
             credentials: 'include',
-            body: JSON.stringify({
-              checkout_id: checkoutId,
-              user_id: user.id,
-              polar_subscription_id: subIdParam || undefined,
-              polar_customer_id: custIdParam || undefined,
-            }),
+            body: JSON.stringify({ checkout_id: checkoutId }),
           });
 
           toast.promise(
