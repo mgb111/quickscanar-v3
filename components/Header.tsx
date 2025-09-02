@@ -73,10 +73,7 @@ export default function Header({
               </Link>
             )}
             
-            {/* User email display */}
-            {userEmail && (
-              <span className="text-sm text-white">{userEmail}</span>
-            )}
+            {/* User email display removed for privacy */}
             
             {/* Sign Out button */}
             {showSignOut && (
