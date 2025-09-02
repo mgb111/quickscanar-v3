@@ -55,7 +55,7 @@ export default function SupportBot() {
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-105"
+          className="bg-red-600 hover:bg-red-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-105 border-2 border-black"
           aria-label="Open support chat"
         >
           {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
@@ -69,7 +69,7 @@ export default function SupportBot() {
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
           {/* Header */}
-          <div className="bg-blue-600 text-white p-4 rounded-t-lg">
+          <div className="bg-red-600 text-white p-4 rounded-t-lg border-b-2 border-black">
             <h3 className="font-semibold">Customer Support</h3>
             <p className="text-sm opacity-90">Send us a message and we'll get back to you!</p>
           </div>
@@ -95,7 +95,7 @@ export default function SupportBot() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="Your name"
                   />
                 </div>
@@ -111,7 +111,7 @@ export default function SupportBot() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -127,7 +127,7 @@ export default function SupportBot() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="How can we help?"
                   />
                 </div>
@@ -143,7 +143,7 @@ export default function SupportBot() {
                     onChange={handleInputChange}
                     required
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                     placeholder="Tell us about your issue or question..."
                   />
                 </div>
@@ -152,7 +152,7 @@ export default function SupportBot() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2"
+                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2 border-2 border-black"
                   >
                     {isSubmitting ? (
                       <>
