@@ -55,7 +55,6 @@ function SubscriptionPageContent() {
   const [campaignUsage, setCampaignUsage] = useState<CampaignUsage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -86,10 +85,8 @@ function SubscriptionPageContent() {
 
         // Combine free plan with plans from Polar
         setPlans([freePlan, ...data.prices])
-        setError(null)
       } catch (err) {
         console.error('Error fetching plans:', err)
-        setError(err instanceof Error ? err.message : 'Could not load plans.')
         // Set default plans as a fallback
         setPlans([
           {
@@ -163,15 +160,25 @@ function SubscriptionPageContent() {
 
           if (response.ok) {
             console.log('Subscription linked successfully.')
-            // Refresh data to show the new subscription immediately
-            window.location.href = '/subscription' // Clear params and refetch
+            toast.success('Subscription activated successfully!')
+            // Clear URL params and refresh data
+            window.history.replaceState({}, '', '/subscription')
+            setTimeout(() => {
+              fetchCurrentSubscription()
+              fetchCampaignUsage()
+            }, 1000)
           } else {
             const errorData = await response.json()
-            setError(`Failed to link subscription: ${errorData.error}`)
+            console.error('Subscription linking failed:', errorData.error)
+            toast.error('Subscription setup in progress. Please refresh in a moment.')
+            // Clear URL params even on error to avoid repeated attempts
+            window.history.replaceState({}, '', '/subscription')
           }
         } catch (err) {
           console.error('Error calling link-subscription API:', err)
-          setError('An error occurred while finalizing your subscription.')
+          toast.error('Subscription setup in progress. Please refresh in a moment.')
+          // Clear URL params even on error
+          window.history.replaceState({}, '', '/subscription')
         }
       }
     }
