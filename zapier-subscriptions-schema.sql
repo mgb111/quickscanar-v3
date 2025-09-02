@@ -37,6 +37,11 @@ CREATE POLICY "Users can view own subscriptions" ON subscriptions
 CREATE POLICY "Service role full access" ON subscriptions
     FOR ALL USING (auth.role() = 'service_role');
 
+-- Policy: Admins (via service_role) can update campaign limits
+CREATE POLICY "Admins can update campaign limits" ON subscriptions
+    FOR UPDATE USING (auth.role() = 'service_role')
+    WITH CHECK (auth.role() = 'service_role');
+
 -- Function to automatically link subscriptions to users by email
 CREATE OR REPLACE FUNCTION link_subscription_to_user()
 RETURNS TRIGGER AS $$
