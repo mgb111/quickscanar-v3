@@ -50,11 +50,13 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                🚀 QuickScanAR
-                <span className="block text-red-600">AR for Real Estate</span>
+                Bring Every Property to Life with AR
               </h1>
-              <p className="text-xl text-black opacity-80 mb-8 leading-relaxed">
-                Turn Any Property Photo into an Interactive AR Video in 3 Steps
+              <p className="text-xl text-black opacity-80 leading-relaxed">
+                Turn any sign, flyer, or photo into an interactive AR showcase in minutes.
+              </p>
+              <p className="text-lg text-black opacity-80 mb-8 leading-relaxed">
+                No apps. No coding. Just scan and wow your clients.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
@@ -90,7 +92,7 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              ✨ How It Works (Simple 3-Step Flow)
+              How It Works (Simple 3-Step Flow)
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               Upload a marker image, add your content, and launch instantly
@@ -145,7 +147,7 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              🎯 Why Realtors Love QuickScanAR?
+              Why Realtors Love QuickScanAR?
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
               No coding or tech skills needed
@@ -187,7 +189,7 @@ function HomePage() {
       <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">💡 Real Estate Use Cases</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Real Estate Use Cases</h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">These broker and buyer touchpoints can be AR‑enabled</p>
           </div>
 
@@ -287,9 +289,6 @@ function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Luxury Agent */}
             <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
-                <span className="text-lg">🏙️</span>
-              </div>
               <p className="text-black italic leading-relaxed">
                 "My sellers expect innovation. When I showed them how their $12M listing sign could trigger an AR film of the property, they were blown away. It set me apart from every other agent in the area."
               </p>
@@ -300,9 +299,6 @@ function HomePage() {
 
             {/* International Agent */}
             <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
-                <span className="text-lg">🌐</span>
-              </div>
               <p className="text-black italic leading-relaxed">
                 "In Dubai, competition is intense. With QuickScanAR, my listings stand out immediately. Clients scan and see a polished walkthrough without even booking a showing. It’s a powerful first impression."
               </p>
@@ -313,9 +309,6 @@ function HomePage() {
 
             {/* Brokerage Owner */}
             <div className="relative bg-cream rounded-2xl p-8 border-2 border-black shadow">
-              <div className="absolute -top-3 -left-3 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center border-2 border-black">
-                <span className="text-lg">📊</span>
-              </div>
               <p className="text-black italic leading-relaxed">
                 "We rolled QuickScanAR across 45 agents in my office. Now every business card, sign rider, and brochure is interactive. It’s consistent, simple, and makes our brand look cutting-edge."
               </p>
@@ -526,7 +519,7 @@ function HomePage() {
       <section className="py-20 bg-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            🎯 Ready to Make Your Listings Unforgettable?
+            Ready to Make Your Listings Unforgettable?
           </h2>
           <p className="text-xl text-white opacity-90 mb-8">
             Turn static property images into AR video experiences that drive leads and close deals — in just 3 steps.
@@ -539,7 +532,7 @@ function HomePage() {
             }}
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >
-            👉 Create Your First AR Listing
+            Create Your First AR Listing
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
