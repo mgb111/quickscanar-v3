@@ -314,11 +314,8 @@ export default function Dashboard() {
         const data = await response.json()
         if (data.subscription) {
           setSubscription(data.subscription)
-          const planName = data.subscription.plan_name || ''
-          if (planName.toLowerCase().includes('monthly')) {
-            setCampaignLimit(3)
-          } else if (planName.toLowerCase().includes('annual')) {
-            setCampaignLimit(36) // Represents Pro/Unlimited
+          if (data.plan && typeof data.plan.limit === 'number') {
+            setCampaignLimit(data.plan.limit)
           }
         }
       }
