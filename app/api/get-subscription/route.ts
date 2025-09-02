@@ -116,6 +116,16 @@ export async function GET(request: NextRequest) {
       plan.limit = data.campaign_limit;
     }
 
+    // Normalize the plan name strictly from the final numeric limit to keep UI labels consistent
+    const nameByLimit: Record<number, string> = {
+      1: 'Free Plan',
+      3: 'Monthly Plan',
+      36: 'Annual Plan',
+    };
+    if (typeof plan.limit === 'number' && nameByLimit[plan.limit]) {
+      plan.name = nameByLimit[plan.limit];
+    }
+
     const responsePayload = {
       subscription: data,
       plan: plan
