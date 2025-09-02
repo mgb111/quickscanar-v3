@@ -314,6 +314,7 @@ export default function Dashboard() {
       const response = await fetch('/api/get-subscription');
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Dashboard received subscription data:', JSON.stringify(data, null, 2));
         if (data.subscription) {
           setSubscription(data.subscription);
           if (data.plan && typeof data.plan.limit === 'number') {

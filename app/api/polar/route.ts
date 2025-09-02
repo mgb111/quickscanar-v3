@@ -242,18 +242,40 @@ async function getPrices() {
     const prices = await response.json()
     console.log('✅ Raw prices from Polar.sh:', prices)
     
-    // Filter and format prices for QuickScanAR
+    const checkoutLinksResponse = await fetch(`${POLAR_API_URL}/checkout-links?product_id=${process.env.POLAR_PRODUCT_ID}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.POLAR_API_KEY}`,
+      }
+    });
+
+    if (!checkoutLinksResponse.ok) {
+      console.error('❌ Failed to fetch checkout links from Polar.sh, falling back.');
+      return NextResponse.json({ prices: fallbackPrices });
+    }
+
+    const checkoutLinksData = await checkoutLinksResponse.json();
+    const priceToCheckoutUrlMap = new Map(checkoutLinksData.data.map((link: any) => [link.price.id, link.url]));
+
     const formattedPrices = prices.data
       .filter((price: any) => price.active)
-      .map((price: any) => ({
-        id: price.id,
-        name: price.nickname || `AR Experience Plan`,
-        amount: price.unit_amount / 100, // Convert from cents
-        currency: price.currency.toUpperCase(),
-        interval: price.recurring.interval,
-        features: getFeaturesForPrice(price.unit_amount, price.recurring.interval),
-        description: getDescriptionForPrice(price.unit_amount, price.recurring.interval)
-      }))
+      .map((price: any) => {
+        let checkoutUrl = priceToCheckoutUrlMap.get(price.id);
+        if (checkoutUrl) {
+          const successUrl = `${request.nextUrl.origin}/subscription?checkout_id={CHECKOUT_ID}`;
+          checkoutUrl = `${checkoutUrl}?success_url=${encodeURIComponent(successUrl)}`;
+        }
+
+        return {
+          id: price.id,
+          name: price.nickname || `AR Experience Plan`,
+          amount: price.unit_amount / 100, // Convert from cents
+          currency: price.currency.toUpperCase(),
+          interval: price.recurring.interval,
+          features: getFeaturesForPrice(price.unit_amount, price.recurring.interval),
+          description: getDescriptionForPrice(price.unit_amount, price.recurring.interval),
+          polarCheckoutUrl: checkoutUrl
+        };
+      })
 
     console.log('🎯 Formatted prices:', formattedPrices)
     return NextResponse.json({ prices: formattedPrices })

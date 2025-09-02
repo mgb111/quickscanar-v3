@@ -26,12 +26,14 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error) {
-      console.error('Database error:', error)
+      console.error('❌ Database query error in get-subscription:', error)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
+    console.log('✅ Fetched subscription data from DB:', JSON.stringify(data, null, 2));
+
     if (!data) {
-      console.log('No active subscription found for user:', user.id, user.email)
+      console.log('ℹ️ No active subscription found for user:', user.id, user.email, 'Returning Free Plan.')
       return NextResponse.json({ 
         subscription: null,
         plan: {
@@ -74,10 +76,14 @@ export async function GET(request: NextRequest) {
       plan.limit = data.campaign_limit;
     }
 
-    return NextResponse.json({
+    const responsePayload = {
       subscription: data,
       plan: plan
-    });
+    };
+
+    console.log('✅ Sending subscription payload to dashboard:', JSON.stringify(responsePayload, null, 2));
+
+    return NextResponse.json(responsePayload);
 
   } catch (error) {
     console.error('Unexpected error fetching subscription:', error)
