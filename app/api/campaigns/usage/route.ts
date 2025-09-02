@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies })
@@ -25,13 +26,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get user's subscription to determine limits from new Zapier-managed table
-    const { data: subscription } = await supabase
+    // Get user's subscription from user-scoped client first
+    let { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('plan, status, campaign_limit')
+      .select('plan, status, campaign_limit, end_date')
       .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-      .eq('status', 'active')
+      .order('created_at', { ascending: false })
       .maybeSingle()
+
+    // If no row or RLS blocked, try admin client as fallback (server-side only)
+    if ((!subscription || subError) && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+      const adminRes = await admin
+        .from('subscriptions')
+        .select('plan, status, campaign_limit, end_date')
+        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        .order('created_at', { ascending: false })
+        .maybeSingle()
+      subscription = adminRes.data as any
+    }
 
     // Count user's AR experiences (not campaigns)
     const { count: experienceCount, error: countError } = await supabase
@@ -64,7 +77,14 @@ export async function GET(request: NextRequest) {
     let usageLimit = 1 // Free plan default
     let planName = 'Free Plan'
 
-    if (subscription && subscription.status === 'active') {
+    const isActiveLike = (sub: any) => {
+      if (!sub) return false
+      const status = (sub.status || '').toLowerCase()
+      const endOk = sub.end_date ? new Date(sub.end_date) > new Date() : true
+      return status !== 'canceled' && status !== 'expired' && endOk
+    }
+
+    if (subscription && isActiveLike(subscription)) {
       const planLimits = {
         monthly: { limit: 3, name: 'Monthly Plan' },
         annual: { limit: 36, name: 'Annual Plan' },
@@ -93,6 +113,16 @@ export async function GET(request: NextRequest) {
       if (typeof (subscription as any).campaign_limit === 'number' && (subscription as any).campaign_limit > 0) {
         usageLimit = (subscription as any).campaign_limit
       }
+    }
+
+    // Final authoritative mapping: plan_name strictly from limit
+    const nameByLimit: Record<number, string> = {
+      1: 'Free Plan',
+      3: 'Monthly Plan',
+      36: 'Annual Plan',
+    }
+    if (nameByLimit[usageLimit]) {
+      planName = nameByLimit[usageLimit]
     }
 
     return NextResponse.json({

@@ -6,9 +6,23 @@ export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies })
   
   try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    // Get authenticated user (cookies first, then Authorization header)
+    let user = null as any
+    let authError: any = null
+    const cookieRes = await supabase.auth.getUser()
+    user = cookieRes.data.user
+    authError = cookieRes.error
+
+    if (!user) {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const jwtRes = await supabase.auth.getUser(token)
+        user = jwtRes.data.user
+        authError = jwtRes.error
+      }
+    }
+
     if (authError || !user) {
       console.log('Auth error or no user:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

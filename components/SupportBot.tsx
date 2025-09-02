@@ -64,7 +64,10 @@ export default function SupportBot() {
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 bg-white rounded-lg shadow-xl border z-50 max-h-[500px] overflow-hidden">
+        <div
+          className="fixed right-4 sm:right-6 bg-white rounded-lg shadow-xl border z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] sm:max-h-[600px] flex flex-col"
+          style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        >
           {/* Header */}
           <div className="bg-blue-600 text-white p-4 rounded-t-lg">
             <h3 className="font-semibold">Customer Support</h3>
@@ -72,7 +75,7 @@ export default function SupportBot() {
           </div>
 
           {/* Content */}
-          <div className="p-4">
+          <div className="p-4 flex-1 overflow-y-auto">
             {isSubmitted ? (
               <div className="text-center py-8">
                 <div className="text-green-600 text-lg mb-2">✓</div>
@@ -145,23 +148,25 @@ export default function SupportBot() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} />
-                      Send Message
-                    </>
-                  )}
-                </button>
+                <div className="sticky bottom-0 bg-white pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        Send Message
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>
