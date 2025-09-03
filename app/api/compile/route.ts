@@ -111,6 +111,17 @@ export async function POST(request: NextRequest) {
               try {
                 console.log('Starting compilation in browser...')
                 
+                // Wait for MindAR compiler to be available
+                let attempts = 0
+                while (!window.MindARCompiler && attempts < 50) {
+                  await new Promise(resolve => setTimeout(resolve, 100))
+                  attempts++
+                }
+                
+                if (!window.MindARCompiler) {
+                  throw new Error('MindAR compiler failed to load from CDN')
+                }
+                
                 // Convert base64 to File object
                 const response = await fetch(imageBase64)
                 const blob = await response.blob()
@@ -118,15 +129,15 @@ export async function POST(request: NextRequest) {
                 
                 console.log('File created, size:', file.size)
                 
-                // Import and use MindAR compiler
-                const { default: compiler } = await import('https://cdn.jsdelivr.net/npm/@maherboughdiri/mind-ar-compiler@1.0.1/index.js')
+                // Use MindAR compiler directly from global scope
+                const compiler = window.MindARCompiler
                 
                 if (!compiler || !compiler.compileFiles) {
                   throw new Error('MindAR compiler not available or missing compileFiles method')
                 }
                 
                 console.log('Compiler loaded, starting compilation...')
-                const result = await compiler.compileFiles([file], 'progress')
+                const result = await compiler.compileFiles([file])
                 console.log('Compilation completed')
                 
                 // Convert ArrayBuffer to base64 for transfer
