@@ -125,20 +125,7 @@ function HomePage() {
               <p className="text-black opacity-80">Receive everything ready to share — links, QR codes, and usage instructions</p>
             </div>
           </div>
-          
-          <div className="relative w-full lg:max-w-4xl mx-auto">
-            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, width: '100%' }}>
-              <iframe
-                src="https://www.youtube.com/embed/Xeka_dIevm4?rel=0&modestbranding=1&playsinline=1&autoplay=1&mute=1&loop=1&playlist=Xeka_dIevm4"
-                title="Create and Launch a Custom AR Experience"
-                frameBorder="0"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '1rem', border: '2px solid #000000' }}
-              />
-            </div>
-          </div>
+
         </div>
       </section>
 
