@@ -101,13 +101,15 @@ export async function POST(request: NextRequest) {
       page.setDefaultTimeout(60000)
       page.setDefaultNavigationTimeout(60000)
       
-      // Create HTML page with local MindAR compiler bundle
+      // Create HTML page with A-Frame and local MindAR compiler
       const html = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
+          <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+          <script src="/js/mindar-compiler.js"></script>
         </head>
         <body>
           <div id="progress">Loading...</div>
@@ -118,51 +120,62 @@ export async function POST(request: NextRequest) {
               return false;
             };
             
-            // Load local MindAR compiler
-            async function loadMindARCompiler() {
-              console.log('Loading MindAR compiler from local file...');
+            // Wait for dependencies to load
+            async function waitForDependencies() {
+              console.log('Waiting for A-Frame and MindAR to load...');
               
-              try {
-                // Load the local MindAR script
-                const script = document.createElement('script');
-                script.src = '/js/mindar-compiler.js';
-                script.type = 'module';
-                
-                await new Promise((resolve, reject) => {
-                  script.onload = () => {
-                    console.log('Local MindAR loaded successfully');
-                    resolve(true);
-                  };
-                  script.onerror = (error) => {
-                    console.error('Failed to load local MindAR:', error);
-                    reject(error);
-                  };
-                  document.head.appendChild(script);
-                });
-                
-                // Wait for MINDAR to be available
-                let attempts = 0;
-                while (!window.MINDAR && attempts < 50) {
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  attempts++;
-                }
-                
-                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
-                  console.log('MindAR compiler ready from local file');
-                  return true;
-                } else {
-                  throw new Error('MINDAR.IMAGE.Compiler not available after loading local file');
-                }
-              } catch (error) {
-                console.error('Local MindAR loading failed:', error);
-                throw error;
+              // Wait for A-Frame to be available
+              let attempts = 0;
+              while (!window.AFRAME && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
               }
+              
+              if (!window.AFRAME) {
+                throw new Error('A-Frame not loaded after waiting');
+              }
+              console.log('A-Frame loaded successfully');
+              
+              // Wait for MINDAR to be available - check multiple possible exports
+              attempts = 0;
+              while (attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Check various possible exports
+                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
+                  console.log('MindAR compiler ready via MINDAR.IMAGE.Compiler');
+                  return true;
+                }
+                
+                // Check if it's available as a global function
+                if (typeof window.Compiler !== 'undefined') {
+                  console.log('MindAR compiler ready via global Compiler');
+                  window.MINDAR = { IMAGE: { Compiler: window.Compiler } };
+                  return true;
+                }
+                
+                // Check if MindAR is available but IMAGE is not
+                if (window.MINDAR && !window.MINDAR.IMAGE) {
+                  console.log('MINDAR found but IMAGE not available, creating structure');
+                  window.MINDAR.IMAGE = { Compiler: window.MINDAR.Compiler || window.Compiler };
+                  if (window.MINDAR.IMAGE.Compiler) return true;
+                }
+                
+                attempts++;
+              }
+              
+              throw new Error('MINDAR.IMAGE.Compiler not available after loading');
             }
             
             window.compileImage = async function(imageBase64) {
               try {
                 console.log('Starting compilation in browser...');
                 document.getElementById('progress').textContent = 'Loading MindAR compiler...';
+                
+                // Wait for dependencies to load first
+                await waitForDependencies();
+                
+                document.getElementById('progress').textContent = 'Initializing compiler...';
                 
                 // Load the compiler
                 const compiler = new window.MINDAR.IMAGE.Compiler();
