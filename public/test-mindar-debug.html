@@ -30,15 +30,17 @@
                 
                 log('Test image created: ' + imageBase64.substring(0, 50) + '...');
                 
+                // Build multipart/form-data as required by /api/compile (expects 'markerImage')
+                log('Preparing multipart/form-data request...');
+                const res = await fetch(imageBase64);
+                const blob = await res.blob();
+                const file = new File([blob], 'test-debug.png', { type: 'image/png' });
+                const formData = new FormData();
+                formData.append('markerImage', file);
+
                 const response = await fetch('/api/compile', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        image: imageBase64,
-                        filename: 'test-debug.png'
-                    })
+                    body: formData // Do NOT set Content-Type; browser will set proper boundary
                 });
                 
                 const result = await response.json();
