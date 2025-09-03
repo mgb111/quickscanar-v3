@@ -97,6 +97,9 @@ export async function POST(request: NextRequest) {
     try {
       const page = await browser.newPage()
       
+      // Ensure fresh assets: disable HTTP cache in headless browser
+      await page.setCacheEnabled(false)
+      
       // Set longer timeout for network requests
       page.setDefaultTimeout(60000)
       page.setDefaultNavigationTimeout(60000)
@@ -119,78 +122,30 @@ export async function POST(request: NextRequest) {
               return false;
             };
             
-            // Wait for local MindAR to load with detailed debugging
+            // Wait for local MindAR to load
             async function waitForDependencies() {
-              console.log('=== DETAILED DEBUGGING: Waiting for local MindAR to load ===');
-              
-              // Log initial state
-              console.log('Initial window object keys containing "MINDAR":', Object.keys(window).filter(k => k.toUpperCase().includes('MINDAR')));
-              console.log('Initial window object keys containing "Mind":', Object.keys(window).filter(k => k.includes('Mind')));
-              console.log('Initial window.MINDAR:', window.MINDAR);
-              console.log('Initial window.MindARThree:', window.MindARThree);
+              console.log('Waiting for local MindAR to load...');
               
               let attempts = 0;
               while (attempts < 50) {
                 await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-                
-                // Detailed logging every 10 attempts
-                if (attempts % 10 === 0) {
-                  console.log('=== Attempt ' + attempts + '/50 ===');
-                  console.log('All window keys:', Object.keys(window).length);
-                  console.log('Keys containing MINDAR:', Object.keys(window).filter(k => k.toUpperCase().includes('MINDAR')));
-                  console.log('Keys containing Mind:', Object.keys(window).filter(k => k.includes('Mind')));
-                  console.log('Keys containing AR:', Object.keys(window).filter(k => k.toUpperCase().includes('AR')));
-                  console.log('Keys containing Three:', Object.keys(window).filter(k => k.includes('Three')));
-                  console.log('Keys containing Compiler:', Object.keys(window).filter(k => k.includes('Compiler')));
-                  console.log('window.MINDAR:', window.MINDAR);
-                  console.log('window.MindARThree:', window.MindARThree);
-                  
-                  // Check for any exports that might be available
-                  const possibleExports = ['MINDAR', 'MindARThree', 'Zb', 'exports', 'module'];
-                  possibleExports.forEach(exp => {
-                    if (window[exp]) {
-                      console.log('Found ' + exp + ':', window[exp]);
-                      if (typeof window[exp] === 'object') {
-                        console.log(exp + ' keys:', Object.keys(window[exp]));
-                      }
-                    }
-                  });
-                }
                 
                 // Check if MINDAR is available from the local file
                 if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.MindARThree) {
-                  console.log('✅ SUCCESS: MindAR loaded from local file - MindARThree available');
-                  console.log('MINDAR.IMAGE.MindARThree:', window.MINDAR.IMAGE.MindARThree);
+                  console.log('MindAR loaded from local file - MindARThree available');
                   return true;
                 }
                 
                 // Check if MindARThree is available as a global
                 if (typeof window.MindARThree !== 'undefined') {
-                  console.log('✅ SUCCESS: MindARThree available as global from local file');
-                  console.log('MindARThree:', window.MindARThree);
+                  console.log('MindARThree available as global from local file');
                   return true;
                 }
                 
-                // Check for Zb export (from the file structure you showed)
-                if (typeof window.Zb !== 'undefined') {
-                  console.log('✅ SUCCESS: Found Zb export (MindARThree)');
-                  console.log('Zb:', window.Zb);
-                  window.MindARThree = window.Zb; // Assign it for compatibility
-                  return true;
-                }
+                attempts++;
               }
               
-              // Final detailed error report
-              console.log('=== FINAL ERROR REPORT ===');
-              console.log('Total window keys:', Object.keys(window).length);
-              console.log('All window keys:', Object.keys(window).sort());
-              console.log('Script tags in document:', document.querySelectorAll('script').length);
-              document.querySelectorAll('script').forEach((script, i) => {
-                console.log('Script ' + i + ':', script.src, script.type, script.textContent?.substring(0, 100));
-              });
-              
-              throw new Error('MindAR not available after loading local file. Checked ' + attempts + ' times. Available globals: ' + Object.keys(window).filter(k => k.includes('Mind') || k.includes('AR') || k.includes('Zb')).join(', '));
+              throw new Error('MindAR not available after loading local file');
             }
             
             window.compileImage = async function(imageBase64) {
