@@ -187,6 +187,13 @@ function HomePage() {
                   Get Your First AR Experience Free
                   <Zap className="ml-2 h-5 w-5 group-hover:animate-pulse" />
                 </Link>
+                <Link
+                  href="/demo"
+                  className="bg-white text-dark-blue px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center border-2 border-black"
+                >
+                  Try the AR Demo
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
               </div>
             </div>
             <div className="relative">
