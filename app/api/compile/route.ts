@@ -111,7 +111,12 @@ export async function POST(request: NextRequest) {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script type="module" src="/js/mindar-compiler.js"></script>
+          <script type="module">
+            // Import MindARThree from local ES module and expose globally for Puppeteer
+            import { MindARThree } from '/js/mindar-compiler.js';
+            window.MindARThree = MindARThree;
+            console.log('MindARThree successfully attached to window.');
+          </script>
         </head>
         <body>
           <div id="progress">Loading...</div>
