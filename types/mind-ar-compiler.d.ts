@@ -15,12 +15,7 @@ declare module '@maherboughdiri/mind-ar-compiler/assets/compiler.js' {
 }
 
 declare module '@maherboughdiri/mind-ar-compiler' {
-  interface CompileOptions {
-    maxTrack?: number;
-    warmupTolerance?: number;
-    missTolerance?: number;
-  }
-
-  export function compile(imageBuffer: Buffer, options?: CompileOptions): Promise<Buffer>;
-  export default { compile };
+  export function compileFiles(files: File[]): Promise<ArrayBuffer>;
+  export function download(target: ArrayBuffer): void;
+  export default { compileFiles, download };
 }
