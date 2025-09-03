@@ -50,13 +50,13 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-black leading-tight mb-6">
-                Bring Every Property to Life <span className="text-red-600">with AR</span>
+                QuickScanAR <span className="text-red-600">Professional AR Creation Service</span>
               </h1>
               <p className="text-xl text-black opacity-80 leading-relaxed">
-                Turn any sign, flyer, or photo into an interactive AR showcase in minutes.
+                We create AR experiences that make your listings unforgettable.
               </p>
               <p className="text-lg text-black opacity-80 mb-8 leading-relaxed">
-                No apps. No coding. Just scan and wow your clients.
+                Professional AR creation service for busy real estate agents. Send us your property photos and videos — we’ll deliver stunning AR experiences in 24 hours.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
@@ -67,7 +67,7 @@ function HomePage() {
                   }}
                   className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black group"
                 >
-                  Create Your First AR Listing
+                  Get Your First AR Experience Free
                   <Zap className="ml-2 h-5 w-5 group-hover:animate-pulse" />
                 </Link>
               </div>
@@ -92,10 +92,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              How It Works (Simple 3-Step Flow)
+              How Our Service Works (Simple 3-Step Process)
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Upload a marker image, add your content, and launch instantly
+              Just send us your content — we handle everything else
             </p>
           </div>
           
@@ -105,24 +105,24 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <span className="text-2xl font-bold text-white">1</span>
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Upload Marker Image</h3>
-              <p className="text-black opacity-80">Choose any property photo — brochure, flyer, or listing image</p>
+              <h3 className="text-xl font-bold text-black mb-4">Send Your Materials</h3>
+              <p className="text-black opacity-80">Email us your property photos, videos, and any special requests</p>
             </div>
             
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <span className="text-2xl font-bold text-white">2</span>
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Add Your Content</h3>
-              <p className="text-black opacity-80">Upload video walkthrough, promo, or virtual tour</p>
+              <h3 className="text-xl font-bold text-black mb-4">We Create Your AR Experience</h3>
+              <p className="text-black opacity-80">Our team builds your professional AR experience within 24 hours</p>
             </div>
             
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <span className="text-2xl font-bold text-white">3</span>
               </div>
-              <h3 className="text-xl font-bold text-black mb-4">Launch & Share</h3>
-              <p className="text-black opacity-80">Get QR code and share your AR experience instantly</p>
+              <h3 className="text-xl font-bold text-black mb-4">Get Your Links & QR Codes</h3>
+              <p className="text-black opacity-80">Receive everything ready to share — links, QR codes, and usage instructions</p>
             </div>
           </div>
           
@@ -147,10 +147,10 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Why Realtors Love QuickScanAR?
+              Why Top Agents Choose Our AR Creation Service
             </h2>
             <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              No coding or tech skills needed
+              Built for speed, quality, and results
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -158,28 +158,22 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Zap className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Stand Out from Competitors</h3>
-              <p className="text-black opacity-80 text-lg">
-                Transform static images into interactive AR experiences that wow buyers.
-              </p>
+              <h3 className="text-2xl font-bold text-black mb-4">Zero Learning Curve</h3>
+              <p className="text-black opacity-80 text-lg">No software to learn or technical skills needed. Just send materials and get results.</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <BarChart3 className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Increase Buyer Engagement</h3>
-              <p className="text-black opacity-80 text-lg">
-                Let prospects instantly explore listings from their phones with AR walkthroughs.
-              </p>
+              <h3 className="text-2xl font-bold text-black mb-4">Professional Quality Guaranteed</h3>
+              <p className="text-black opacity-80 text-lg">Every AR experience meets luxury real estate standards.</p>
             </div>
             <div className="text-center">
               <div className="bg-red-600 rounded-2xl w-20 h-20 flex items-center justify-center mx-auto mb-6 border-2 border-black">
                 <Globe className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-black mb-4">Drive Action with Links</h3>
-              <p className="text-black opacity-80 text-lg">
-                Send buyers directly to your listing or scheduling page from AR experiences.
-              </p>
+              <h3 className="text-2xl font-bold text-black mb-4">24-Hour Turnaround</h3>
+              <p className="text-black opacity-80 text-lg">Send materials today, start wowing buyers tomorrow.</p>
             </div>
           </div>
         </div>
@@ -189,8 +183,8 @@ function HomePage() {
       <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Real Estate Use Cases</h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">These broker and buyer touchpoints can be AR‑enabled</p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Real Estate Applications We Create</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Transform any marketing material into an AR experience</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -199,8 +193,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <User className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Business Cards</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Play an intro video, showcase a property, or link to your portfolio.</p>
+              <h3 className="text-xl font-bold text-black">Business Cards & Flyers</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Professional intro videos, property showcases, or portfolio highlights.</p>
             </div>
 
             {/* 2. Flyers & brochures */}
@@ -208,8 +202,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <FileText className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Flyers & Brochures</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scanning pulls up an AR tour or property highlight reel.</p>
+              <h3 className="text-xl font-bold text-black">Yard Signs & Riders</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Property walkthroughs, drone footage, or agent introductions.</p>
             </div>
 
             {/* 3. Yard sign riders */}
@@ -217,8 +211,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Tag className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Yard Sign Riders</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Each rider can trigger unique AR content (e.g., drone pool video).</p>
+              <h3 className="text-xl font-bold text-black">Open House Materials</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Virtual tours, scheduling links, or property highlight reels.</p>
             </div>
 
             {/* 4. Open house signs */}
@@ -226,8 +220,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <HomeIcon className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Open House Signs</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scan to see highlights, agent intro, or book a showing.</p>
+              <h3 className="text-xl font-bold text-black">Listing Sheets & Brochures</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Interactive tours, mortgage calculators, or contact information.</p>
             </div>
 
             {/* 5. Window posters / office displays */}
@@ -235,8 +229,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Monitor className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Window Posters & Displays</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Passersby can scan after hours and view AR walkthroughs.</p>
+              <h3 className="text-xl font-bold text-black">Direct Mail & Print Ads</h3>
+              <p className="text-black opacity-80 text-sm mt-2">3D walkthroughs, testimonials, or compelling agent pitches.</p>
             </div>
 
             {/* 6. Listing sheets */}
@@ -244,8 +238,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Files className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Listing Sheets</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scan to view AR video tours or a mortgage calculator.</p>
+              <h3 className="text-xl font-bold text-black">Window Displays</h3>
+              <p className="text-black opacity-80 text-sm mt-2">After-hours property viewing and showing scheduling.</p>
             </div>
 
             {/* 7. Direct mail postcards */}
@@ -282,30 +276,19 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">What Agents Say</h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Real stories from top performers using QuickScanAR</p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">What Our Clients Say</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Real results from top real estate professionals</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Luxury Agent */}
+            {/* Luxury Broker */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
               <Quote className="h-8 w-8 text-red-600 mb-4" />
               <p className="text-black text-lg italic leading-8">
-                "My sellers expect innovation. When I showed them how their $12M listing sign could trigger an AR film of the property, they were blown away. It set me apart from every other agent in the area."
+                "I sent them a basic listing photo and property video on Monday. By Tuesday, I had an AR experience that made my $12M listing look like something from the future. My sellers were blown away."
               </p>
               <div className="mt-6 border-t border-black/10 pt-4">
                 <div className="text-black opacity-70 text-sm">Luxury Broker, Beverly Hills CA</div>
-              </div>
-            </div>
-
-            {/* International Agent */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
-              <Quote className="h-8 w-8 text-red-600 mb-4" />
-              <p className="text-black text-lg italic leading-8">
-                "In Dubai, competition is intense. With QuickScanAR, my listings stand out immediately. Clients scan and see a polished walkthrough without even booking a showing. It’s a powerful first impression."
-              </p>
-              <div className="mt-6 border-t border-black/10 pt-4">
-                <div className="text-black opacity-70 text-sm">Real Estate Consultant, Dubai</div>
               </div>
             </div>
 
@@ -313,10 +296,21 @@ function HomePage() {
             <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
               <Quote className="h-8 w-8 text-red-600 mb-4" />
               <p className="text-black text-lg italic leading-8">
-                "We rolled QuickScanAR across 45 agents in my office. Now every business card, sign rider, and brochure is interactive. It’s consistent, simple, and makes our brand look cutting-edge."
+                "The team at QuickScanAR created AR experiences for our entire office. Now every business card and flyer is interactive. Our brand looks cutting-edge compared to competitors."
               </p>
               <div className="mt-6 border-t border-black/10 pt-4">
                 <div className="text-black opacity-70 text-sm">Brokerage Owner, Miami FL</div>
+              </div>
+            </div>
+
+            {/* International Consultant */}
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg italic leading-8">
+                "In Dubai's competitive market, I needed something special. Their AR experiences give me that 'wow factor' that gets buyers excited before they even visit the property."
+              </p>
+              <div className="mt-6 border-t border-black/10 pt-4">
+                <div className="text-black opacity-70 text-sm">Real Estate Consultant, Dubai</div>
               </div>
             </div>
           </div>
@@ -327,192 +321,98 @@ function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-black opacity-80">
-              Common questions about AR technology for real estate
-            </p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Frequently Asked Questions</h2>
+            <p className="text-xl text-black opacity-80">Everything you need to know before getting started</p>
           </div>
           <div className="space-y-8">
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">Do I need technical skills to create AR experiences?</h3>
-              <p className="text-black opacity-80 text-lg">
-                No technical skills are required. Our platform is designed for realtors and business users. If you can upload images and videos, you can create professional AR experiences.
-              </p>
+              <h3 className="text-xl font-bold text-black mb-4">How quickly can you create my AR experience?</h3>
+              <p className="text-black opacity-80 text-lg">Standard turnaround is 24 hours. Rush orders (same-day) available for urgent listings.</p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">How quickly can I launch my first AR listing?</h3>
-              <p className="text-black opacity-80 text-lg">
-                Most realtors can create and launch their first AR experience in under 10 minutes. Upload a property photo, add your video content, and publish instantly.
-              </p>
+              <h3 className="text-xl font-bold text-black mb-4">What materials do I need to send?</h3>
+              <p className="text-black opacity-80 text-lg">Just your target image (listing photo, flyer, business card) and your video content. We handle everything else.</p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">What kind of videos can I add to listings?</h3>
-              <p className="text-black opacity-80 text-lg">
-                Any property walkthrough, promo, or marketing video. Keep it short — under 1 minute works best for buyer engagement.
-              </p>
+              <h3 className="text-xl font-bold text-black mb-4">What if I don't have a property video?</h3>
+              <p className="text-black opacity-80 text-lg">We can work with photos, create slideshow videos, or recommend local videographers in your area.</p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">Will this work for printed materials too?</h3>
-              <p className="text-black opacity-80 text-lg">
-                Yes! Flyers, brochures, and posters all work — just make sure the image is clear. Perfect for open houses and trade shows.
-              </p>
+              <h3 className="text-xl font-bold text-black mb-4">Can this work for printed materials?</h3>
+              <p className="text-black opacity-80 text-lg">Absolutely! We optimize AR experiences to work perfectly with business cards, flyers, brochures, and yard signs.</p>
             </div>
             <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">Can I track engagement on my AR listings?</h3>
-              <p className="text-black opacity-80 text-lg">
-                You can see how many people scanned and watched the AR video via our dashboard. Track performance and optimize your campaigns.
-              </p>
+              <h3 className="text-xl font-bold text-black mb-4">Do you provide the QR codes?</h3>
+              <p className="text-black opacity-80 text-lg">Yes! You receive everything ready to use: shareable links, high-resolution QR codes, and printing instructions.</p>
+            </div>
+            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
+              <h3 className="text-xl font-bold text-black mb-4">Can I make changes after creation?</h3>
+              <p className="text-black opacity-80 text-lg">First revision is included free. Additional changes available for a small fee.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Service Packages Section */}
       <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">
-              Choose Your Plan
-            </h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">
-              Flexible options designed to grow with your real estate business
-            </p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Service Packages</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Done-for-you AR creation with fast turnaround</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Free Plan */}
+            {/* Starter Package */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-black mb-2">Free Plan</h3>
-                <div className="text-4xl font-bold text-red-600 mb-2">$0</div>
-                <p className="text-black opacity-80">Forever free</p>
+                <h3 className="text-2xl font-bold text-black mb-2">Starter Package</h3>
+                <div className="text-4xl font-bold text-red-600 mb-2">$49</div>
+                <p className="text-black opacity-80">per AR experience</p>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">1 AR experience</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">2-Step Upload Creation</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">QR Code Added</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Experience Dashboard</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Customer Support</span>
-                </li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Professional AR creation</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />24-hour turnaround</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Shareable links & QR codes</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />One free revision</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Email support</li>
               </ul>
-              <Link
-                href="/compiler"
-                onClick={() => {
-                  trackEvent('click', 'pricing', 'free_plan')
-                  trackUserEngagement('pricing_click', 'free_plan', 'button')
-                }}
-                className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
-              >
-                Get Started Free
-              </Link>
+              <Link href="/support" className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black">Get Started</Link>
             </div>
 
-            {/* Monthly Plan */}
+            {/* Agent Package */}
             <div className="bg-red-600 rounded-2xl p-8 border-2 border-black relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-white text-red-600 px-4 py-2 rounded-full text-sm font-semibold border-2 border-black">Most Popular</span>
               </div>
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Monthly Plan</h3>
-                <div className="text-4xl font-bold text-white mb-2">$49</div>
-                <p className="text-white opacity-90">per month</p>
+                <h3 className="text-2xl font-bold text-white mb-2">Agent Package</h3>
+                <div className="text-4xl font-bold text-white mb-2">$129</div>
+                <p className="text-white opacity-90">for 3 AR experiences</p>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">3 AR Experiences</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">2-Step Upload Creation</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">QR Code Added</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">Experience Dashboard</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-white mr-3" />
-                  <span className="text-white">Priority Customer Support</span>
-                </li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Everything in Starter</span></li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Priority 12-hour turnaround</span></li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Custom branding options</span></li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Phone support</span></li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Usage analytics dashboard</span></li>
               </ul>
-              <a
-                href="https://buy.polar.sh/polar_cl_tIJXTsoXdnxQRDa7GaT3JBFrWiJY3CTYZ0vkr2Mwj9d"
-                data-polar-checkout
-                data-polar-checkout-theme="dark"
-                data-customer-id={user?.id}
-                onClick={() => {
-                  trackEvent('click', 'pricing', 'professional_plan')
-                  trackUserEngagement('pricing_click', 'professional_plan', 'button')
-                  trackEvent('begin_checkout', 'ecommerce', 'professional_plan', 49)
-                }}
-                className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black"
-              >
-                Start Monthly Plan
-              </a>
+              <Link href="/support" className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black">Choose Agent Package</Link>
             </div>
 
-            {/* Annual Plan */}
+            {/* Brokerage Package */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-black mb-2">Annual Plan</h3>
-                <div className="text-4xl font-bold text-red-600 mb-2">$499</div>
-                <p className="text-black opacity-80">per year</p>
+                <h3 className="text-2xl font-bold text-black mb-2">Brokerage Package</h3>
+                <div className="text-4xl font-bold text-red-600 mb-2">$399</div>
+                <p className="text-black opacity-80">for 10 AR experiences</p>
               </div>
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">36 AR Experiences</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">2-Step Upload Creation</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">QR Code Added</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Experience Dashboard</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-black">Priority Customer Support</span>
-                </li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Everything in Agent Package</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Same-day rush available</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Dedicated account manager</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Team training session</li>
+                <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Volume discounts available</li>
               </ul>
-              <a
-                href="https://buy.polar.sh/polar_cl_uJCvGJRiHoQ9Y1fNO8c8aSlVofV5iTlzVtlaQ3hUriO"
-                data-polar-checkout
-                data-polar-checkout-theme="dark"
-                data-customer-id={user?.id}
-                onClick={() => {
-                  trackEvent('click', 'pricing', 'enterprise_plan')
-                  trackUserEngagement('pricing_click', 'enterprise_plan', 'button')
-                  trackEvent('begin_checkout', 'ecommerce', 'enterprise_plan', 499)
-                }}
-                className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black"
-              >
-                Choose Annual Plan
-              </a>
+              <Link href="/contact" className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black">Contact for Brokerage Pricing</Link>
             </div>
           </div>
         </div>
@@ -521,11 +421,9 @@ function HomePage() {
       {/* CTA Section */}
       <section className="py-20 bg-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            Ready to Make Your Listings Unforgettable?
-          </h2>
+          <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">Ready to Transform Your Marketing?</h2>
           <p className="text-xl text-white opacity-90 mb-8">
-            Turn static property images into AR video experiences that drive leads and close deals — in just 3 steps.
+            Send us your first property materials today and see the AR difference. No contracts. No setup fees. Just results.
           </p>
           <Link
             href="/compiler"
@@ -535,7 +433,7 @@ function HomePage() {
             }}
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >
-            Create Your First AR Listing
+            Start Your First AR Experience — FREE
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
