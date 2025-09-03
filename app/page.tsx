@@ -565,17 +565,16 @@ function HomePage() {
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-black mb-2">Starter Package</h3>
-                <div className="text-4xl font-bold text-red-600 mb-2">$49</div>
-                <p className="text-black opacity-80">per AR experience</p>
+                <p className="text-black opacity-70">Pricing temporarily unavailable</p>
               </div>
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-4 mb-4">
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Professional AR creation</li>
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />24-hour turnaround</li>
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Shareable links & QR codes</li>
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />One free revision</li>
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Email support</li>
               </ul>
-              <Link href="/support" className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors text-center block border-2 border-black">Get Started</Link>
+              <div className="text-center text-sm text-gray-600">Payments are temporarily disabled</div>
             </div>
 
             {/* Agent Package */}
@@ -585,8 +584,7 @@ function HomePage() {
               </div>
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-white mb-2">Agent Package</h3>
-                <div className="text-4xl font-bold text-white mb-2">$129</div>
-                <p className="text-white opacity-90">for 3 AR experiences</p>
+                <p className="text-white opacity-90">Pricing temporarily unavailable</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Everything in Starter</span></li>
@@ -595,15 +593,14 @@ function HomePage() {
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Phone support</span></li>
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-white mr-3" /><span className="text-white">Usage analytics dashboard</span></li>
               </ul>
-              <Link href="/support" className="w-full bg-white text-red-600 py-4 px-6 rounded-lg font-semibold hover:bg-cream transition-colors text-center block border-2 border-black">Choose Agent Package</Link>
+              <div className="text-center text-sm text-white/80">Payments are temporarily disabled</div>
             </div>
 
             {/* Brokerage Package */}
             <div className="bg-white rounded-2xl p-8 border-2 border-black">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-black mb-2">Brokerage Package</h3>
-                <div className="text-4xl font-bold text-red-600 mb-2">$399</div>
-                <p className="text-black opacity-80">for 10 AR experiences</p>
+                <p className="text-black opacity-80">Custom pricing</p>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center"><CheckCircle className="h-5 w-5 text-red-600 mr-3" />Everything in Agent Package</li>

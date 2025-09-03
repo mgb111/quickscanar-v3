@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QuickScanAR Experience</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #000; }
+      #startButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 18px 32px;
+        font-size: 18px;
+        background: #e11d48; /* red-600 */
+        color: white;
+        border: 2px solid #111827; /* black-ish */
+        border-radius: 12px;
+        cursor: pointer;
+        z-index: 1000;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      }
+      #note { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 12px; opacity: 0.8; z-index: 999; }
+    </style>
+  </head>
+  <body>
+    <button id="startButton">Start AR</button>
+    <div id="note">If the camera doesn't start, tap "Start AR"</div>
+
+    <a-scene
+      id="scene"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      embedded>
+
+      <a-assets>
+        <video id="promoVideo" loop muted playsinline crossorigin="anonymous"></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity id="targetEntity" mindar-image-target="targetIndex: 0">
+        <a-plane id="videoPlane" position="0 0 0" height="0.6" width="1" rotation="0 0 0"></a-plane>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // Read query params
+      const params = new URLSearchParams(location.search)
+      const mindUrl = params.get('mind') || 'https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/mind-1756910461299-n4faoaex.mind'
+      const videoUrl = params.get('video') || 'https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/uploads/videos/1756909099647_1756909096334_ssvid.net--Celebrity-Photographer-s-Home-Stunning-Views-Hollywood-Hills_1080p.mp4'
+      const planeWidth = parseFloat(params.get('w')) || 1
+      const planeHeight = parseFloat(params.get('h')) || 0.6
+
+      const sceneEl = document.getElementById('scene')
+      const startBtn = document.getElementById('startButton')
+      const videoEl = document.getElementById('promoVideo')
+      const planeEl = document.getElementById('videoPlane')
+      const targetEntity = document.getElementById('targetEntity')
+
+      // Configure scene with provided assets
+      sceneEl.setAttribute('mindar-image', `imageTargetSrc: ${mindUrl};`)
+      videoEl.setAttribute('src', videoUrl)
+      planeEl.setAttribute('width', planeWidth)
+      planeEl.setAttribute('height', planeHeight)
+
+      // UX: after video is ready, assign it as the material
+      videoEl.addEventListener('loadeddata', () => {
+        planeEl.setAttribute('material', 'src: #promoVideo')
+      })
+
+      // Play/pause on tracking
+      targetEntity.addEventListener('targetFound', () => {
+        videoEl.play().catch(console.warn)
+      })
+      targetEntity.addEventListener('targetLost', () => {
+        videoEl.pause()
+      })
+
+      // Require user gesture to start camera and unlock autoplay
+      startBtn.addEventListener('click', async () => {
+        try { await videoEl.play() } catch (e) {}
+        startBtn.style.display = 'none'
+        try { sceneEl.enterVR() } catch (e) {}
+      })
+    </script>
+  </body>
+</html>
