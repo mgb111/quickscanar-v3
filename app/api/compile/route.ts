@@ -11,7 +11,7 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Starting local MindAR compilation...')
+    console.log('MindAR compilation endpoint called')
     
     // Parse the form data
     const formData = await request.formData()
@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log('Starting Puppeteer-based MindAR compilation with local file...')
 
     // Setup file paths
     const uniqueId = uuidv4()
@@ -116,42 +118,43 @@ export async function POST(request: NextRequest) {
               return false;
             };
             
-            // Load local MindAR compiler bundle
+            // Load local MindAR compiler
             async function loadMindARCompiler() {
-              console.log('Loading MindAR compiler from local bundle...');
+              console.log('Loading MindAR compiler from local file...');
               
               try {
-                // Load the local bundle script
+                // Load the local MindAR script
                 const script = document.createElement('script');
-                script.src = '/mind-ar-compiler-bundle.js';
+                script.src = '/js/mindar-compiler.js';
+                script.type = 'module';
                 
                 await new Promise((resolve, reject) => {
                   script.onload = () => {
-                    console.log('Local MindAR bundle loaded successfully');
+                    console.log('Local MindAR loaded successfully');
                     resolve(true);
                   };
                   script.onerror = (error) => {
-                    console.error('Failed to load local bundle:', error);
+                    console.error('Failed to load local MindAR:', error);
                     reject(error);
                   };
                   document.head.appendChild(script);
                 });
                 
-                // Wait for MindARCompiler to be available
+                // Wait for MINDAR to be available
                 let attempts = 0;
-                while (!window.MindARCompiler && attempts < 50) {
+                while (!window.MINDAR && attempts < 50) {
                   await new Promise(resolve => setTimeout(resolve, 100));
                   attempts++;
                 }
                 
-                if (window.MindARCompiler) {
-                  console.log('MindAR compiler ready from local bundle');
+                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
+                  console.log('MindAR compiler ready from local file');
                   return true;
                 } else {
-                  throw new Error('MindARCompiler not available after loading local bundle');
+                  throw new Error('MINDAR.IMAGE.Compiler not available after loading local file');
                 }
               } catch (error) {
-                console.error('Local bundle loading failed:', error);
+                console.error('Local MindAR loading failed:', error);
                 throw error;
               }
             }
@@ -162,33 +165,31 @@ export async function POST(request: NextRequest) {
                 document.getElementById('progress').textContent = 'Loading MindAR compiler...';
                 
                 // Load the compiler
-                await loadMindARCompiler();
+                const compiler = new window.MINDAR.IMAGE.Compiler();
                 
-                document.getElementById('progress').textContent = 'Converting image...';
+                // Convert base64 to image element
+                const img = new Image();
+                img.src = imageBase64;
                 
-                // Convert base64 to File object
-                const response = await fetch(imageBase64);
-                const blob = await response.blob();
-                const file = new File([blob], 'marker.jpg', { type: 'image/jpeg' });
+                await new Promise((resolve, reject) => {
+                  img.onload = resolve;
+                  img.onerror = reject;
+                });
                 
-                console.log('File created, size:', file.size);
-                document.getElementById('progress').textContent = 'Compiling...';
+                document.getElementById('progress').textContent = 'Compiling image...';
                 
-                // Use MindAR compiler
-                const compiler = window.MindARCompiler;
-                
-                if (!compiler || !compiler.compileFiles) {
-                  throw new Error('MindAR compiler not available or missing compileFiles method');
-                }
-                
-                console.log('Compiler loaded, starting compilation...');
-                const result = await compiler.compileFiles([file]);
-                console.log('Compilation completed');
+                // Compile the image using the proper MindAR API
+                const compiledData = await compiler.compileImageTargets([img], (progress) => {
+                  document.getElementById('progress').textContent = 'Compiling: ' + Math.round(progress) + '%';
+                });
                 
                 document.getElementById('progress').textContent = 'Compilation complete!';
                 
+                // Export the compiled data
+                const exportedData = await compiler.exportData();
+                
                 // Convert ArrayBuffer to base64 for transfer
-                const uint8Array = new Uint8Array(result);
+                const uint8Array = new Uint8Array(exportedData);
                 const base64 = btoa(String.fromCharCode.apply(null, uint8Array));
                 return { success: true, data: base64 };
               } catch (error) {
