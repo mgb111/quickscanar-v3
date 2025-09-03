@@ -69,9 +69,14 @@
       })
 
       startBtn.addEventListener('click', async () => {
-        try { await videoEl.play() } catch (e) {}
+        try { videoEl.muted = true; await videoEl.play() } catch (e) {}
         startBtn.style.display = 'none'
-        try { sceneEl.enterVR() } catch (e) {}
+        try {
+          const arSystem = sceneEl.systems['mindar-image-system']
+          if (arSystem && arSystem.start) {
+            await arSystem.start()
+          }
+        } catch (e) { console.warn(e) }
       })
     </script>
   </body>

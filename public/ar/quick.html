@@ -82,11 +82,16 @@
         videoEl.pause()
       })
 
-      // Require user gesture to start camera and unlock autoplay
+      // Require user gesture to start camera (MindAR) and unlock video autoplay
       startBtn.addEventListener('click', async () => {
-        try { await videoEl.play() } catch (e) {}
+        try { videoEl.muted = true; await videoEl.play() } catch (e) { /* ignore */ }
         startBtn.style.display = 'none'
-        try { sceneEl.enterVR() } catch (e) {}
+        try {
+          const arSystem = sceneEl.systems['mindar-image-system']
+          if (arSystem && arSystem.start) {
+            await arSystem.start()
+          }
+        } catch (e) { console.warn(e) }
       })
     </script>
   </body>
