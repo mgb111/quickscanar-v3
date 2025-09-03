@@ -5,6 +5,9 @@ import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import puppeteer from 'puppeteer'
 
+// Ensure this route runs on the Node.js runtime (required for Puppeteer)
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Starting Puppeteer-based compilation...')
@@ -108,7 +111,7 @@ export async function POST(request: NextRequest) {
       
       // Execute compilation
       const compiledBase64 = await page.evaluate(async (imageBase64) => {
-        return await window.compileImage(imageBase64)
+        return await (window as any).compileImage(imageBase64)
       }, imageBase64)
       
       // Convert base64 back to buffer and save
