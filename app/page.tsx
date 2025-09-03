@@ -74,14 +74,20 @@ function HomePage() {
         headers: { 'Content-Type': markerFile.type },
         body: markerFile,
       })
-      if (!putImg.ok) throw new Error('Failed to upload marker image')
+      if (!putImg.ok) {
+        const errTxt = await putImg.text().catch(() => '')
+        throw new Error(`Failed to upload marker image (status ${putImg.status}): ${errTxt}`)
+      }
 
       const putVid = await fetch(vidData.signedUrl, {
         method: 'PUT',
         headers: { 'Content-Type': videoFile.type },
         body: videoFile,
       })
-      if (!putVid.ok) throw new Error('Failed to upload video')
+      if (!putVid.ok) {
+        const errTxt = await putVid.text().catch(() => '')
+        throw new Error(`Failed to upload video (status ${putVid.status}): ${errTxt}`)
+      }
 
       // 3) Notify support with the uploaded keys (and user info if available)
       const subject = 'Free Custom AR Request (Landing Page)'
