@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-          <script src="/js/mindar-compiler.js"></script>
+          <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
         </head>
         <body>
           <div id="progress">Loading...</div>
