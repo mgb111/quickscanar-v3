@@ -27,10 +27,10 @@ export default function Compiler() {
             </Link>
           </div>
           <h1 className="text-4xl font-bold mb-4 tracking-tight">
-            AR Image Converter
+            AR Image Compiler
           </h1>
           <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
-            Create AR-ready targets with our advanced MindAR conversion engine
+            Create AR-ready targets with our advanced MindAR compilation engine
           </p>
         </div>
 
@@ -47,15 +47,15 @@ export default function Compiler() {
             </li>
             <li className="flex items-start">
               <span className="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3 mt-0.5">2</span>
-              <span>Wait for the conversion process to complete</span>
+              <span>Wait for the compilation process to complete</span>
             </li>
             <li className="flex items-start">
               <span className="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3 mt-0.5">3</span>
-              <span>Download the generated file</span>
+              <span>Download the generated .mind file</span>
             </li>
             <li className="flex items-start">
               <span className="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3 mt-0.5">4</span>
-              <span>Use the file in your AR application</span>
+              <span>Use the .mind file in your AR application</span>
             </li>
           </ol>
         </div>
@@ -68,7 +68,7 @@ export default function Compiler() {
               Important Notice
             </h3>
             <p className="text-lg opacity-90">
-              <strong>Scroll down</strong> in the converter below to find the upload and convert buttons!
+              <strong>Scroll down</strong> in the converter below to find the upload and compile buttons!
             </p>
             <p className="text-sm opacity-80 mt-2">
               The interface may be partially hidden by our overlays - scroll down to access all features.
@@ -94,12 +94,12 @@ export default function Compiler() {
           <div className="absolute top-0 left-0 bottom-0 w-72 bg-white z-10 pointer-events-none hidden md:block"></div>
           <div className="absolute top-0 right-0 bottom-0 w-0 bg-white z-10 pointer-events-none hidden md:block"></div>
           
-          {/* AR Image Converter Iframe */}
+          {/* MindAR Compiler Iframe */}
           <iframe 
             src="https://hiukim.github.io/mind-ar-js-doc/tools/compile/"
             className="w-full h-[800px] border-0 -mt-32 pt-32 -mb-32 pb-32"
             onLoad={() => setIframeLoaded(true)}
-            title="AR Image Converter"
+            title="AR Image Compiler"
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function Compiler() {
           <div className="bg-white border-2 border-black rounded-xl p-6 inline-block shadow-lg">
             <h3 className="text-black font-semibold mb-2">Ready to create your AR experience?</h3>
             <p className="text-black opacity-80 text-sm mb-4">
-              After creating your AR targets, proceed to create your AR experience with videos and files.
+              After creating your AR targets, proceed to create your AR experience with videos and .mind files.
             </p>
             <Link
               href="/dashboard/create"

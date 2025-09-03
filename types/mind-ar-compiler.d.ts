@@ -13,9 +13,3 @@ declare module '@maherboughdiri/mind-ar-compiler/assets/compiler.js' {
     exportData(): ArrayBuffer;
   }
 }
-
-declare module '@maherboughdiri/mind-ar-compiler' {
-  export function compileFiles(files: File[]): Promise<ArrayBuffer>;
-  export function download(target: ArrayBuffer): void;
-  export default { compileFiles, download };
-}

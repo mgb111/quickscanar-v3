@@ -544,15 +544,12 @@ function HomePage() {
       {/* Footer */}
       <footer className="bg-black text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center mb-6">
-            <Camera className="h-8 w-8 text-red-600" />
-            <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
-          </div>
-          <p className="text-white opacity-80 text-lg max-w-3xl mx-auto">
-            Professional AR creation platform that makes interactive experiences accessible to realtors of all sizes. Simple, powerful, and results-driven.
-          </p>
-          <div className="border-t border-white/20 mt-12 pt-8 text-white/80">
-            <p className="text-lg">&copy; 2025 QuickScanAR. All rights reserved.</p>
+          <div className="space-y-4">
+            <div className="text-2xl font-bold">QuickScanAR</div>
+            <p className="text-white/80 text-lg">
+              Professional AR creation platform that makes interactive experiences accessible to realtors of all sizes. Simple, powerful, and results-driven.
+            </p>
+            <div className="text-white/80 text-lg">&copy; 2025 QuickScanAR. All rights reserved.</div>
           </div>
         </div>
       </footer>

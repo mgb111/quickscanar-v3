@@ -23,7 +23,7 @@ export default function CreateExperience() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [compilingImage, setCompilingImage] = useState(false)
+  const [mindFile, setMindFile] = useState<File | null>(null)
   const [markerImageFile, setMarkerImageFile] = useState<File | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
 
@@ -51,6 +51,17 @@ export default function CreateExperience() {
     }
   }, [])
 
+  const handleMindUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.name.endsWith('.mind')) {
+        toast.error('Please upload a .mind file')
+        return
+      }
+      setMindFile(file)
+      toast.success('Mind file uploaded successfully!')
+    }
+  }, [])
 
   const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -70,14 +81,15 @@ export default function CreateExperience() {
     }
   }, [])
 
-
-  const removeFile = useCallback((type: 'video' | 'markerImage') => {
+  const removeFile = useCallback((type: 'video' | 'mind' | 'markerImage') => {
     if (type === 'video') {
       setVideoFile(null)
+    } else if (type === 'mind') {
+      setMindFile(null)
     } else if (type === 'markerImage') {
       setMarkerImageFile(null)
     }
-    toast.success(`${type === 'video' ? 'Video' : 'Marker image'} removed`)
+    toast.success(`${type === 'video' ? 'Video' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +105,10 @@ export default function CreateExperience() {
       return
     }
 
-
+    if (!mindFile) {
+      toast.error('Please upload a mind file')
+      return
+    }
 
     if (!markerImageFile) {
       toast.error('Please upload a marker image')
@@ -103,38 +118,8 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-      // Step 1: Compile marker image to .mind file using Puppeteer
-      setCompilingImage(true)
-      const compileFormData = new FormData()
-      compileFormData.append('markerImage', markerImageFile)
-      
-      const compileResponse = await fetch('/api/compile', {
-        method: 'POST',
-        body: compileFormData
-      })
-      
-      if (!compileResponse.ok) {
-        const compileError = await compileResponse.json().catch(() => ({ message: 'Failed to compile image' }))
-        throw new Error(compileError.message || 'Failed to compile marker image')
-      }
-      
-      const compileData = await compileResponse.json()
-      setCompilingImage(false)
-      
-      if (!compileData.success) {
-        // Check if manual compilation is required
-        if (compileData.requiresManualCompilation) {
-          toast.error('Server compilation unavailable. Please use the manual converter.')
-          // Redirect to compiler page
-          window.open('/compiler', '_blank')
-          return
-        }
-        throw new Error(compileData.message || 'Image compilation failed')
-      }
-      
-      toast.success('Image compiled successfully!')
-      
-      // Step 2: Get presigned URL for video upload to R2
+
+      // Step 1: Get presigned URL for video upload to R2
       const videoPresignedResponse = await fetch('/api/upload/r2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,8 +152,43 @@ export default function CreateExperience() {
 
       const videoUrl = videoPresignedData.publicUrl
 
-      // The compiled .mind file is already available at the public path
-      const mindUrl = `${window.location.origin}${compileData.filePath}`
+      // Upload mind file to R2 (two-step: presign then upload)
+      let mindUrl = ''
+      if (mindFile) {
+        // Step 1: Get presigned URL for .mind upload
+        const mindPresignedResponse = await fetch('/api/upload/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: mindFile.name,
+            fileType: 'mind',
+            // .mind is a binary bundle; octet-stream is a safe default
+            contentType: 'application/octet-stream',
+          }),
+        })
+
+        if (!mindPresignedResponse.ok) {
+          const err = await mindPresignedResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get mind upload URL')
+        }
+
+        const mindPresignedData = await mindPresignedResponse.json()
+
+        // Step 2: Upload .mind directly to R2 using presigned URL
+        const mindUploadResponse = await fetch(mindPresignedData.signedUrl, {
+          method: 'PUT',
+          body: mindFile,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+        })
+
+        if (!mindUploadResponse.ok) {
+          throw new Error('Failed to upload mind file to R2')
+        }
+
+        mindUrl = mindPresignedData.publicUrl
+      }
 
       // Upload marker image to R2 (two-step: presign then upload)
       let markerImageUrl = ''
@@ -211,7 +231,7 @@ export default function CreateExperience() {
       const experienceData = {
         title: title.trim(),
         video_file_url: videoUrl,
-        mind_file_url: mindUrl,
+        mind_file_url: mindUrl || null,
         marker_image_url: markerImageUrl || null,
         user_id: user!.id,
         link_url: linkUrl.trim() ? linkUrl.trim() : null
@@ -252,10 +272,9 @@ export default function CreateExperience() {
     } catch (error) {
       console.error('Error creating AR experience:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create AR experience')
-    } finally {
-      setSubmitting(false)
-      setCompilingImage(false)
-    }
+          } finally {
+        setSubmitting(false)
+      }
       }
 
   if (loading) {
@@ -302,18 +321,56 @@ export default function CreateExperience() {
           </p>
         </div>
 
+        {/* Step 1: Compile Image to AR Format */}
+        <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+          <div>
+              <h3 className="text-2xl font-semibold mb-3 text-black flex items-center">
+                <Camera className="h-6 w-6 mr-3 text-red-600" />
+                Step 1: Compile Image to AR Format
+            </h3>
+              <p className="text-black opacity-80 text-lg">
+                First, convert your image to AR-ready format using our compiler
+            </p>
+          </div>
+          <Link
+            href="/compiler"
+              className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center shadow-lg"
+          >
+              Go to Compiler
+              <ArrowLeft className="h-5 w-5 ml-2" />
+          </Link>
+        </div>
+        
+          <div className="bg-cream border border-black rounded-xl p-6">
+            <h4 className="font-semibold text-black mb-4 text-lg">What happens in the compiler:</h4>
+            <ul className="text-black space-y-2 text-base">
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Upload your image (JPG, PNG, etc.)
+              </li>
+            <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Our AI processes it to create a .mind file
+            </li>
+            <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                The .mind file contains the image recognition data
+            </li>
+            <li className="flex items-center">
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-3"></span>
+                Download the .mind file to use in your AR experience
+            </li>
+          </ul>
+        </div>
+      </div>
 
-        {/* Create AR Experience Form */}
+        {/* Step 2: Create AR Experience Form */}
         <div className="bg-white border border-black rounded-2xl p-8 mb-8 shadow-lg">
           <h3 className="text-2xl font-semibold mb-6 text-black flex items-center">
             <Upload className="h-6 w-6 mr-3 text-red-600" />
-            Create New AR Experience
+            Step 2: Create New AR Experience
         </h3>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-            <p className="text-blue-800 text-sm">
-              <strong>✨ Automated Process:</strong> Upload your marker image and video below. Our system will automatically convert your image to AR format in the background.
-            </p>
-          </div>
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Title Input */}
@@ -391,6 +448,47 @@ export default function CreateExperience() {
                 </div>
             </div>
 
+              {/* Mind File Upload */}
+              <div>
+                <label className="block text-lg font-medium text-black mb-3">
+                  Mind File (.mind) *
+                </label>
+                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                  {mindFile ? (
+                    <div className="space-y-3">
+                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                      <p className="text-base text-black font-medium">{mindFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => removeFile('mind')}
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+            <div>
+                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                      <p className="text-base text-black">
+                        <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                          Upload .mind file
+              </label>
+              </p>
+                      <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
+                <input
+                        id="mind-upload"
+                  type="file"
+                        accept=".mind"
+                        onChange={handleMindUpload}
+                  className="hidden"
+                />
+              </div>
+                  )}
+                </div>
+              </div>
+
+
             </div>
 
             {/* Marker Image Upload */}
@@ -443,7 +541,7 @@ export default function CreateExperience() {
                 {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                    {compilingImage ? 'Converting Image...' : 'Creating Experience...'}
+                    Uploading Files...
                   </>
                 ) : (
                   <>
