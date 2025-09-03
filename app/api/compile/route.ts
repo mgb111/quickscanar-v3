@@ -101,70 +101,52 @@ export async function POST(request: NextRequest) {
       page.setDefaultTimeout(60000)
       page.setDefaultNavigationTimeout(60000)
       
-      // Create HTML page with A-Frame and local MindAR compiler
+      // Create HTML page with THREE.js and MindAR THREE version for compilation
       const html = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-          <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+          <script type="importmap">
+          {
+            "imports": {
+              "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+              "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+              "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+            }
+          }
+          </script>
         </head>
         <body>
           <div id="progress">Loading...</div>
-          <script>
+          <script type="module">
             // Global error handler
             window.onerror = function(msg, url, line, col, error) {
               console.error('Global error:', msg, url, line, col, error);
               return false;
             };
             
-            // Wait for dependencies to load
+            // Import THREE.js and MindAR
+            import * as THREE from 'three';
+            import { MindARThree } from 'mindar-image-three';
+            
+            console.log('THREE.js and MindAR modules loaded');
+            
+            // Wait for modules to be ready
             async function waitForDependencies() {
-              console.log('Waiting for A-Frame and MindAR to load...');
+              console.log('Checking THREE.js and MindAR availability...');
               
-              // Wait for A-Frame to be available
-              let attempts = 0;
-              while (!window.AFRAME && attempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
+              if (!THREE) {
+                throw new Error('THREE.js not available');
               }
               
-              if (!window.AFRAME) {
-                throw new Error('A-Frame not loaded after waiting');
-              }
-              console.log('A-Frame loaded successfully');
-              
-              // Wait for MINDAR to be available - check multiple possible exports
-              attempts = 0;
-              while (attempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Check various possible exports
-                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
-                  console.log('MindAR compiler ready via MINDAR.IMAGE.Compiler');
-                  return true;
-                }
-                
-                // Check if it's available as a global function
-                if (typeof window.Compiler !== 'undefined') {
-                  console.log('MindAR compiler ready via global Compiler');
-                  window.MINDAR = { IMAGE: { Compiler: window.Compiler } };
-                  return true;
-                }
-                
-                // Check if MindAR is available but IMAGE is not
-                if (window.MINDAR && !window.MINDAR.IMAGE) {
-                  console.log('MINDAR found but IMAGE not available, creating structure');
-                  window.MINDAR.IMAGE = { Compiler: window.MINDAR.Compiler || window.Compiler };
-                  if (window.MINDAR.IMAGE.Compiler) return true;
-                }
-                
-                attempts++;
+              if (!MindARThree) {
+                throw new Error('MindARThree not available');
               }
               
-              throw new Error('MINDAR.IMAGE.Compiler not available after loading');
+              console.log('THREE.js and MindAR ready');
+              return true;
             }
             
             window.compileImage = async function(imageBase64) {
@@ -175,10 +157,13 @@ export async function POST(request: NextRequest) {
                 // Wait for dependencies to load first
                 await waitForDependencies();
                 
-                document.getElementById('progress').textContent = 'Initializing compiler...';
+                document.getElementById('progress').textContent = 'Initializing MindAR compiler...';
                 
-                // Load the compiler
-                const compiler = new window.MINDAR.IMAGE.Compiler();
+                // Initialize MindAR with THREE.js
+                const mindarThree = new MindARThree({
+                  container: document.body,
+                  imageTargetSrc: null // We'll compile the target
+                });
                 
                 // Convert base64 to image element
                 const img = new Image();
@@ -189,22 +174,17 @@ export async function POST(request: NextRequest) {
                   img.onerror = reject;
                 });
                 
-                document.getElementById('progress').textContent = 'Compiling image...';
+                document.getElementById('progress').textContent = 'Note: MindAR THREE.js version does not have direct compilation API';
                 
-                // Compile the image using the proper MindAR API
-                const compiledData = await compiler.compileImageTargets([img], (progress) => {
-                  document.getElementById('progress').textContent = 'Compiling: ' + Math.round(progress) + '%';
-                });
+                // MindARThree is for runtime AR, not compilation
+                // The compilation needs to be done differently or use a different approach
                 
-                document.getElementById('progress').textContent = 'Compilation complete!';
-                
-                // Export the compiled data
-                const exportedData = await compiler.exportData();
-                
-                // Convert ArrayBuffer to base64 for transfer
-                const uint8Array = new Uint8Array(exportedData);
-                const base64 = btoa(String.fromCharCode.apply(null, uint8Array));
-                return { success: true, data: base64 };
+                return { 
+                  success: false, 
+                  requiresManualCompilation: true,
+                  message: 'MindAR THREE.js version does not provide direct image compilation API. Please use manual compilation.',
+                  compilerUrl: '/compiler'
+                };
               } catch (error) {
                 console.error('Browser compilation error:', error);
                 document.getElementById('progress').textContent = 'Error: ' + error.message;
