@@ -188,7 +188,7 @@ function HomePage() {
                   <Zap className="ml-2 h-5 w-5 group-hover:animate-pulse" />
                 </Link>
                 <Link
-                  href="/demo"
+                  href="#demo"
                   className="bg-white text-dark-blue px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center border-2 border-black"
                 >
                   Try the AR Demo
@@ -346,6 +346,56 @@ function HomePage() {
             </div>
           </div>
 
+        </div>
+      </section>
+
+      {/* AR Demo Section */}
+      <section id="demo" className="py-20 bg-cream">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-4">Try the AR Demo</h2>
+            <p className="text-lg text-black/80 max-w-3xl mx-auto">
+              Scan the QR code in the image below with your phone, open the link, allow camera access, then point your phone back at this same image to see the AR overlay.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-10 items-start">
+            <div>
+              <img
+                src="/demo-photo.png"
+                alt="Demo photo with QR code"
+                className="w-full h-auto rounded-2xl border-2 border-black shadow"
+                style={{ objectFit: 'cover' }}
+              />
+              <p className="text-sm text-black/60 mt-2">
+                If the image doesn’t load, ensure the file exists at <code>public/demo-photo.png</code>.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border-2 border-black p-6">
+              <h3 className="text-2xl font-bold text-black mb-3">How to view</h3>
+              <ol className="list-decimal list-inside space-y-2 text-black/90">
+                <li>On your phone, open the camera and scan the QR in the image.</li>
+                <li>Tap the link and allow camera access.</li>
+                <li>Point the phone back at the same image to trigger the AR.</li>
+              </ol>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/ar/quick.html"
+                  className="bg-red-600 text-white px-5 py-3 rounded-lg font-semibold border-2 border-black hover:bg-red-700"
+                >
+                  Open AR Experience
+                </Link>
+                <a
+                  href="/demo-photo.png"
+                  download
+                  className="px-5 py-3 rounded-lg border-2 border-black hover:bg-cream"
+                >
+                  Download Demo Photo
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
