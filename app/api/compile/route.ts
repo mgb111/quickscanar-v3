@@ -405,19 +405,19 @@ export async function POST(request: NextRequest) {
   if (!result.success) {
     throw new Error(`Browser compilation failed: ${result.error || result.message}`)
   }
-      
-      // Convert base64 back to buffer and save
-      const compiledBuffer = Buffer.from(result.data, 'base64')
-      await writeFile(mindFilePath, compiledBuffer)
-      
-      console.log('Puppeteer compilation completed successfully')
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Image compilation successful',
-        filePath: publicPath,
-        fileName: mindFileName
-      })
+  
+  // Convert base64 back to buffer and save
+  const compiledBuffer = Buffer.from(result.data, 'base64')
+  await writeFile(mindFilePath, compiledBuffer)
+  
+  console.log('Puppeteer compilation completed successfully')
+  
+  return NextResponse.json({
+    success: true,
+    message: 'Image compilation successful',
+    filePath: publicPath,
+    fileName: mindFileName
+  })
       
     } finally {
       await browser.close()
