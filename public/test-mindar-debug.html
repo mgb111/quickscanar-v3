@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>MindAR Debug Test</title>
+</head>
+<body>
+    <h1>MindAR Debug Test</h1>
+    <div id="output"></div>
+    <button onclick="testCompilation()">Test Compilation</button>
+    
+    <script>
+        function log(message) {
+            console.log(message);
+            document.getElementById('output').innerHTML += '<div>' + message + '</div>';
+        }
+        
+        async function testCompilation() {
+            try {
+                log('Starting compilation test...');
+                
+                // Create a simple test image (100x100 red square)
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'red';
+                ctx.fillRect(0, 0, 100, 100);
+                const imageBase64 = canvas.toDataURL('image/png');
+                
+                log('Test image created: ' + imageBase64.substring(0, 50) + '...');
+                
+                const response = await fetch('/api/compile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imageBase64,
+                        filename: 'test-debug.png'
+                    })
+                });
+                
+                const result = await response.json();
+                log('Response status: ' + response.status);
+                log('Response: ' + JSON.stringify(result, null, 2));
+                
+            } catch (error) {
+                log('Error: ' + error.message);
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
