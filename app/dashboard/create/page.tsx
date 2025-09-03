@@ -122,6 +122,13 @@ export default function CreateExperience() {
       setCompilingImage(false)
       
       if (!compileData.success) {
+        // Check if manual compilation is required
+        if (compileData.requiresManualCompilation) {
+          toast.error('Server compilation unavailable. Please use the manual converter.')
+          // Redirect to compiler page
+          window.open('/compiler', '_blank')
+          return
+        }
         throw new Error(compileData.message || 'Image compilation failed')
       }
       

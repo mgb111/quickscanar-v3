@@ -70,14 +70,28 @@ export async function POST(request: NextRequest) {
     console.log('Launching headless browser...')
     
     const browser = await puppeteer.launch({
-      args: isServerless ? chromium.args : [
+      args: isServerless ? [
+        ...chromium.args,
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-ipc-flooding-protection',
+        '--font-render-hinting=none'
+      ] : [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage'
       ],
-      defaultViewport: chromium.defaultViewport,
+      defaultViewport: isServerless ? chromium.defaultViewport : undefined,
       executablePath: isServerless ? await chromium.executablePath() : undefined,
-      headless: true
+      headless: true,
+      timeout: 60000
     })
 
     try {
