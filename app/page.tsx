@@ -151,9 +151,9 @@ function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <Header
-        showCreateAR={true}
-        showDashboard={Boolean(isSupabaseConfigured() && !supabaseError && user)}
-        showSignOut={Boolean(isSupabaseConfigured() && !supabaseError && user)}
+        showCreateAR={false}
+        showDashboard={false}
+        showSignOut={false}
         showSignIn={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
         showSignUp={Boolean(isSupabaseConfigured() && !supabaseError && !user)}
         onSignOut={handleSignOut}
