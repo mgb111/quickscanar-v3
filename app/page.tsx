@@ -5,10 +5,111 @@ import { Camera, ArrowRight, BarChart3, Globe, CheckCircle, Zap, User, FileText,
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
 import { useAnalytics } from '@/lib/useAnalytics';
+import { useState } from 'react'
 
 function HomePage() {
   const { user, loading, signOut } = useAuth()
   const { trackEvent, trackUserEngagement } = useAnalytics()
+
+  // Upload modal state
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [markerFile, setMarkerFile] = useState<File | null>(null)
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const openUploadModal = () => {
+    setErrorMsg(null)
+    setSubmitted(false)
+    setShowUploadModal(true)
+  }
+
+  const closeUploadModal = () => {
+    if (submitting) return
+    setShowUploadModal(false)
+  }
+
+  const handleSubmitUpload = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMsg(null)
+    if (!name || !email) {
+      setErrorMsg('Please provide your name and email so we can contact you.')
+      return
+    }
+    if (!markerFile || !videoFile) {
+      setErrorMsg('Please upload both a marker photo and a video.')
+      return
+    }
+    try {
+      setSubmitting(true)
+      // 1) Get signed URLs
+      const imgReq = await fetch('/api/upload/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: `${Date.now()}_${markerFile.name}`,
+          contentType: markerFile.type,
+        }),
+      })
+      if (!imgReq.ok) throw new Error(`Image signing failed: ${await imgReq.text()}`)
+      const imgData = await imgReq.json()
+
+      const vidReq = await fetch('/api/upload/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: `${Date.now()}_${videoFile.name}`,
+          contentType: videoFile.type,
+        }),
+      })
+      if (!vidReq.ok) throw new Error(`Video signing failed: ${await vidReq.text()}`)
+      const vidData = await vidReq.json()
+
+      // 2) Upload files to signed URLs
+      const putImg = await fetch(imgData.signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': markerFile.type },
+        body: markerFile,
+      })
+      if (!putImg.ok) throw new Error('Failed to upload marker image')
+
+      const putVid = await fetch(vidData.signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': videoFile.type },
+        body: videoFile,
+      })
+      if (!putVid.ok) throw new Error('Failed to upload video')
+
+      // 3) Notify support with the uploaded keys (and user info if available)
+      const subject = 'Free Custom AR Request (Landing Page)'
+      const msg = [
+        'A new free AR request was submitted from the landing page.',
+        `Name: ${name}`,
+        `Email: ${email}`,
+        user?.id ? `User ID: ${user.id}` : 'User ID: not logged in',
+        '',
+        `Marker key: ${imgData.key}`,
+        `Video key: ${vidData.key}`,
+      ].join('\n')
+
+      const supportRes = await fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, message: msg }),
+      })
+      if (!supportRes.ok) throw new Error(`Support request failed: ${await supportRes.text()}`)
+
+      setSubmitted(true)
+    } catch (err: any) {
+      console.error(err)
+      setErrorMsg(err?.message || 'Upload failed. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const isSupabaseConfigured = () => {
     return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -60,10 +161,12 @@ function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/compiler"
-                  onClick={() => {
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
                     trackEvent('click', 'cta', 'hero_create_ar_experience')
                     trackUserEngagement('cta_click', 'hero_section', 'button')
+                    openUploadModal()
                   }}
                   className="bg-red-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center border-2 border-black group"
                 >
@@ -86,6 +189,102 @@ function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={closeUploadModal} />
+          <div className="relative bg-white w-full max-w-lg mx-4 rounded-2xl border-2 border-black shadow-xl p-6">
+            {!submitted ? (
+              <form onSubmit={handleSubmitUpload}>
+                <h3 className="text-2xl font-bold text-black mb-2">Submit Your Materials</h3>
+                <p className="text-black/70 mb-6">Upload a marker photo and a video. We will get back to you within 24 hours.</p>
+
+                {errorMsg && (
+                  <div className="mb-4 text-red-700 bg-red-50 border border-red-200 rounded-md p-3">{errorMsg}</div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">Your Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full border-2 border-black rounded-lg p-2"
+                      placeholder="Jane Agent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">Your Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full border-2 border-black rounded-lg p-2"
+                      placeholder="jane@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">Marker Photo</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setMarkerFile(e.target.files?.[0] || null)}
+                      className="w-full border-2 border-dashed border-black rounded-lg p-3"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-1">Video</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                      className="w-full border-2 border-dashed border-black rounded-lg p-3"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeUploadModal}
+                    className="px-4 py-2 rounded-lg border-2 border-black hover:bg-cream"
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold border-2 border-black hover:bg-red-700 disabled:opacity-60"
+                  >
+                    {submitting ? 'Submitting...' : 'Submit Materials'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-black mb-3">Thanks! 🎉</h3>
+                <p className="text-black/80 mb-6">We received your materials. We will get back to you within 24 hours.</p>
+                <button
+                  onClick={closeUploadModal}
+                  className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold border-2 border-black hover:bg-red-700"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Interactive Product Walkthrough */}
       <section className="py-20 bg-white">
@@ -413,10 +612,12 @@ function HomePage() {
             Send us your first property materials today and see the AR difference. No contracts. No setup fees. Just results.
           </p>
           <Link
-            href="/compiler"
-            onClick={() => {
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
               trackEvent('click', 'cta', 'final_section_create_ar')
               trackUserEngagement('cta_click', 'final_section', 'button')
+              openUploadModal()
             }}
             className="bg-white text-red-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-cream transition-colors inline-flex items-center border-2 border-white group"
           >

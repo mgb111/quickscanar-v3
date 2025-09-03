@@ -12,11 +12,11 @@ export async function POST(request: NextRequest) {
     }
 
     const allowedTypes = [
-      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'
+      'image/jpeg', 'image/png', 'image/webp', 'image/gif'
     ];
     if (!allowedTypes.includes(contentType)) {
       return NextResponse.json({
-        error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}`
+        error: `Unsupported image format. Please use JPEG, PNG, WEBP, or GIF. Current type: ${contentType}`
       }, { status: 400 });
     }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const key = `uploads/videos/${Date.now()}_${fileName}`
+    const key = `uploads/images/${Date.now()}_${fileName}`
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ signedUrl, key })
   } catch (error) {
-    console.error('Video upload error:', error)
+    console.error('Image upload error:', error);
     return NextResponse.json(
-      { error: `Video upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: `Image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
-    )
+    );
   }
 }
