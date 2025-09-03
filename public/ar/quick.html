@@ -35,7 +35,7 @@
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
       embedded>
 
       <a-assets>
@@ -83,10 +83,29 @@
       })
 
       // Require user gesture to start camera (MindAR) and unlock video autoplay
+      const sceneReady = () => new Promise((resolve) => {
+        if (sceneEl.hasLoaded) return resolve()
+        sceneEl.addEventListener('loaded', () => resolve(), { once: true })
+      })
+
+      // Explicitly request camera access to trigger permission UI (helps iOS/Android)
+      const requestCamera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+          // Immediately stop tracks; MindAR will acquire its own stream
+          stream.getTracks().forEach(t => t.stop())
+        } catch (e) {
+          console.warn('Camera permission request failed', e)
+        }
+      }
+
       startBtn.addEventListener('click', async () => {
         try { videoEl.muted = true; await videoEl.play() } catch (e) { /* ignore */ }
         startBtn.style.display = 'none'
         try {
+          await requestCamera()
+          await sceneReady()
           const arSystem = sceneEl.systems['mindar-image-system']
           if (arSystem && arSystem.start) {
             await arSystem.start()
