@@ -101,52 +101,48 @@ export async function POST(request: NextRequest) {
       page.setDefaultTimeout(60000)
       page.setDefaultNavigationTimeout(60000)
       
-      // Create HTML page with THREE.js and MindAR THREE version for compilation
+      // Create HTML page with local MindAR compiler
       const html = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script type="importmap">
-          {
-            "imports": {
-              "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-              "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-              "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
-            }
-          }
-          </script>
+          <script src="/js/mindar-compiler.js"></script>
         </head>
         <body>
           <div id="progress">Loading...</div>
-          <script type="module">
+          <script>
             // Global error handler
             window.onerror = function(msg, url, line, col, error) {
               console.error('Global error:', msg, url, line, col, error);
               return false;
             };
             
-            // Import THREE.js and MindAR
-            import * as THREE from 'three';
-            import { MindARThree } from 'mindar-image-three';
-            
-            console.log('THREE.js and MindAR modules loaded');
-            
-            // Wait for modules to be ready
+            // Wait for local MindAR to load
             async function waitForDependencies() {
-              console.log('Checking THREE.js and MindAR availability...');
+              console.log('Waiting for local MindAR to load...');
               
-              if (!THREE) {
-                throw new Error('THREE.js not available');
+              let attempts = 0;
+              while (attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Check if MINDAR is available from the local file
+                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.MindARThree) {
+                  console.log('MindAR loaded from local file - MindARThree available');
+                  return true;
+                }
+                
+                // Check if MindARThree is available as a global
+                if (typeof window.MindARThree !== 'undefined') {
+                  console.log('MindARThree available as global from local file');
+                  return true;
+                }
+                
+                attempts++;
               }
               
-              if (!MindARThree) {
-                throw new Error('MindARThree not available');
-              }
-              
-              console.log('THREE.js and MindAR ready');
-              return true;
+              throw new Error('MindAR not available after loading local file');
             }
             
             window.compileImage = async function(imageBase64) {
@@ -159,7 +155,14 @@ export async function POST(request: NextRequest) {
                 
                 document.getElementById('progress').textContent = 'Initializing MindAR compiler...';
                 
-                // Initialize MindAR with THREE.js
+                // Get MindARThree from the loaded local file
+                const MindARThree = window.MINDAR?.IMAGE?.MindARThree || window.MindARThree;
+                
+                if (!MindARThree) {
+                  throw new Error('MindARThree not found in loaded file');
+                }
+                
+                // Initialize MindAR
                 const mindarThree = new MindARThree({
                   container: document.body,
                   imageTargetSrc: null // We'll compile the target
@@ -174,17 +177,32 @@ export async function POST(request: NextRequest) {
                   img.onerror = reject;
                 });
                 
-                document.getElementById('progress').textContent = 'Note: MindAR THREE.js version does not have direct compilation API';
+                document.getElementById('progress').textContent = 'Compiling image with MindAR...';
                 
-                // MindARThree is for runtime AR, not compilation
-                // The compilation needs to be done differently or use a different approach
-                
-                return { 
-                  success: false, 
-                  requiresManualCompilation: true,
-                  message: 'MindAR THREE.js version does not provide direct image compilation API. Please use manual compilation.',
-                  compilerUrl: '/compiler'
-                };
+                // Check if the MindARThree instance has a compiler method
+                if (mindarThree.compile) {
+                  console.log('Using MindARThree.compile method');
+                  const result = await mindarThree.compile([img]);
+                  return { success: true, data: result };
+                } else if (mindarThree.addImageTargets) {
+                  console.log('Using MindARThree.addImageTargets method');
+                  const result = await mindarThree.addImageTargets([img]);
+                  return { success: true, data: result };
+                } else {
+                  console.log('Checking for global compilation functions...');
+                  
+                  // Check for compilation functions in the global scope
+                  if (typeof window.compileImageTargets === 'function') {
+                    const result = await window.compileImageTargets([img]);
+                    return { success: true, data: result };
+                  }
+                  
+                  return { 
+                    success: false, 
+                    message: 'No compilation method found in MindAR. Available methods: ' + Object.getOwnPropertyNames(mindarThree).join(', '),
+                    availableGlobals: Object.keys(window).filter(key => key.toLowerCase().includes('mindar') || key.toLowerCase().includes('compile')).join(', ')
+                  };
+                }
               } catch (error) {
                 console.error('Browser compilation error:', error);
                 document.getElementById('progress').textContent = 'Error: ' + error.message;
