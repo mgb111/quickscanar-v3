@@ -32,18 +32,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    if (!existsSync(uploadsDir)) {
-      console.log('Creating uploads directory:', uploadsDir)
-      await mkdir(uploadsDir, { recursive: true })
-    }
-
-    // Generate unique filename for the compiled .mind file
+    // In serverless environments, we can't write to the file system
+    // Instead, we'll return the compiled data directly or use a temporary storage solution
     const uniqueId = uuidv4()
     const mindFileName = `${uniqueId}.mind`
-    const mindFilePath = path.join(uploadsDir, mindFileName)
-    const publicPath = `/uploads/${mindFileName}`
+    
+    // Check if we're in a serverless environment (like Vercel)
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.cwd().includes('/var/task')
+    
+    let uploadsDir: string
+    let mindFilePath: string
+    let publicPath: string
+    
+    if (isServerless) {
+      // In serverless, use /tmp directory which is writable
+      uploadsDir = '/tmp'
+      mindFilePath = path.join(uploadsDir, mindFileName)
+      publicPath = `/api/download/${mindFileName}` // We'll need a download endpoint
+    } else {
+      // Local development - use public/uploads
+      uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+      if (!existsSync(uploadsDir)) {
+        console.log('Creating uploads directory:', uploadsDir)
+        await mkdir(uploadsDir, { recursive: true })
+      }
+      mindFilePath = path.join(uploadsDir, mindFileName)
+      publicPath = `/uploads/${mindFileName}`
+    }
 
     console.log('Generated file path:', mindFilePath)
 
