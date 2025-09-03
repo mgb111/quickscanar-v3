@@ -62,132 +62,25 @@ export async function POST(request: NextRequest) {
 
     console.log('Generated file path:', mindFilePath)
 
-    // Convert image to base64 for browser processing
-    const imageBuffer = Buffer.from(await markerImage.arrayBuffer())
-    const imageBase64 = `data:${markerImage.type};base64,${imageBuffer.toString('base64')}`
-
-    // Launch Puppeteer browser with serverless-compatible Chrome
-    console.log('Launching headless browser...')
+    // Since CDN loading fails in headless browser, trigger fallback immediately
+    console.log('CDN loading not reliable in serverless headless browser, using fallback approach')
     
-    const browser = await puppeteer.launch({
-      args: isServerless ? [
-        ...chromium.args,
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-ipc-flooding-protection',
-        '--font-render-hinting=none'
-      ] : [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
-      ],
-      defaultViewport: isServerless ? chromium.defaultViewport : undefined,
-      executablePath: isServerless ? await chromium.executablePath() : undefined,
-      headless: true,
-      timeout: 60000
+    // Save the image for manual compilation
+    const imageBuffer = Buffer.from(await markerImage.arrayBuffer())
+    await writeFile(mindFilePath.replace('.mind', '_image.jpg'), imageBuffer)
+    
+    return NextResponse.json({
+      success: false,
+      requiresManualCompilation: true,
+      message: 'Server-side compilation temporarily unavailable. Please use manual compilation.',
+      compilerUrl: '/compiler',
+      instructions: [
+        'Go to the AR Image Converter page',
+        'Upload your marker image',
+        'Download the compiled .mind file',
+        'Return to create your AR experience with the .mind file'
+      ]
     })
-
-    try {
-      const page = await browser.newPage()
-      
-      // Create HTML page with MindAR compiler
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <script src="https://cdn.jsdelivr.net/npm/@maherboughdiri/mind-ar-compiler@1.0.1/index.js"></script>
-        </head>
-        <body>
-          <div id="progress">0%</div>
-          <script>
-            window.compileImage = async function(imageBase64) {
-              try {
-                console.log('Starting compilation in browser...')
-                
-                // Wait for MindAR compiler to be available
-                let attempts = 0
-                while (!window.MindARCompiler && attempts < 50) {
-                  await new Promise(resolve => setTimeout(resolve, 100))
-                  attempts++
-                }
-                
-                if (!window.MindARCompiler) {
-                  throw new Error('MindAR compiler failed to load from CDN')
-                }
-                
-                // Convert base64 to File object
-                const response = await fetch(imageBase64)
-                const blob = await response.blob()
-                const file = new File([blob], 'marker.jpg', { type: 'image/jpeg' })
-                
-                console.log('File created, size:', file.size)
-                
-                // Use MindAR compiler directly from global scope
-                const compiler = window.MindARCompiler
-                
-                if (!compiler || !compiler.compileFiles) {
-                  throw new Error('MindAR compiler not available or missing compileFiles method')
-                }
-                
-                console.log('Compiler loaded, starting compilation...')
-                const result = await compiler.compileFiles([file])
-                console.log('Compilation completed')
-                
-                // Convert ArrayBuffer to base64 for transfer
-                const uint8Array = new Uint8Array(result)
-                const base64 = btoa(String.fromCharCode.apply(null, uint8Array))
-                return { success: true, data: base64 }
-              } catch (error) {
-                console.error('Browser compilation error:', error)
-                return { success: false, error: error.message }
-              }
-            }
-          </script>
-        </body>
-        </html>
-      `
-      
-      await page.setContent(html)
-      console.log('Page content loaded')
-      
-      // Wait for script to load
-      await page.waitForFunction('window.compileImage', { timeout: 30000 })
-      console.log('Compiler function ready')
-      
-      // Execute compilation
-      console.log('Executing compilation in browser...')
-      const result = await page.evaluate(async (imageBase64) => {
-        return await (window as any).compileImage(imageBase64)
-      }, imageBase64)
-      
-      if (!result.success) {
-        throw new Error(`Browser compilation failed: ${result.error}`)
-      }
-      
-      // Convert base64 back to buffer and save
-      const compiledBuffer = Buffer.from(result.data, 'base64')
-      await writeFile(mindFilePath, compiledBuffer)
-      
-      console.log('Puppeteer compilation completed successfully')
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Image compilation successful',
-        filePath: publicPath,
-        fileName: mindFileName
-      })
-      
-    } finally {
-      await browser.close()
-      console.log('Browser closed')
-    }
 
   } catch (error) {
     console.error('Puppeteer compilation error:', error)
