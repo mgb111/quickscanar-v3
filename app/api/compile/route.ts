@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script src="/js/mindar-compiler.js" onload="console.log('MindAR script loaded')" onerror="console.error('Failed to load MindAR script')"></script>
+          <script type="module" src="/js/mindar-compiler.js"></script>
         </head>
         <body>
           <div id="progress">Loading...</div>
@@ -122,19 +122,10 @@ export async function POST(request: NextRequest) {
             // Wait for local MindAR to load
             async function waitForDependencies() {
               console.log('Waiting for local MindAR to load...');
-              console.log('Available window properties:', Object.keys(window).filter(key => key.toLowerCase().includes('mindar')));
               
               let attempts = 0;
               while (attempts < 50) {
                 await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Log what's available each attempt
-                if (attempts % 10 === 0) {
-                  console.log('Attempt ' + attempts + ': Checking for MindAR...');
-                  console.log('window.MINDAR:', typeof window.MINDAR);
-                  console.log('window.MindARThree:', typeof window.MindARThree);
-                  console.log('All window keys with "mind":', Object.keys(window).filter(key => key.toLowerCase().includes('mind')));
-                }
                 
                 // Check if MINDAR is available from the local file
                 if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.MindARThree) {
@@ -151,7 +142,6 @@ export async function POST(request: NextRequest) {
                 attempts++;
               }
               
-              console.error('Final check - Available globals:', Object.keys(window).slice(0, 20));
               throw new Error('MindAR not available after loading local file');
             }
             
