@@ -3,7 +3,8 @@ import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 // Ensure this route runs on the Node.js runtime (required for Puppeteer)
 export const runtime = 'nodejs'
@@ -65,11 +66,18 @@ export async function POST(request: NextRequest) {
     const imageBuffer = Buffer.from(await markerImage.arrayBuffer())
     const imageBase64 = `data:${markerImage.type};base64,${imageBuffer.toString('base64')}`
 
-    // Launch Puppeteer browser
+    // Launch Puppeteer browser with serverless-compatible Chrome
     console.log('Launching headless browser...')
+    
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: isServerless ? chromium.args : [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: isServerless ? await chromium.executablePath() : undefined,
+      headless: true
     })
 
     try {
