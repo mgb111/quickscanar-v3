@@ -543,43 +543,15 @@ function HomePage() {
 
       {/* Footer */}
       <footer className="bg-black text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center mb-6">
-                <Camera className="h-8 w-8 text-red-600" />
-                <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
-              </div>
-              <p className="text-white opacity-80 text-lg">
-                Professional AR creation platform that makes interactive experiences accessible to realtors of all sizes. Simple, powerful, and results-driven.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-6">Product</h3>
-              <ul className="space-y-3 text-white opacity-80">
-                <li><Link href="/compiler" className="hover:text-white transition-colors">AR Compiler</Link></li>
-                <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
-                <li><Link href="/debug" className="hover:text-white transition-colors">Debug Tools</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-6">Company</h3>
-              <ul className="space-y-3 text-white opacity-80">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-6">Connect</h3>
-              <ul className="space-y-3 text-white opacity-80">
-                <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">LinkedIn</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">GitHub</a></li>
-              </ul>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center mb-6">
+            <Camera className="h-8 w-8 text-red-600" />
+            <span className="ml-2 text-2xl font-bold">QuickScanAR</span>
           </div>
-          <div className="border-t border-white opacity-20 mt-12 pt-8 text-center text-white opacity-80">
+          <p className="text-white opacity-80 text-lg max-w-3xl mx-auto">
+            Professional AR creation platform that makes interactive experiences accessible to realtors of all sizes. Simple, powerful, and results-driven.
+          </p>
+          <div className="border-t border-white/20 mt-12 pt-8 text-white/80">
             <p className="text-lg">&copy; 2025 QuickScanAR. All rights reserved.</p>
           </div>
         </div>
