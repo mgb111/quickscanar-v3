@@ -11,26 +11,22 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Starting Puppeteer-based compilation...')
+    console.log('Starting local MindAR compilation...')
     
     // Parse the form data
     const formData = await request.formData()
     const markerImage = formData.get('markerImage') as File
     
     if (!markerImage) {
-      console.log('No marker image provided')
       return NextResponse.json(
         { success: false, message: 'No marker image provided' },
         { status: 400 }
       )
     }
 
-    console.log('Marker image received:', markerImage.name, markerImage.type, markerImage.size)
-
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
     if (!allowedTypes.includes(markerImage.type)) {
-      console.log('Invalid file type:', markerImage.type)
       return NextResponse.json(
         { success: false, message: 'Invalid file type. Only JPEG and PNG images are allowed.' },
         { status: 400 }
@@ -103,7 +99,7 @@ export async function POST(request: NextRequest) {
       page.setDefaultTimeout(60000)
       page.setDefaultNavigationTimeout(60000)
       
-      // Create HTML page with MindAR compiler - using unpkg as alternative CDN
+      // Create HTML page with local MindAR compiler bundle
       const html = `
         <!DOCTYPE html>
         <html>
@@ -120,44 +116,44 @@ export async function POST(request: NextRequest) {
               return false;
             };
             
-            // Load MindAR compiler with multiple fallback CDNs
+            // Load local MindAR compiler bundle
             async function loadMindARCompiler() {
-              const cdnUrls = [
-                'https://unpkg.com/@maherboughdiri/mind-ar-compiler@1.0.1/index.js',
-                'https://cdn.jsdelivr.net/npm/@maherboughdiri/mind-ar-compiler@1.0.1/index.js',
-                'https://cdn.skypack.dev/@maherboughdiri/mind-ar-compiler@1.0.1'
-              ];
+              console.log('Loading MindAR compiler from local bundle...');
               
-              for (let i = 0; i < cdnUrls.length; i++) {
-                try {
-                  console.log('Trying CDN:', cdnUrls[i]);
-                  const script = document.createElement('script');
-                  script.src = cdnUrls[i];
-                  
-                  await new Promise((resolve, reject) => {
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                  });
-                  
-                  // Wait for MindARCompiler to be available
-                  let attempts = 0;
-                  while (!window.MindARCompiler && attempts < 100) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    attempts++;
-                  }
-                  
-                  if (window.MindARCompiler) {
-                    console.log('MindAR compiler loaded successfully from:', cdnUrls[i]);
-                    return true;
-                  }
-                } catch (error) {
-                  console.error('Failed to load from CDN:', cdnUrls[i], error);
-                  continue;
+              try {
+                // Load the local bundle script
+                const script = document.createElement('script');
+                script.src = '/mind-ar-compiler-bundle.js';
+                
+                await new Promise((resolve, reject) => {
+                  script.onload = () => {
+                    console.log('Local MindAR bundle loaded successfully');
+                    resolve(true);
+                  };
+                  script.onerror = (error) => {
+                    console.error('Failed to load local bundle:', error);
+                    reject(error);
+                  };
+                  document.head.appendChild(script);
+                });
+                
+                // Wait for MindARCompiler to be available
+                let attempts = 0;
+                while (!window.MindARCompiler && attempts < 50) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  attempts++;
                 }
+                
+                if (window.MindARCompiler) {
+                  console.log('MindAR compiler ready from local bundle');
+                  return true;
+                } else {
+                  throw new Error('MindARCompiler not available after loading local bundle');
+                }
+              } catch (error) {
+                console.error('Local bundle loading failed:', error);
+                throw error;
               }
-              
-              throw new Error('Failed to load MindAR compiler from all CDN sources');
             }
             
             window.compileImage = async function(imageBase64) {
