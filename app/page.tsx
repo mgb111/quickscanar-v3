@@ -98,7 +98,15 @@ function HomePage() {
       const supportRes = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message: msg }),
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          subject, 
+          message: msg,
+          markerKey: imgData.key,
+          videoKey: vidData.key,
+          userId: user?.id || null
+        }),
       })
       if (!supportRes.ok) throw new Error(`Support request failed: ${await supportRes.text()}`)
 
