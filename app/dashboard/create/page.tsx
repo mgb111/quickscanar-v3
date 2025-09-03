@@ -70,6 +70,7 @@ export default function CreateExperience() {
     }
   }, [])
 
+
   const removeFile = useCallback((type: 'video' | 'markerImage') => {
     if (type === 'video') {
       setVideoFile(null)
@@ -93,6 +94,7 @@ export default function CreateExperience() {
     }
 
 
+
     if (!markerImageFile) {
       toast.error('Please upload a marker image')
       return
@@ -101,7 +103,7 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
-      // Step 1: Compile marker image to .mind file
+      // Step 1: Compile marker image to .mind file using Puppeteer
       setCompilingImage(true)
       const compileFormData = new FormData()
       compileFormData.append('markerImage', markerImageFile)
@@ -300,6 +302,11 @@ export default function CreateExperience() {
             <Upload className="h-6 w-6 mr-3 text-red-600" />
             Create New AR Experience
         </h3>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <p className="text-blue-800 text-sm">
+              <strong>✨ Automated Process:</strong> Upload your marker image and video below. Our system will automatically convert your image to AR format in the background.
+            </p>
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Title Input */}
@@ -376,6 +383,7 @@ export default function CreateExperience() {
                   )}
                 </div>
             </div>
+
             </div>
 
             {/* Marker Image Upload */}

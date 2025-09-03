@@ -14,19 +14,15 @@ export async function POST(request: NextRequest) {
     const markerImage = formData.get('markerImage') as File
     
     if (!markerImage) {
-      console.log('No marker image provided')
       return NextResponse.json(
         { success: false, message: 'No marker image provided' },
         { status: 400 }
       )
     }
 
-    console.log('Marker image received:', markerImage.name, markerImage.type, markerImage.size)
-
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
     if (!allowedTypes.includes(markerImage.type)) {
-      console.log('Invalid file type:', markerImage.type)
       return NextResponse.json(
         { success: false, message: 'Invalid file type. Only JPEG and PNG images are allowed.' },
         { status: 400 }
@@ -49,24 +45,20 @@ export async function POST(request: NextRequest) {
     } else {
       uploadsDir = path.join(process.cwd(), 'public', 'uploads')
       if (!existsSync(uploadsDir)) {
-        console.log('Creating uploads directory:', uploadsDir)
         await mkdir(uploadsDir, { recursive: true })
       }
       mindFilePath = path.join(uploadsDir, mindFileName)
       publicPath = `/uploads/${mindFileName}`
     }
 
-    console.log('Generated file path:', mindFilePath)
-
     // Convert image to base64 for browser processing
     const imageBuffer = Buffer.from(await markerImage.arrayBuffer())
     const imageBase64 = `data:${markerImage.type};base64,${imageBuffer.toString('base64')}`
 
     // Launch Puppeteer browser
-    console.log('Launching headless browser...')
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     })
 
     try {
@@ -80,37 +72,28 @@ export async function POST(request: NextRequest) {
           <script src="https://cdn.jsdelivr.net/npm/@maherboughdiri/mind-ar-compiler@1.0.1/index.js"></script>
         </head>
         <body>
-          <div id="progress">0%</div>
           <script>
             window.compileImage = async function(imageBase64) {
               try {
-                console.log('Starting compilation in browser...')
-                
                 // Convert base64 to File object
                 const response = await fetch(imageBase64)
                 const blob = await response.blob()
-                const file = new File([blob], 'marker.jpg', { type: 'image/jpeg' })
+                const file = new File([blob], 'image.jpg', { type: 'image/jpeg' })
                 
-                console.log('File created, size:', file.size)
-                
-                // Import and use MindAR compiler
-                const { default: compiler } = await import('https://cdn.jsdelivr.net/npm/@maherboughdiri/mind-ar-compiler@1.0.1/index.js')
-                
+                // Use MindAR compiler
+                const compiler = window.MindARCompiler || window.default
                 if (!compiler || !compiler.compileFiles) {
-                  throw new Error('MindAR compiler not available or missing compileFiles method')
+                  throw new Error('MindAR compiler not available')
                 }
                 
-                console.log('Compiler loaded, starting compilation...')
-                const result = await compiler.compileFiles([file], 'progress')
-                console.log('Compilation completed')
+                const result = await compiler.compileFiles([file])
                 
                 // Convert ArrayBuffer to base64 for transfer
                 const uint8Array = new Uint8Array(result)
                 const base64 = btoa(String.fromCharCode.apply(null, uint8Array))
-                return { success: true, data: base64 }
+                return base64
               } catch (error) {
-                console.error('Browser compilation error:', error)
-                return { success: false, error: error.message }
+                throw new Error('Compilation failed: ' + error.message)
               }
             }
           </script>
@@ -119,24 +102,17 @@ export async function POST(request: NextRequest) {
       `
       
       await page.setContent(html)
-      console.log('Page content loaded')
       
       // Wait for script to load
-      await page.waitForFunction('window.compileImage', { timeout: 30000 })
-      console.log('Compiler function ready')
+      await page.waitForFunction('window.compileImage')
       
       // Execute compilation
-      console.log('Executing compilation in browser...')
-      const result = await page.evaluate(async (imageBase64) => {
+      const compiledBase64 = await page.evaluate(async (imageBase64) => {
         return await window.compileImage(imageBase64)
       }, imageBase64)
       
-      if (!result.success) {
-        throw new Error(`Browser compilation failed: ${result.error}`)
-      }
-      
       // Convert base64 back to buffer and save
-      const compiledBuffer = Buffer.from(result.data, 'base64')
+      const compiledBuffer = Buffer.from(compiledBase64, 'base64')
       await writeFile(mindFilePath, compiledBuffer)
       
       console.log('Puppeteer compilation completed successfully')
@@ -150,7 +126,6 @@ export async function POST(request: NextRequest) {
       
     } finally {
       await browser.close()
-      console.log('Browser closed')
     }
 
   } catch (error) {
@@ -163,10 +138,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Optional: Add GET method to check endpoint status
 export async function GET() {
   return NextResponse.json({
-    message: 'MindAR Compilation Endpoint',
+    message: 'Puppeteer-based MindAR Compilation Endpoint',
     status: 'active',
     supportedFormats: ['image/jpeg', 'image/png']
   })
