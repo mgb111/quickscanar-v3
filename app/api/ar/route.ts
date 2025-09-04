@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ Claims table check failed unexpectedly:', e?.message || e)
     }
 
-    // Phase 2: Fallback current-count guard to prevent duplicates when claims table not deployed yet
+    // Phase 2: Check subscription-based limits
     const { count: existingCount, error: countError } = await supabase
       .from('ar_experiences')
       .select('id', { count: 'exact', head: true })
@@ -69,9 +69,52 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    if ((existingCount ?? 0) >= 1) {
+    // Get user's subscription to determine actual limits
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('plan, status, campaign_limit, end_date')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false })
+      .maybeSingle()
+
+    // Determine plan limits based on subscription
+    let usageLimit = 1 // Free plan default
+    
+    const isActiveLike = (sub: any) => {
+      if (!sub) return false
+      const status = (sub.status || '').toLowerCase()
+      const endOk = sub.end_date ? new Date(sub.end_date) > new Date() : true
+      return status !== 'canceled' && status !== 'expired' && endOk
+    }
+
+    if (subscription && isActiveLike(subscription)) {
+      const planLimits = {
+        monthly: 3,
+        annual: 36,
+        yearly: 36,
+        pro: 10,
+      } as const
+
+      const rawPlan = (subscription.plan || '').toLowerCase()
+      if (rawPlan in planLimits) {
+        usageLimit = planLimits[rawPlan as keyof typeof planLimits]
+      } else if (rawPlan.includes('annual') || rawPlan.includes('yearly') || rawPlan.includes('year')) {
+        usageLimit = 36
+      } else if (rawPlan.includes('monthly') || rawPlan.includes('month')) {
+        usageLimit = 3
+      } else if (rawPlan.includes('pro')) {
+        usageLimit = 10
+      }
+
+      // Override with per-user campaign_limit when present
+      if (typeof subscription.campaign_limit === 'number' && subscription.campaign_limit > 0) {
+        usageLimit = subscription.campaign_limit
+      }
+    }
+
+    if ((existingCount ?? 0) >= usageLimit) {
       return NextResponse.json({
-        error: 'Limit reached: Only 1 campaign per user is allowed. Delete or update the existing one.',
+        error: `Limit reached: Only ${usageLimit} campaign${usageLimit > 1 ? 's' : ''} allowed on your current plan. Upgrade to create more.`,
         code: 'LIMIT_EXCEEDED'
       }, { status: 409 })
     }
