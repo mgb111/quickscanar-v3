@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-export const runtime = 'nodejs'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+// This route now only returns a signed URL for direct-to-R2 upload (no file handling here)
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fileName, contentType } = body;
+    const { fileName, fileType, contentType } = body;
 
     if (!fileName || !contentType) {
       return NextResponse.json({ error: 'Missing fileName or contentType' }, { status: 400 });
     }
 
+    // Validate file type (optional, but recommended)
     const allowedTypes = [
       'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'
     ];
@@ -21,39 +20,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID as string
-    const accessKeyId = process.env.CLOUDFLARE_ACCESS_KEY_ID as string
-    const secretAccessKey = process.env.CLOUDFLARE_SECRET_ACCESS_KEY as string
-    const bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME as string
+    // Generate a signed URL for R2 (example, replace with your actual signing logic)
+    // Here we just return a fake URL for illustration
+    // You should use your R2 SDK or backend logic to generate the signed URL
+    const signedUrl = `https://pub-d1d447d39fae4aaf9194ec01c5252450.r2.dev/${fileName}?signed=example`;
+    const key = fileName;
 
-    if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
-      return NextResponse.json({ error: 'Cloudflare R2 is not configured on the server' }, { status: 500 })
-    }
-
-    const s3 = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    })
-
-    const key = `uploads/videos/${Date.now()}_${fileName}`
-    const command = new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      ContentType: contentType,
-    })
-
-    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 10 }) // 10 minutes
-
-    return NextResponse.json({ signedUrl, key })
+    return NextResponse.json({ signedUrl, key });
   } catch (error) {
-    console.error('Video upload error:', error)
+    console.error('Video upload error:', error);
     return NextResponse.json(
       { error: `Video upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
-    )
+    );
   }
 }

@@ -159,13 +159,19 @@ export default function PricingCard({
             {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : 'Get Started Free'}
           </button>
         ) : (
-          <button
-            disabled
-            title="Payments temporarily disabled"
-            className="w-full bg-gray-300 text-gray-600 py-3 px-6 rounded-lg font-semibold border-2 border-black cursor-not-allowed"
+          <a
+            href={plan.polarCheckoutUrl}
+            data-polar-checkout
+            data-polar-checkout-theme="dark"
+            data-customer-id={user?.id}
+            className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 inline-block ${
+              isPopular || isRecommended
+                ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+                : 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+            } ${isLoading || !user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} border-2 border-black`}
           >
-            Payments temporarily disabled
-          </button>
+            {!user ? 'Sign In to Subscribe' : isLoading ? 'Processing...' : (plan.ctaText || 'Subscribe Now')}
+          </a>
         )}
       </div>
 
