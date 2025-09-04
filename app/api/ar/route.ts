@@ -143,17 +143,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Best-effort: Record lifetime claim after first successful creation
+    // Update campaign creation counter
     try {
-      const { error: claimInsertErr } = await supabase
+      // Get current count and increment
+      const { data: currentClaim, error: fetchError } = await supabase
         .from('user_campaign_claims')
-        .insert({ user_id, first_created_at: new Date().toISOString() })
-      if (claimInsertErr) {
-        // If duplicate or table missing, ignore but log
-        console.warn('⚠️ Failed to record lifetime claim (non-fatal):', claimInsertErr.message)
+        .select('campaigns_created_count')
+        .eq('user_id', user_id)
+        .maybeSingle()
+
+      if (fetchError || !currentClaim) {
+        // Insert new record with count = 1
+        const { error: insertError } = await supabase
+          .from('user_campaign_claims')
+          .insert({ 
+            user_id, 
+            campaigns_created_count: 1,
+            first_created_at: new Date().toISOString(),
+            last_created_at: new Date().toISOString()
+          })
+        
+        if (insertError) {
+          console.warn('⚠️ Failed to track campaign creation (non-fatal):', insertError.message)
+        }
+      } else {
+        // Update existing record with incremented count
+        const newCount = (currentClaim.campaigns_created_count || 0) + 1
+        const { error: updateError } = await supabase
+          .from('user_campaign_claims')
+          .update({ 
+            campaigns_created_count: newCount,
+            last_created_at: new Date().toISOString()
+          })
+          .eq('user_id', user_id)
+
+        if (updateError) {
+          console.warn('⚠️ Failed to update campaign count (non-fatal):', updateError.message)
+        }
       }
     } catch (e: any) {
-      console.warn('⚠️ Failed to record lifetime claim (unexpected):', e?.message || e)
+      console.warn('⚠️ Failed to track campaign creation (unexpected):', e?.message || e)
     }
 
     console.log('AR experience created successfully:', experience.id)

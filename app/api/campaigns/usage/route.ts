@@ -46,31 +46,33 @@ export async function GET(request: NextRequest) {
       subscription = adminRes.data as any
     }
 
-    // Count user's AR experiences (not campaigns)
-    const { count: experienceCount, error: countError } = await supabase
-      .from('ar_experiences')
-      .select('*', { count: 'exact', head: true })
+    // Count total campaigns created (including deleted ones) using campaign claims table
+    let totalCampaignsCreated = 0
+    
+    // First try to get from user_campaign_claims table (tracks total created)
+    const { data: claimData, error: claimError } = await supabase
+      .from('user_campaign_claims')
+      .select('campaigns_created_count')
       .eq('user_id', user.id)
+      .maybeSingle()
 
-    if (countError) {
-      console.error('Error counting AR experiences:', countError)
-      // Fallback: try user_campaigns table if ar_experiences doesn't exist
-      const { count: campaignCount, error: campaignError } = await supabase
-        .from('user_campaigns')
+    if (claimError) {
+      console.warn('Claims table not available, falling back to active count:', claimError.message)
+      // Fallback: count active AR experiences
+      const { count: experienceCount, error: countError } = await supabase
+        .from('ar_experiences')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-      
-      if (campaignError) {
-        console.error('Error counting campaigns:', campaignError)
+
+      if (countError) {
+        console.error('Error counting AR experiences:', countError)
         return NextResponse.json({ error: 'Failed to fetch campaign usage' }, { status: 500 })
       }
       
-      // Use campaign count as fallback
-      return NextResponse.json({
-        used: campaignCount || 0,
-        limit: 1,
-        plan_name: 'Free Plan'
-      })
+      totalCampaignsCreated = experienceCount || 0
+    } else {
+      // Use the persistent counter from claims table
+      totalCampaignsCreated = claimData?.campaigns_created_count || 0
     }
 
     // Determine plan limits based on subscription
@@ -126,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      used: experienceCount || 0,
+      used: totalCampaignsCreated,
       limit: usageLimit,
       plan_name: planName
     })
