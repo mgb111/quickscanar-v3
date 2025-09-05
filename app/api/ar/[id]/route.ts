@@ -268,45 +268,6 @@ export async function GET(
         }
       });
 
-      // Video stabilizer component - completely locks video to marker position
-      AFRAME.registerComponent('video-stabilizer', {
-        init: function () {
-          this.stableMatrix = new THREE.Matrix4();
-          this.hasStableReference = false;
-          this.frameCount = 0;
-        },
-
-        tick: function () {
-          if (!this.el.object3D.visible) return;
-          
-          const target = this.el.parentEl;
-          if (!target || !target.object3D.visible) return;
-
-          this.frameCount++;
-
-          // Capture stable reference matrix after a few frames of tracking
-          if (!this.hasStableReference && this.frameCount > 10) {
-            this.stableMatrix.copy(target.object3D.matrix);
-            this.hasStableReference = true;
-            console.log('Video stabilizer: Captured stable reference');
-            return;
-          }
-
-          // Lock video plane to the stable reference matrix
-          if (this.hasStableReference) {
-            // Apply the stable matrix directly to maintain exact position
-            this.el.object3D.matrix.copy(this.stableMatrix);
-            this.el.object3D.matrix.decompose(
-              this.el.object3D.position,
-              this.el.object3D.quaternion,
-              this.el.object3D.scale
-            );
-            
-            // Apply the original offset for the video plane
-            this.el.object3D.position.z += 0.01;
-          }
-        }
-      });
     </script>
     <style>
       * {
@@ -617,10 +578,9 @@ export async function GET(
 
 
     <a-scene
-      id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; interpolation: true; smoothing: true; filterMinCF: 0.8; filterBeta: 0.1; missTolerance: 15; warmupTolerance: 8;"
+      mindar-image="imageTargetSrc: ${experience.mind_file_url}; maxTrack: 1; showStats: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.00001; filterBeta: 10000; missTolerance: 15; warmupTolerance: 15"
       color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
+      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; logarithmicDepthBuffer: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
@@ -642,7 +602,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.02; freq: 60; mincutoff: 0.1; beta: 0.5; dcutoff: 1.0; posDeadzone: 0.005; rotDeadzoneDeg: 1.0; emaFactor: 0.08; throttleHz: 30; medianWindow: 5; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target">
         <a-plane
           id="backgroundPlane"
           width="2"
@@ -664,7 +624,6 @@ export async function GET(
           geometry="primitive: plane; skipCache: true"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
           animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
-          video-stabilizer
         ></a-plane>
       </a-entity>
     </a-scene>
