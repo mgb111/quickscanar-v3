@@ -679,8 +679,7 @@ export async function GET(
           loop
           playsinline
           crossorigin="anonymous"
-          preload="metadata"
-          controls
+          preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
       </a-assets>
@@ -816,20 +815,22 @@ export async function GET(
         }
 
         if (video && videoPlane && backgroundPlane) {
+          // Optimize video for performance
+          video.playsInline = true;
+          video.autoplay = false;
+          video.controls = false;
+          video.setAttribute('webkit-playsinline', 'true');
+          video.setAttribute('x5-playsinline', 'true');
 
-// A-Frame/MindAR lifecycle
-if (scene) {
-scene.addEventListener('arReady', () => {
-console.log('MindAR arReady');
-scene.style.opacity = '1';
-  
-// Custom stabilization logic removed.
-});
-scene.addEventListener('arError', (e) => {
-console.error('MindAR arError', e);
-showStatus('AR Initialization Error', 'Please allow camera access and try again.');
-});
-}
+          video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+            const ratio = video.videoWidth / video.videoHeight || (16/9);
+            const baseWidth = 2.0; // 200% of marker width
+            const planeHeight = baseWidth / ratio;
+            
+            // Set video plane dimensions to match video aspect ratio
+            videoPlane.setAttribute('width', baseWidth);
+            videoPlane.setAttribute('height', planeHeight);
             backgroundPlane.setAttribute('width', baseWidth);
             backgroundPlane.setAttribute('height', planeHeight);
             
@@ -905,25 +906,20 @@ showStatus('AR Initialization Error', 'Please allow camera access and try again.
                 if (video) {
                   video.currentTime = 0; // Restart video
                   
-                  // Simple direct video play with audio
+                  // Force video to play with audio enabled
                   const playVideo = async () => {
                     try {
+                      // Force audio to work
                       video.muted = false;
                       video.volume = 1.0;
+                      
                       await video.play();
                       
-                      console.log('=== AUDIO DEBUG ===');
-                      console.log('Video playing:', !video.paused);
-                      console.log('Video muted:', video.muted);
-                      console.log('Video volume:', video.volume);
-                      console.log('Video duration:', video.duration);
-                      console.log('Video current time:', video.currentTime);
-                      console.log('Video ready state:', video.readyState);
-                      console.log('Audio tracks:', video.audioTracks ? video.audioTracks.length : 'Not supported');
-                      console.log('==================');
-                      
+                      // Aggressively force audio unmuting
+                      video.muted = false;
+                      video.volume = 1.0;
                     } catch (error) {
-                      console.log('Video play failed:', error);
+                      console.log('Video play failed, retrying...', error);
                       setTimeout(playVideo, 200);
                     }
                   };
@@ -984,15 +980,17 @@ showStatus('AR Initialization Error', 'Please allow camera access and try again.
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            // Simplified audio unlock
+            // Enable audio context for mobile devices - CRITICAL for audio to work
             if (video) {
               try {
+                // Simple audio unlock
                 video.muted = false;
                 video.volume = 1.0;
-                window.audioUnlocked = true;
-                console.log('Audio enabled');
+                await video.play();
+                video.pause();
+                video.currentTime = 0;
               } catch (error) {
-                console.log('Audio setup failed:', error);
+                console.log('Audio unlock failed:', error);
                 window.audioUnlocked = false;
               }
             }
