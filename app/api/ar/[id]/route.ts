@@ -679,7 +679,8 @@ export async function GET(
           loop
           playsinline
           crossorigin="anonymous"
-          preload="auto"
+          preload="metadata"
+          controls
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
       </a-assets>
@@ -815,22 +816,20 @@ export async function GET(
         }
 
         if (video && videoPlane && backgroundPlane) {
-          // Optimize video for performance
-          video.playsInline = true;
-          video.autoplay = false;
-          video.controls = false;
-          video.setAttribute('webkit-playsinline', 'true');
-          video.setAttribute('x5-playsinline', 'true');
 
-          video.addEventListener('loadedmetadata', () => {
-            console.log('Video metadata loaded');
-            const ratio = video.videoWidth / video.videoHeight || (16/9);
-            const baseWidth = 2.0; // 200% of marker width
-            const planeHeight = baseWidth / ratio;
-            
-            // Set video plane dimensions to match video aspect ratio
-            videoPlane.setAttribute('width', baseWidth);
-            videoPlane.setAttribute('height', planeHeight);
+// A-Frame/MindAR lifecycle
+if (scene) {
+scene.addEventListener('arReady', () => {
+console.log('MindAR arReady');
+scene.style.opacity = '1';
+  
+// Custom stabilization logic removed.
+});
+scene.addEventListener('arError', (e) => {
+console.error('MindAR arError', e);
+showStatus('AR Initialization Error', 'Please allow camera access and try again.');
+});
+}
             backgroundPlane.setAttribute('width', baseWidth);
             backgroundPlane.setAttribute('height', planeHeight);
             
@@ -906,32 +905,25 @@ export async function GET(
                 if (video) {
                   video.currentTime = 0; // Restart video
                   
-                  // Force video to play with audio enabled
+                  // Simple direct video play with audio
                   const playVideo = async () => {
                     try {
-                      // Only proceed if audio was unlocked by user interaction
-                      if (!window.audioUnlocked) {
-                        console.log('Audio not unlocked yet, playing without sound');
-                        video.muted = true;
-                      } else {
-                        video.muted = false; // Unmute first
-                        video.volume = 1.0; // Set full volume
-                        console.log('Playing with audio - unlocked:', window.audioUnlocked);
-                      }
-                      
+                      video.muted = false;
+                      video.volume = 1.0;
                       await video.play();
-                      console.log('Video started playing, muted:', video.muted, 'volume:', video.volume);
                       
-                      // Force audio on after play if unlocked
-                      if (window.audioUnlocked) {
-                        setTimeout(() => {
-                          video.muted = false;
-                          video.volume = 1.0;
-                          console.log('Final audio status:', { muted: video.muted, volume: video.volume, unlocked: window.audioUnlocked });
-                        }, 200);
-                      }
+                      console.log('=== AUDIO DEBUG ===');
+                      console.log('Video playing:', !video.paused);
+                      console.log('Video muted:', video.muted);
+                      console.log('Video volume:', video.volume);
+                      console.log('Video duration:', video.duration);
+                      console.log('Video current time:', video.currentTime);
+                      console.log('Video ready state:', video.readyState);
+                      console.log('Audio tracks:', video.audioTracks ? video.audioTracks.length : 'Not supported');
+                      console.log('==================');
+                      
                     } catch (error) {
-                      console.log('Video play failed, retrying...', error);
+                      console.log('Video play failed:', error);
                       setTimeout(playVideo, 200);
                     }
                   };
