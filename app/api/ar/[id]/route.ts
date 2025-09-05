@@ -344,11 +344,11 @@ export async function GET(
             smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
           }
           
-          // 8b. Additional ultra-lock for video plane elements
+          // 8b. Additional stabilization for video plane elements
           if (this.el.id === 'videoPlane') {
-            // Apply 99.5% lock for video plane specifically
-            smoothedPosition.lerp(currentPos, 0.995);
-            smoothedQuaternion.slerp(currentQuat, 0.995);
+            // Apply strong but not extreme lock for video plane to maintain rendering
+            smoothedPosition.lerp(currentPos, 0.95);
+            smoothedQuaternion.slerp(currentQuat, 0.95);
           }
 
           // 9. Apply the smoothed transform to the object.
@@ -709,12 +709,9 @@ export async function GET(
           height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1"
+          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
           visible="false"
-          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 15; mincutoff: 0.0001; beta: 0.001; dcutoff: 0.01; posDeadzone: 0.0001; rotDeadzoneDeg: 0.01; emaFactor: 0.005; throttleHz: 10; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.00001"
-          geometry="primitive: plane; skipCache: true"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
+          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.02; freq: 30; mincutoff: 0.001; beta: 0.01; dcutoff: 0.1; posDeadzone: 0.001; rotDeadzoneDeg: 0.2; emaFactor: 0.01; throttleHz: 20; medianWindow: 7; zeroRoll: true; minMovementThreshold: 0.0001"
         ></a-plane>
       </a-entity>
     </a-scene>
