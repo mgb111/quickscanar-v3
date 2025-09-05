@@ -907,13 +907,21 @@ export async function GET(
                 }
                 if (video) {
                   video.currentTime = 0; // Restart video
-                  video.muted = false; // Enable audio when target is found
                   
-                  // Force video to play with multiple attempts
+                  // Force video to play with audio enabled
                   const playVideo = async () => {
                     try {
+                      video.muted = false; // Unmute first
+                      video.volume = 1.0; // Set full volume
                       await video.play();
-                      console.log('Video started playing');
+                      console.log('Video started playing with audio');
+                      
+                      // Double-check audio is enabled after play
+                      setTimeout(() => {
+                        video.muted = false;
+                        video.volume = 1.0;
+                        console.log('Audio status:', { muted: video.muted, volume: video.volume });
+                      }, 100);
                     } catch (error) {
                       console.log('Video play failed, retrying...', error);
                       setTimeout(playVideo, 100);
@@ -976,8 +984,20 @@ export async function GET(
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            // Don't start video here - wait for target to be found
-            // if (video) await video.play().catch(() => {});
+            // Enable audio context for mobile devices
+            if (video) {
+              try {
+                video.muted = false;
+                video.volume = 1.0;
+                // Try to play and pause to unlock audio on mobile
+                await video.play();
+                video.pause();
+                video.currentTime = 0;
+                console.log('Audio context unlocked');
+              } catch (error) {
+                console.log('Audio unlock failed:', error);
+              }
+            }
 
             // Smooth fade out for overlay
             overlay.style.opacity = '0';
