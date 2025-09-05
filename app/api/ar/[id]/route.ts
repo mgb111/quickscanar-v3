@@ -344,12 +344,7 @@ export async function GET(
             smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
           }
           
-          // 8b. Additional stabilization for video plane elements
-          if (this.el.id === 'videoPlane') {
-            // Apply strong but not extreme lock for video plane to maintain rendering
-            smoothedPosition.lerp(currentPos, 0.95);
-            smoothedQuaternion.slerp(currentQuat, 0.95);
-          }
+          // Video plane should not have additional stabilization to avoid rendering issues
 
           // 9. Apply the smoothed transform to the object.
           this.el.object3D.position.copy(smoothedPosition);
@@ -679,7 +674,7 @@ export async function GET(
     >
       <a-assets>
         <video
-          id="videoTexture"
+          id="arVideo"
           src="${experience.video_url}"
           loop
           muted
@@ -709,9 +704,8 @@ export async function GET(
           height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
+          material="src: #arVideo; transparent: true; alphaTest: 0.1"
           visible="false"
-          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.02; freq: 30; mincutoff: 0.001; beta: 0.01; dcutoff: 0.1; posDeadzone: 0.001; rotDeadzoneDeg: 0.2; emaFactor: 0.01; throttleHz: 20; medianWindow: 7; zeroRoll: true; minMovementThreshold: 0.0001"
         ></a-plane>
       </a-entity>
     </a-scene>
