@@ -199,7 +199,7 @@ export async function GET(
           // Ultra stabilization variables
           this._lockedPosition = new THREE.Vector3();
           this._lockedQuaternion = new THREE.Quaternion();
-          this._lockStrength = 0.999; // How strongly to lock to position (99.9% locked)
+          this._lockStrength = 0.85; // How strongly to lock to position (85% locked)
         },
 
         tick: function (t, dt) {
@@ -209,8 +209,8 @@ export async function GET(
           const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll, minMovementThreshold } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
-          // Throttle updates to reduce visible micro jitter - ultra slow for max stability
-          const interval = 1000 / Math.max(1, throttleHz || 3);
+          // Throttle updates to reduce visible micro jitter - balanced for stability
+          const interval = 1000 / Math.max(10, throttleHz || 15);
           if (this._lastApply && (t - this._lastApply) < interval) {
             return;
           }
@@ -336,11 +336,11 @@ export async function GET(
 
           // 8. Apply additional EMA blending for extra smoothness with enhanced stability.
           if (emaFactor > 0 && emaFactor < 1) {
-            // Ultra-aggressive EMA for maximum stability - almost no movement allowed
-            const ultraStableEma = emaFactor * 0.01; // Make EMA 100x more aggressive
+            // Balanced EMA for stability without breaking video rendering
+            const balancedEma = emaFactor * 0.5; // More moderate EMA blending
             
-            smoothedPosition.lerp(currentPos, 1 - ultraStableEma);
-            smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
+            smoothedPosition.lerp(currentPos, 1 - balancedEma);
+            smoothedQuaternion.slerp(currentQuat, 1 - balancedEma);
           }
 
           // 9. Apply the smoothed transform to the object.
@@ -660,7 +660,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 100; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.1; filterBeta: 0.2; warmupTolerance: 15; missTolerance: 20; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -684,7 +684,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001"
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.02; freq: 30; mincutoff: 0.1; beta: 0.2; dcutoff: 1.0; posDeadzone: 0.001; rotDeadzoneDeg: 0.3; emaFactor: 0.05; throttleHz: 15; medianWindow: 7; zeroRoll: true; minMovementThreshold: 0.0005"
         <a-plane
           id="backgroundPlane"
           width="2"
@@ -701,7 +701,7 @@ export async function GET(
           height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1"
+          material="src: #arVideo; transparent: false; shader: flat"
           visible="false"
         ></a-plane>
       </a-entity>
