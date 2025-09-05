@@ -677,6 +677,7 @@ export async function GET(
           id="arVideo"
           src="${experience.video_url}"
           loop
+          muted
           playsinline
           crossorigin="anonymous"
           preload="auto"
@@ -905,25 +906,8 @@ export async function GET(
                 }
                 if (video) {
                   video.currentTime = 0; // Restart video
-                  
-                  // Force video to play with audio enabled
-                  const playVideo = async () => {
-                    try {
-                      // Force audio to work
-                      video.muted = false;
-                      video.volume = 1.0;
-                      
-                      await video.play();
-                      
-                      // Aggressively force audio unmuting
-                      video.muted = false;
-                      video.volume = 1.0;
-                    } catch (error) {
-                      console.log('Video play failed, retrying...', error);
-                      setTimeout(playVideo, 200);
-                    }
-                  };
-                  playVideo();
+                  video.muted = false; // Enable audio when target is found
+                  video.play().catch(() => {});
                 }
                 showStatus('Target Found!', 'AR content should be visible');
                 setTimeout(hideStatus, 1500);
@@ -980,20 +964,8 @@ export async function GET(
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            // Enable audio context for mobile devices - CRITICAL for audio to work
-            if (video) {
-              try {
-                // Simple audio unlock
-                video.muted = false;
-                video.volume = 1.0;
-                await video.play();
-                video.pause();
-                video.currentTime = 0;
-              } catch (error) {
-                console.log('Audio unlock failed:', error);
-                window.audioUnlocked = false;
-              }
-            }
+            // Don't start video here - wait for target to be found
+            // if (video) await video.play().catch(() => {});
 
             // Smooth fade out for overlay
             overlay.style.opacity = '0';
