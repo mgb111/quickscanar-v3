@@ -268,6 +268,85 @@ export async function GET(
         }
       });
 
+      // Advanced stabilizer with pose smoothing, sticky anchoring, and video plane tricks
+      AFRAME.registerComponent('advanced-stabilizer', {
+        schema: {
+          positionLerpFactor: { type: 'number', default: 0.15 },
+          rotationSlerpFactor: { type: 'number', default: 0.2 },
+          movementThreshold: { type: 'number', default: 0.002 },
+          rotationThreshold: { type: 'number', default: 0.5 },
+          stabilizationFrames: { type: 'number', default: 5 }
+        },
+
+        init: function () {
+          this.smoothedPosition = new THREE.Vector3();
+          this.smoothedQuaternion = new THREE.Quaternion();
+          this.lastPosition = new THREE.Vector3();
+          this.lastQuaternion = new THREE.Quaternion();
+          this.isInitialized = false;
+          this.stableFrameCount = 0;
+          this.videoPlane = null;
+          this.backgroundPlane = null;
+          
+          // Wait for child elements to be ready
+          this.el.addEventListener('child-attached', () => {
+            this.videoPlane = this.el.querySelector('#videoPlane');
+            this.backgroundPlane = this.el.querySelector('#backgroundPlane');
+          });
+        },
+
+        tick: function () {
+          if (!this.el.object3D.visible) {
+            this.isInitialized = false;
+            this.stableFrameCount = 0;
+            return;
+          }
+
+          const currentPos = this.el.object3D.position;
+          const currentQuat = this.el.object3D.quaternion;
+
+          // Initialize smoothed values on first frame
+          if (!this.isInitialized) {
+            this.smoothedPosition.copy(currentPos);
+            this.smoothedQuaternion.copy(currentQuat);
+            this.lastPosition.copy(currentPos);
+            this.lastQuaternion.copy(currentQuat);
+            this.isInitialized = true;
+            return;
+          }
+
+          // Calculate movement deltas for sticky anchoring
+          const positionDelta = currentPos.distanceTo(this.lastPosition);
+          const rotationDelta = Math.abs(currentQuat.angleTo(this.lastQuaternion));
+
+          // Only update if movement exceeds threshold (sticky anchoring)
+          if (positionDelta > this.data.movementThreshold || 
+              rotationDelta > this.data.rotationThreshold) {
+            
+            // Pose smoothing with lerp/slerp
+            this.smoothedPosition.lerp(currentPos, this.data.positionLerpFactor);
+            this.smoothedQuaternion.slerp(currentQuat, this.data.rotationSlerpFactor);
+            
+            // Update last known values
+            this.lastPosition.copy(currentPos);
+            this.lastQuaternion.copy(currentQuat);
+            this.stableFrameCount = 0;
+          } else {
+            this.stableFrameCount++;
+          }
+
+          // Apply smoothed transform to the entity
+          this.el.object3D.position.copy(this.smoothedPosition);
+          this.el.object3D.quaternion.copy(this.smoothedQuaternion);
+
+          // Video plane tricks - ease in animation when stable
+          if (this.videoPlane && this.stableFrameCount === this.data.stabilizationFrames) {
+            this.videoPlane.setAttribute('animation', 'property: scale; from: 0.9 0.9 0.9; to: 1 1 1; dur: 200; easing: easeOutCubic');
+            this.videoPlane.components.animation.beginAnimation();
+          }
+        }
+      });
+
     </script>
     <style>
       * {
@@ -602,11 +681,11 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" advanced-stabilizer>
         <a-plane
           id="backgroundPlane"
-          width="2"
-          height="1.125"
+          width="2.2"
+          height="1.24"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -615,15 +694,15 @@ export async function GET(
 
         <a-plane
           id="videoPlane"
-          width="2"
-          height="1.125"
+          width="2.2"
+          height="1.24"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
           visible="false"
           geometry="primitive: plane; skipCache: true"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
+          animation="property: scale; from: 0.8 0.8 0.8; to: 1 1 1; dur: 300; easing: easeOutCubic; autoplay: false"
         ></a-plane>
       </a-entity>
     </a-scene>
