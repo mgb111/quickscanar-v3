@@ -140,21 +140,24 @@ export async function GET(
       AFRAME.registerComponent('one-euro-smoother', {
         schema: {
           // Lower value = more smoothing, less responsive
-          smoothingFactor: { type: 'number', default: 0.1 },
+          smoothingFactor: { type: 'number', default: 0.08 },
           // One-Euro filter params for position
-          freq: { type: 'number', default: 120 },
-          mincutoff: { type: 'number', default: 0.5 }, // Lower value = more smoothing for slow movements
-          beta: { type: 'number', default: 1.5 }, // Higher value = more smoothing for fast movements
+          freq: { type: 'number', default: 60 },
+          mincutoff: { type: 'number', default: 0.8 }, // Lower value = more smoothing for slow movements
+          beta: { type: 'number', default: 0.7 }, // Higher value = more smoothing for fast movements
           dcutoff: { type: 'number', default: 1.0 },
           // Extra stabilizers
-          posDeadzone: { type: 'number', default: 0.0015 }, // meters; ignore micro translation noise
-          rotDeadzoneDeg: { type: 'number', default: 0.4 }, // degrees; ignore micro rotation noise
-          emaFactor: { type: 'number', default: 0.15 }, // 0..1, additional EMA blend after One-Euro
+          posDeadzone: { type: 'number', default: 0.002 }, // meters; ignore micro translation noise
+          rotDeadzoneDeg: { type: 'number', default: 0.8 }, // degrees; ignore micro rotation noise
+          emaFactor: { type: 'number', default: 0.12 }, // 0..1, additional EMA blend after One-Euro
           // Ultra lock controls
-          mode: { type: 'string', default: 'normal' }, // 'normal' | 'ultra_lock'
-          throttleHz: { type: 'number', default: 60 }, // apply transforms at most this often
-          medianWindow: { type: 'number', default: 3 }, // median window size for position
-          zeroRoll: { type: 'boolean', default: false }, // lock roll around marker normal
+          mode: { type: 'string', default: 'ultra_lock' }, // 'normal' | 'ultra_lock'
+          throttleHz: { type: 'number', default: 30 }, // apply transforms at most this often
+          medianWindow: { type: 'number', default: 5 }, // median window size for position
+          zeroRoll: { type: 'boolean', default: true }, // lock roll around marker normal
+          // Homography stabilization
+          homographySmoothing: { type: 'number', default: 0.15 }, // smooth marker corner detection
+          minMovementThreshold: { type: 'number', default: 0.001 }, // minimum movement to trigger update
         },
 
         init: function () {
@@ -167,25 +170,42 @@ export async function GET(
             z: new OneEuroFilter(freq, mincutoff, beta, dcutoff),
           };
 
+          // Rotation smoothers for each axis
+          this.rotationSmoother = {
+            x: new OneEuroFilter(freq, mincutoff * 0.5, beta * 0.8, dcutoff),
+            y: new OneEuroFilter(freq, mincutoff * 0.5, beta * 0.8, dcutoff),
+            z: new OneEuroFilter(freq, mincutoff * 0.5, beta * 0.8, dcutoff),
+            w: new OneEuroFilter(freq, mincutoff * 0.5, beta * 0.8, dcutoff),
+          };
+
           // We will use a separate matrix to hold the raw, unsmoothed transform from MindAR.
           this.rawMatrix = new THREE.Matrix4();
           this.tmpVec = new THREE.Vector3();
           this.tmpQuat = new THREE.Quaternion();
+          this.tmpEuler = new THREE.Euler();
 
           // Position history for median filtering
           this._posHistory = [];
           this._lastApply = 0;
+          this._lastRawPosition = new THREE.Vector3();
+          this._lastRawQuaternion = new THREE.Quaternion();
+          this._isFirstFrame = true;
+          
+          // Sticky anchoring - lock position when movement is minimal
+          this._stickyLocked = false;
+          this._stickyCounter = 0;
+          this._stickyThreshold = 5; // frames of minimal movement to trigger lock
         },
 
         tick: function (t, dt) {
           // Only run if the target is visible.
           if (!this.el.object3D.visible) return;
 
-          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll } = this.data;
+          const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll, minMovementThreshold } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
           // Throttle updates to reduce visible micro jitter
-          const interval = 1000 / Math.max(15, throttleHz || 60);
+          const interval = 1000 / Math.max(15, throttleHz || 30);
           if (this._lastApply && (t - this._lastApply) < interval) {
             return;
           }
@@ -201,6 +221,32 @@ export async function GET(
           const rawScale = new THREE.Vector3();
           this.rawMatrix.decompose(rawPosition, rawQuaternion, rawScale);
 
+          // 2a. Sticky anchoring - detect minimal movement and lock position
+          if (!this._isFirstFrame) {
+            const positionDelta = rawPosition.distanceTo(this._lastRawPosition);
+            const quaternionDelta = 1 - Math.abs(rawQuaternion.dot(this._lastRawQuaternion));
+            
+            if (positionDelta < minMovementThreshold && quaternionDelta < minMovementThreshold * 10) {
+              this._stickyCounter++;
+              if (this._stickyCounter >= this._stickyThreshold) {
+                this._stickyLocked = true;
+              }
+            } else {
+              this._stickyCounter = 0;
+              this._stickyLocked = false;
+            }
+          }
+          
+          // If sticky locked, use minimal movement
+          if (this._stickyLocked) {
+            rawPosition.lerp(this._lastRawPosition, 0.95);
+            rawQuaternion.slerp(this._lastRawQuaternion, 0.95);
+          }
+          
+          this._lastRawPosition.copy(rawPosition);
+          this._lastRawQuaternion.copy(rawQuaternion);
+          this._isFirstFrame = false;
+
           // 3. Smooth the position using a median filter (optional) then One-Euro filter.
           // This reduces translational jitter (shakiness).
           let usePos = rawPosition;
@@ -211,142 +257,90 @@ export async function GET(
             while (this._posHistory.length > maxN) this._posHistory.shift();
             // compute median per axis
             const med = (arr)=>{
-              const a = arr.slice().sort((a,b)=>a-b);
-              const m = Math.floor(a.length/2);
-              return a.length % 2 ? a[m] : 0.5*(a[m-1]+a[m]);
+              const s = [...arr].sort((a,b)=>a-b);
+              const mid = Math.floor(s.length / 2);
+              return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
             };
-            const xs = this._posHistory.map(v=>v.x);
-            const ys = this._posHistory.map(v=>v.y);
-            const zs = this._posHistory.map(v=>v.z);
-            usePos = new THREE.Vector3(med(xs), med(ys), med(zs));
+            if (this._posHistory.length >= 2) {
+              usePos = new THREE.Vector3(
+                med(this._posHistory.map(p=>p.x)),
+                med(this._posHistory.map(p=>p.y)),
+                med(this._posHistory.map(p=>p.z))
+              );
+            }
           } else {
             // reset history to avoid lag when switching
             this._posHistory.length = 0;
           }
 
-          const smoothedPosition = {
-            x: this.positionSmoother.x.filter(usePos.x, timestamp),
-            y: this.positionSmoother.y.filter(usePos.y, timestamp),
-            z: this.positionSmoother.z.filter(usePos.z, timestamp),
-          };
-
-          // 3b. Apply a deadzone and an extra EMA blend to damp tiny residual motions further.
-          const currentPos = this.el.object3D.position;
-          // Deadzone: if movement is below threshold, keep current axis value
-          const dz = posDeadzone;
-          const targetPos = this.tmpVec.set(
-            Math.abs(smoothedPosition.x - currentPos.x) < dz ? currentPos.x : smoothedPosition.x,
-            Math.abs(smoothedPosition.y - currentPos.y) < dz ? currentPos.y : smoothedPosition.y,
-            Math.abs(smoothedPosition.z - currentPos.z) < dz ? currentPos.z : smoothedPosition.z,
+          const smoothedPosition = new THREE.Vector3(
+            this.positionSmoother.x.filter(usePos.x, timestamp),
+            this.positionSmoother.y.filter(usePos.y, timestamp),
+            this.positionSmoother.z.filter(usePos.z, timestamp)
           );
-          // EMA blend: current := lerp(current, target, emaFactor)
-          currentPos.lerp(targetPos, emaFactor);
 
-          // 4. Smooth the rotation using spherical linear interpolation (Slerp).
-          // This provides a much more stable and natural rotational smoothing than filtering Euler angles.
-          // It smoothly interpolates from the object's current orientation to the new raw orientation.
-          const currentQuaternion = this.el.object3D.quaternion;
-          // Compute angular difference in degrees
-          const dot = THREE.MathUtils.clamp(currentQuaternion.dot(rawQuaternion), -1, 1);
-          const angleRad = 2 * Math.acos(Math.abs(dot));
-          const angleDeg = THREE.MathUtils.radToDeg(angleRad);
-          // Deadzone for rotation: ignore micro rotation
-          if (angleDeg > rotDeadzoneDeg) {
-            // Adaptive slerp: larger differences get slightly higher interpolation for responsiveness
-            const adapt = THREE.MathUtils.clamp(smoothingFactor + (angleDeg / 90) * 0.05, 0.05, 0.35);
-            currentQuaternion.slerp(rawQuaternion, adapt);
-          }
-
-          // Optional zero-roll correction to keep content visually flat to the marker
-          if (mode === 'ultra_lock' && zeroRoll) {
-            const e = new THREE.Euler().setFromQuaternion(currentQuaternion, 'YXZ');
-            e.z = 0; // remove roll
-            currentQuaternion.setFromEuler(e);
-          }
-
-          // 5. Position already updated via EMA lerp. Quaternion updated via slerp above.
-        }
-      });
-
-      // Advanced stabilizer with pose smoothing, sticky anchoring, and video plane tricks
-      AFRAME.registerComponent('advanced-stabilizer', {
-        schema: {
-          positionLerpFactor: { type: 'number', default: 0.15 },
-          rotationSlerpFactor: { type: 'number', default: 0.2 },
-          movementThreshold: { type: 'number', default: 0.002 },
-          rotationThreshold: { type: 'number', default: 0.5 },
-          stabilizationFrames: { type: 'number', default: 5 }
-        },
-
-        init: function () {
-          this.smoothedPosition = new THREE.Vector3();
-          this.smoothedQuaternion = new THREE.Quaternion();
-          this.lastPosition = new THREE.Vector3();
-          this.lastQuaternion = new THREE.Quaternion();
-          this.isInitialized = false;
-          this.stableFrameCount = 0;
-          this.videoPlane = null;
-          this.backgroundPlane = null;
-          
-          // Wait for child elements to be ready
-          this.el.addEventListener('child-attached', () => {
-            this.videoPlane = this.el.querySelector('#videoPlane');
-            this.backgroundPlane = this.el.querySelector('#backgroundPlane');
-          });
-        },
-
-        tick: function () {
-          if (!this.el.object3D.visible) {
-            this.isInitialized = false;
-            this.stableFrameCount = 0;
-            return;
-          }
-
+          // 4. Apply position deadzone to ignore micro-movements.
           const currentPos = this.el.object3D.position;
-          const currentQuat = this.el.object3D.quaternion;
-
-          // Initialize smoothed values on first frame
-          if (!this.isInitialized) {
-            this.smoothedPosition.copy(currentPos);
-            this.smoothedQuaternion.copy(currentQuat);
-            this.lastPosition.copy(currentPos);
-            this.lastQuaternion.copy(currentQuat);
-            this.isInitialized = true;
-            return;
+          const positionDelta = smoothedPosition.distanceTo(currentPos);
+          if (positionDelta < posDeadzone) {
+            smoothedPosition.copy(currentPos); // Keep current position if change is too small.
           }
 
-          // Calculate movement deltas for sticky anchoring
-          const positionDelta = currentPos.distanceTo(this.lastPosition);
-          const rotationDelta = Math.abs(currentQuat.angleTo(this.lastQuaternion));
+          // 5. Smooth the rotation using One-Euro filters for each quaternion component
+          // This reduces rotational jitter more effectively than simple slerp.
+          let smoothedQuaternion;
 
-          // Only update if movement exceeds threshold (sticky anchoring)
-          if (positionDelta > this.data.movementThreshold || 
-              rotationDelta > this.data.rotationThreshold) {
+          if (mode === 'ultra_lock') {
+            // Use One-Euro filter for rotation components with enhanced stability
+            smoothedQuaternion = new THREE.Quaternion(
+              this.rotationSmoother.x.filter(rawQuaternion.x, timestamp),
+              this.rotationSmoother.y.filter(rawQuaternion.y, timestamp),
+              this.rotationSmoother.z.filter(rawQuaternion.z, timestamp),
+              this.rotationSmoother.w.filter(rawQuaternion.w, timestamp)
+            ).normalize();
             
-            // Pose smoothing with lerp/slerp
-            this.smoothedPosition.lerp(currentPos, this.data.positionLerpFactor);
-            this.smoothedQuaternion.slerp(currentQuat, this.data.rotationSlerpFactor);
-            
-            // Update last known values
-            this.lastPosition.copy(currentPos);
-            this.lastQuaternion.copy(currentQuat);
-            this.stableFrameCount = 0;
+            // Additional stability: blend with current rotation for micro-movements
+            const currentQuat = this.el.object3D.quaternion;
+            const rotationDelta = Math.acos(Math.abs(smoothedQuaternion.dot(currentQuat))) * (180 / Math.PI);
+            if (rotationDelta < rotDeadzoneDeg * 2) {
+              smoothedQuaternion.slerp(currentQuat, 0.7); // Heavy bias toward current rotation
+            }
           } else {
-            this.stableFrameCount++;
+            // Use slerp for normal mode
+            const currentQuat = this.el.object3D.quaternion;
+            smoothedQuaternion = currentQuat.clone().slerp(rawQuaternion, smoothingFactor);
           }
 
-          // Apply smoothed transform to the entity
-          this.el.object3D.position.copy(this.smoothedPosition);
-          this.el.object3D.quaternion.copy(this.smoothedQuaternion);
-
-          // Video plane tricks - ease in animation when stable
-          if (this.videoPlane && this.stableFrameCount === this.data.stabilizationFrames) {
-            this.videoPlane.setAttribute('animation', 'property: scale; from: 0.9 0.9 0.9; to: 1 1 1; dur: 200; easing: easeOutCubic');
-            this.videoPlane.components.animation.beginAnimation();
+          // 6. Apply rotation deadzone to ignore micro-rotations.
+          const currentQuat = this.el.object3D.quaternion;
+          const rotationDelta = Math.acos(Math.abs(smoothedQuaternion.dot(currentQuat))) * (180 / Math.PI);
+          if (rotationDelta < rotDeadzoneDeg) {
+            smoothedQuaternion.copy(currentQuat); // Keep current rotation if change is too small.
           }
+
+          // 7. Zero roll if enabled (lock roll around marker normal).
+          if (zeroRoll) {
+            this.tmpEuler.setFromQuaternion(smoothedQuaternion, 'XYZ');
+            this.tmpEuler.z = 0; // Zero the roll component.
+            smoothedQuaternion.setFromEuler(this.tmpEuler);
+          }
+
+          // 8. Apply additional EMA blending for extra smoothness with enhanced stability.
+          if (emaFactor > 0 && emaFactor < 1) {
+            // Enhanced EMA with movement-based adaptive blending
+            const movementFactor = Math.min(1, positionDelta / (posDeadzone * 10));
+            const adaptiveEma = emaFactor * (0.3 + 0.7 * movementFactor);
+            
+            smoothedPosition.lerp(currentPos, 1 - adaptiveEma);
+            smoothedQuaternion.slerp(currentQuat, 1 - adaptiveEma);
+          }
+
+          // 9. Apply the smoothed transform to the object.
+          this.el.object3D.position.copy(smoothedPosition);
+          this.el.object3D.quaternion.copy(smoothedQuaternion);
+          this.el.object3D.scale.copy(rawScale); // Scale is usually not smoothed.
         }
       });
-
     </script>
     <style>
       * {
@@ -657,9 +651,10 @@ export async function GET(
 
 
     <a-scene
-      mindar-image="imageTargetSrc: ${experience.mind_file_url}; maxTrack: 1; showStats: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.00001; filterBeta: 10000; missTolerance: 15; warmupTolerance: 15"
+      id="arScene"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.02; filterBeta: 0.05; warmupTolerance: 10; missTolerance: 10; showStats: false; maxTrack: 1;"
       color-space="sRGB"
-      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true; logarithmicDepthBuffer: true"
+      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
@@ -681,11 +676,11 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" advanced-stabilizer>
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.08; freq: 60; mincutoff: 0.8; beta: 0.7; dcutoff: 1.0; posDeadzone: 0.002; rotDeadzoneDeg: 0.8; emaFactor: 0.12; throttleHz: 30; medianWindow: 5; zeroRoll: true">
         <a-plane
           id="backgroundPlane"
-          width="2.2"
-          height="1.24"
+          width="2"
+          height="1.125"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -694,15 +689,15 @@ export async function GET(
 
         <a-plane
           id="videoPlane"
-          width="2.2"
-          height="1.24"
+          width="2"
+          height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
           visible="false"
           geometry="primitive: plane; skipCache: true"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-          animation="property: scale; from: 0.8 0.8 0.8; to: 1 1 1; dur: 300; easing: easeOutCubic; autoplay: false"
+          animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
         ></a-plane>
       </a-entity>
     </a-scene>
