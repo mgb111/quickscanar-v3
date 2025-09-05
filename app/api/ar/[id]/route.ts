@@ -677,6 +677,7 @@ export async function GET(
           id="arVideo"
           src="${experience.video_url}"
           loop
+          autoplay
           muted
           playsinline
           crossorigin="anonymous"
@@ -847,7 +848,7 @@ export async function GET(
           video.addEventListener('timeupdate', () => {
             if (video.readyState >= 3) { // HAVE_FUTURE_DATA
               // Force repaint for smooth updates
-              videoPlane.setAttribute('material', 'shader: flat; src: #arVideo; transparent: true; alphaTest: 0.1');
+              videoPlane.setAttribute('material', 'shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1');
             }
           });
         }
@@ -905,9 +906,11 @@ export async function GET(
                   videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                 }
                 if (video) {
-                  video.currentTime = 0; // Restart video
+                  // Don't restart video - let it continue playing
                   video.muted = false; // Enable audio when target is found
-                  video.play().catch(() => {});
+                  if (video.paused) {
+                    video.play().catch(() => {});
+                  }
                 }
                 showStatus('Target Found!', 'AR content should be visible');
                 setTimeout(hideStatus, 1500);
