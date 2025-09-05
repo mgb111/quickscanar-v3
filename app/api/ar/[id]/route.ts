@@ -194,12 +194,12 @@ export async function GET(
           // Sticky anchoring - lock position when movement is minimal
           this._stickyLocked = false;
           this._stickyCounter = 0;
-          this._stickyThreshold = 2; // frames of minimal movement to trigger lock
+          this._stickyThreshold = 2; // frames of minimal movement to trigger lock (reduced for faster locking)
           
-          // Ultra stabilization for video plane
+          // Ultra stabilization variables
           this._lockedPosition = new THREE.Vector3();
           this._lockedQuaternion = new THREE.Quaternion();
-          this._lockStrength = 0.98; // 98% lock strength
+          this._lockStrength = 0.98; // How strongly to lock to position (0.98 = 98% locked)
         },
 
         tick: function (t, dt) {
@@ -209,8 +209,8 @@ export async function GET(
           const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll, minMovementThreshold } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
-          // Throttle updates to reduce visible micro jitter
-          const interval = 1000 / Math.max(5, throttleHz || 10);
+          // Throttle updates to reduce visible micro jitter - ultra slow for max stability
+          const interval = 1000 / Math.max(5, throttleHz || 8);
           if (this._lastApply && (t - this._lastApply) < interval) {
             return;
           }
@@ -244,11 +244,10 @@ export async function GET(
           
           // If sticky locked, use ultra-minimal movement with locked reference
           if (this._stickyLocked) {
-            // Use locked reference position with 99% stability
             rawPosition.lerp(this._lockedPosition, this._lockStrength);
             rawQuaternion.slerp(this._lockedQuaternion, this._lockStrength);
           } else {
-            // Update locked position when not locked
+            // Update locked reference position when not locked
             this._lockedPosition.copy(rawPosition);
             this._lockedQuaternion.copy(rawQuaternion);
           }
@@ -335,16 +334,14 @@ export async function GET(
             smoothedQuaternion.setFromEuler(this.tmpEuler);
           }
 
-          // 8. Apply ultra-aggressive EMA blending for maximum stability.
+          // 8. Apply additional EMA blending for extra smoothness with enhanced stability.
           if (emaFactor > 0 && emaFactor < 1) {
-            // Ultra-aggressive stabilization - almost lock in place
-            const ultraStableEma = Math.min(emaFactor, 0.01); // Cap at 1% movement
+            // Ultra-aggressive EMA for maximum stability - almost no movement allowed
+            const ultraStableEma = emaFactor * 0.1; // Make EMA 10x more aggressive
             
             smoothedPosition.lerp(currentPos, 1 - ultraStableEma);
             smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
           }
-          
-          // Video plane should not have additional stabilization to avoid rendering issues
 
           // 9. Apply the smoothed transform to the object.
           this.el.object3D.position.copy(smoothedPosition);
@@ -663,7 +660,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.001; filterBeta: 0.001; warmupTolerance: 20; missTolerance: 30; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.001; filterBeta: 0.01; warmupTolerance: 20; missTolerance: 30; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -674,10 +671,9 @@ export async function GET(
     >
       <a-assets>
         <video
-          id="arVideo"
+          id="videoTexture"
           src="${experience.video_url}"
           loop
-          autoplay
           muted
           playsinline
           crossorigin="anonymous"
@@ -688,7 +684,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.01; freq: 30; mincutoff: 0.001; beta: 0.01; dcutoff: 0.1; posDeadzone: 0.0005; rotDeadzoneDeg: 0.1; emaFactor: 0.02; throttleHz: 15; medianWindow: 9; zeroRoll: true"
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.01; freq: 15; mincutoff: 0.05; beta: 0.1; dcutoff: 1.0; posDeadzone: 0.0001; rotDeadzoneDeg: 0.1; emaFactor: 0.02; throttleHz: 10; medianWindow: 9; zeroRoll: true; minMovementThreshold: 0.00005"
         <a-plane
           id="backgroundPlane"
           width="2"
@@ -707,6 +703,7 @@ export async function GET(
           rotation="0 0 ${experience.video_rotation || 0}"
           material="src: #arVideo; transparent: true; alphaTest: 0.1"
           visible="false"
+          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 10; mincutoff: 0.01; beta: 0.05; dcutoff: 1.0; posDeadzone: 0.00001; rotDeadzoneDeg: 0.05; emaFactor: 0.01; throttleHz: 8; medianWindow: 11; zeroRoll: true; minMovementThreshold: 0.000001"
         ></a-plane>
       </a-entity>
     </a-scene>
@@ -906,11 +903,9 @@ export async function GET(
                   videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                 }
                 if (video) {
-                  // Don't restart video - let it continue playing
+                  video.currentTime = 0; // Restart video
                   video.muted = false; // Enable audio when target is found
-                  if (video.paused) {
-                    video.play().catch(() => {});
-                  }
+                  video.play().catch(() => {});
                 }
                 showStatus('Target Found!', 'AR content should be visible');
                 setTimeout(hideStatus, 1500);
