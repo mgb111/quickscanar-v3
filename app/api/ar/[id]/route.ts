@@ -194,7 +194,12 @@ export async function GET(
           // Sticky anchoring - lock position when movement is minimal
           this._stickyLocked = false;
           this._stickyCounter = 0;
-          this._stickyThreshold = 5; // frames of minimal movement to trigger lock
+          this._stickyThreshold = 2; // frames of minimal movement to trigger lock
+          
+          // Ultra stabilization for video plane
+          this._lockedPosition = new THREE.Vector3();
+          this._lockedQuaternion = new THREE.Quaternion();
+          this._lockStrength = 0.98; // 98% lock strength
         },
 
         tick: function (t, dt) {
@@ -205,7 +210,7 @@ export async function GET(
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
           // Throttle updates to reduce visible micro jitter
-          const interval = 1000 / Math.max(15, throttleHz || 30);
+          const interval = 1000 / Math.max(5, throttleHz || 10);
           if (this._lastApply && (t - this._lastApply) < interval) {
             return;
           }
@@ -237,10 +242,15 @@ export async function GET(
             }
           }
           
-          // If sticky locked, use minimal movement
+          // If sticky locked, use ultra-minimal movement with locked reference
           if (this._stickyLocked) {
-            rawPosition.lerp(this._lastRawPosition, 0.95);
-            rawQuaternion.slerp(this._lastRawQuaternion, 0.95);
+            // Use locked reference position with 99% stability
+            rawPosition.lerp(this._lockedPosition, this._lockStrength);
+            rawQuaternion.slerp(this._lockedQuaternion, this._lockStrength);
+          } else {
+            // Update locked position when not locked
+            this._lockedPosition.copy(rawPosition);
+            this._lockedQuaternion.copy(rawQuaternion);
           }
           
           this._lastRawPosition.copy(rawPosition);
@@ -325,14 +335,20 @@ export async function GET(
             smoothedQuaternion.setFromEuler(this.tmpEuler);
           }
 
-          // 8. Apply additional EMA blending for extra smoothness with enhanced stability.
+          // 8. Apply ultra-aggressive EMA blending for maximum stability.
           if (emaFactor > 0 && emaFactor < 1) {
-            // Enhanced EMA with movement-based adaptive blending
-            const movementFactor = Math.min(1, positionDelta / (posDeadzone * 10));
-            const adaptiveEma = emaFactor * (0.3 + 0.7 * movementFactor);
+            // Ultra-aggressive stabilization - almost lock in place
+            const ultraStableEma = Math.min(emaFactor, 0.01); // Cap at 1% movement
             
-            smoothedPosition.lerp(currentPos, 1 - adaptiveEma);
-            smoothedQuaternion.slerp(currentQuat, 1 - adaptiveEma);
+            smoothedPosition.lerp(currentPos, 1 - ultraStableEma);
+            smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
+          }
+          
+          // 8b. Additional ultra-lock for video plane elements
+          if (this.el.id === 'videoPlane') {
+            // Apply 99.5% lock for video plane specifically
+            smoothedPosition.lerp(currentPos, 0.995);
+            smoothedQuaternion.slerp(currentQuat, 0.995);
           }
 
           // 9. Apply the smoothed transform to the object.
@@ -652,7 +668,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.02; filterBeta: 0.05; warmupTolerance: 10; missTolerance: 10; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.001; filterBeta: 0.001; warmupTolerance: 20; missTolerance: 30; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -676,7 +692,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.08; freq: 60; mincutoff: 0.8; beta: 0.7; dcutoff: 1.0; posDeadzone: 0.002; rotDeadzoneDeg: 0.8; emaFactor: 0.12; throttleHz: 30; medianWindow: 5; zeroRoll: true">
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.01; freq: 30; mincutoff: 0.001; beta: 0.01; dcutoff: 0.1; posDeadzone: 0.0005; rotDeadzoneDeg: 0.1; emaFactor: 0.02; throttleHz: 15; medianWindow: 9; zeroRoll: true"
         <a-plane
           id="backgroundPlane"
           width="2"
@@ -693,8 +709,9 @@ export async function GET(
           height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1"
+          material="src: #arVideo; transparent: true; alphaTest: 0.1"
           visible="false"
+          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 15; mincutoff: 0.0001; beta: 0.001; dcutoff: 0.01; posDeadzone: 0.0001; rotDeadzoneDeg: 0.01; emaFactor: 0.005; throttleHz: 10; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.00001"
           geometry="primitive: plane; skipCache: true"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
           animation="property: object3D.position; dur: 100; easing: easeOutQuad; loop: false"
