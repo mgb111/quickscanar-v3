@@ -984,34 +984,15 @@ showStatus('AR Initialization Error', 'Please allow camera access and try again.
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            // Enable audio context for mobile devices - CRITICAL for audio to work
+            // Simplified audio unlock
             if (video) {
               try {
-                // Force unmute and set volume
                 video.muted = false;
                 video.volume = 1.0;
-                
-                // Create audio context if needed (for iOS/Safari)
-                if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-                  const AudioCtx = AudioContext || webkitAudioContext;
-                  if (!window.audioContext) {
-                    window.audioContext = new AudioCtx();
-                  }
-                  if (window.audioContext.state === 'suspended') {
-                    await window.audioContext.resume();
-                  }
-                }
-                
-                // Try to play and pause to unlock audio on mobile
-                await video.play();
-                video.pause();
-                video.currentTime = 0;
-                
-                // Set a flag that audio is unlocked
                 window.audioUnlocked = true;
-                console.log('Audio context unlocked successfully');
+                console.log('Audio enabled');
               } catch (error) {
-                console.log('Audio unlock failed:', error);
+                console.log('Audio setup failed:', error);
                 window.audioUnlocked = false;
               }
             }
