@@ -199,8 +199,8 @@ export async function GET(
           // Ultra stabilization variables
           this._lockedPosition = new THREE.Vector3();
           this._lockedQuaternion = new THREE.Quaternion();
-          this._lockStrength = 0.999; // How strongly to lock to position (99.9% locked)
-          this._ultraLockMode = true; // Enable ultra lock mode immediately
+          this._lockStrength = 0.8; // How strongly to lock to position (80% locked)
+          this._ultraLockMode = false; // Disable ultra lock mode to allow video display
         },
 
         tick: function (t, dt) {
@@ -210,8 +210,8 @@ export async function GET(
           const { smoothingFactor, posDeadzone, rotDeadzoneDeg, emaFactor, mode, throttleHz, medianWindow, zeroRoll, minMovementThreshold } = this.data;
           const timestamp = t / 1000; // OneEuroFilter requires timestamp in seconds.
 
-          // Throttle updates to reduce visible micro jitter - ultra slow for max stability
-          const interval = 1000 / Math.max(1, throttleHz || 1);
+          // Throttle updates to reduce visible micro jitter
+          const interval = 1000 / Math.max(10, throttleHz || 15);
           if (this._lastApply && (t - this._lastApply) < interval) {
             return;
           }
@@ -346,11 +346,11 @@ export async function GET(
 
           // 8. Apply additional EMA blending for extra smoothness with enhanced stability.
           if (emaFactor > 0 && emaFactor < 1) {
-            // Ultra-aggressive EMA for maximum stability - virtually no movement allowed
-            const ultraStableEma = emaFactor * 0.01; // Make EMA 100x more aggressive
+            // Moderate EMA for stability while preserving video display
+            const stableEma = emaFactor * 0.5; // Balanced smoothing
             
-            smoothedPosition.lerp(currentPos, 1 - ultraStableEma);
-            smoothedQuaternion.slerp(currentQuat, 1 - ultraStableEma);
+            smoothedPosition.lerp(currentPos, 1 - stableEma);
+            smoothedQuaternion.slerp(currentQuat, 1 - stableEma);
           }
 
           // 9. Apply the smoothed transform to the object.
@@ -670,7 +670,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.00001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 100; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.1; filterBeta: 0.5; warmupTolerance: 5; missTolerance: 5; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -694,7 +694,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.0001; freq: 1; mincutoff: 0.0001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.0000001; rotDeadzoneDeg: 0.001; emaFactor: 0.0001; throttleHz: 1; medianWindow: 21; zeroRoll: true; minMovementThreshold: 0.00000001"
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.05; freq: 30; mincutoff: 0.1; beta: 0.5; dcutoff: 1.0; posDeadzone: 0.001; rotDeadzoneDeg: 0.5; emaFactor: 0.1; throttleHz: 15; medianWindow: 7; zeroRoll: true; minMovementThreshold: 0.0005"
         <a-plane
           id="backgroundPlane"
           width="2"
@@ -705,17 +705,15 @@ export async function GET(
           visible="false"
         ></a-plane>
 
-        <a-entity id="videoContainer" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.01; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.01; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001">
-          <a-plane
-            id="videoPlane"
-            width="2"
-            height="1.125"
-            position="0 0 0.01"
-            rotation="0 0 ${experience.video_rotation || 0}"
-            material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat"
-            visible="false"
-          ></a-plane>
-        </a-entity>
+        <a-plane
+          id="videoPlane"
+          width="2"
+          height="1.125"
+          position="0 0 0.01"
+          rotation="0 0 ${experience.video_rotation || 0}"
+          material="src: #arVideo; transparent: true; alphaTest: 0.1"
+          visible="false"
+        ></a-plane>
       </a-entity>
     </a-scene>
 
