@@ -677,8 +677,6 @@ export async function GET(
           id="arVideo"
           src="${experience.video_url}"
           loop
-          muted
-          autoplay
           playsinline
           crossorigin="anonymous"
           preload="auto"
@@ -911,20 +909,30 @@ export async function GET(
                   // Force video to play with audio enabled
                   const playVideo = async () => {
                     try {
-                      video.muted = false; // Unmute first
-                      video.volume = 1.0; // Set full volume
-                      await video.play();
-                      console.log('Video started playing with audio');
+                      // Only proceed if audio was unlocked by user interaction
+                      if (!window.audioUnlocked) {
+                        console.log('Audio not unlocked yet, playing without sound');
+                        video.muted = true;
+                      } else {
+                        video.muted = false; // Unmute first
+                        video.volume = 1.0; // Set full volume
+                        console.log('Playing with audio - unlocked:', window.audioUnlocked);
+                      }
                       
-                      // Double-check audio is enabled after play
-                      setTimeout(() => {
-                        video.muted = false;
-                        video.volume = 1.0;
-                        console.log('Audio status:', { muted: video.muted, volume: video.volume });
-                      }, 100);
+                      await video.play();
+                      console.log('Video started playing, muted:', video.muted, 'volume:', video.volume);
+                      
+                      // Force audio on after play if unlocked
+                      if (window.audioUnlocked) {
+                        setTimeout(() => {
+                          video.muted = false;
+                          video.volume = 1.0;
+                          console.log('Final audio status:', { muted: video.muted, volume: video.volume, unlocked: window.audioUnlocked });
+                        }, 200);
+                      }
                     } catch (error) {
                       console.log('Video play failed, retrying...', error);
-                      setTimeout(playVideo, 100);
+                      setTimeout(playVideo, 200);
                     }
                   };
                   playVideo();
@@ -984,18 +992,35 @@ export async function GET(
             startBtn.classList.add('loading');
             startBtn.textContent = 'Starting...';
             
-            // Enable audio context for mobile devices
+            // Enable audio context for mobile devices - CRITICAL for audio to work
             if (video) {
               try {
+                // Force unmute and set volume
                 video.muted = false;
                 video.volume = 1.0;
+                
+                // Create audio context if needed (for iOS/Safari)
+                if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                  const AudioCtx = AudioContext || webkitAudioContext;
+                  if (!window.audioContext) {
+                    window.audioContext = new AudioCtx();
+                  }
+                  if (window.audioContext.state === 'suspended') {
+                    await window.audioContext.resume();
+                  }
+                }
+                
                 // Try to play and pause to unlock audio on mobile
                 await video.play();
                 video.pause();
                 video.currentTime = 0;
-                console.log('Audio context unlocked');
+                
+                // Set a flag that audio is unlocked
+                window.audioUnlocked = true;
+                console.log('Audio context unlocked successfully');
               } catch (error) {
                 console.log('Audio unlock failed:', error);
+                window.audioUnlocked = false;
               }
             }
 
