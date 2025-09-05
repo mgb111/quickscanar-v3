@@ -137,6 +137,38 @@ export async function GET(
       !function(t,e){if("object"==typeof exports&&"object"==typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var i=e();for(var s in i)("object"==typeof exports?exports:t)[s]=i[s]}}("undefined"!=typeof self?self:this,(()=>(()=>{"use strict";var t={d:(e,i)=>{for(var s in i)t.o(i,s)&&!t.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:i[s]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{LowPassFilter:()=>i,OneEuroFilter:()=>s});class i{setAlpha(t){(t<=0||t>1)&&console.log("alpha should be in (0.0., 1.0]"),this.a=t}constructor(t,e=0){this.y=this.s=e,this.setAlpha(t),this.initialized=!1}filter(t){var e;return this.initialized?e=this.a*t+(1-this.a)*this.s:(e=t,this.initialized=!0),this.y=t,this.s=e,e}filterWithAlpha(t,e){return this.setAlpha(e),this.filter(t)}hasLastRawValue(){return this.initialized}lastRawValue(){return this.y}reset(){this.initialized=!1}}class s{alpha(t){var e=1/this.freq;return 1/(1+1/(2*Math.PI*t)/e)}setFrequency(t){t<=0&&console.log("freq should be >0"),this.freq=t}setMinCutoff(t){t<=0&&console.log("mincutoff should be >0"),this.mincutoff=t}setBeta(t){this.beta_=t}setDerivateCutoff(t){t<=0&&console.log("dcutoff should be >0"),this.dcutoff=t}constructor(t,e=1,s=0,h=1){this.setFrequency(t),this.setMinCutoff(e),this.setBeta(s),this.setDerivateCutoff(h),this.x=new i(this.alpha(e)),this.dx=new i(this.alpha(h)),this.lasttime=void 0}reset(){this.x.reset(),this.dx.reset(),this.lasttime=void 0}filter(t,e=undefined){null!=this.lasttime&&null!=e&&(this.freq=1/(e-this.lasttime)),this.lasttime=e;var i=this.x.hasLastRawValue()?(t-this.x.lastRawValue())*this.freq:0,s=this.dx.filterWithAlpha(i,this.alpha(this.dcutoff)),h=this.mincutoff+this.beta_*Math.abs(s);return this.x.filterWithAlpha(t,this.alpha(h))}}return e})()));
     </script>
     <script>
+      // Absolute freeze component - completely locks video in place
+      AFRAME.registerComponent('video-freeze', {
+        init: function() {
+          this.frozenPosition = null;
+          this.frozenRotation = null;
+          this.frozenScale = null;
+          this.frameCount = 0;
+        },
+        
+        tick: function(time, dt) {
+          if (!this.el.object3D.visible) return;
+          
+          this.frameCount++;
+          
+          // Freeze after 2 frames
+          if (this.frameCount === 2 && !this.frozenPosition) {
+            this.frozenPosition = this.el.object3D.position.clone();
+            this.frozenRotation = this.el.object3D.quaternion.clone();
+            this.frozenScale = this.el.object3D.scale.clone();
+            console.log('Video completely frozen');
+          }
+          
+          // Apply absolute freeze - no movement allowed
+          if (this.frozenPosition) {
+            this.el.object3D.position.copy(this.frozenPosition);
+            this.el.object3D.quaternion.copy(this.frozenRotation);
+            this.el.object3D.scale.copy(this.frozenScale);
+            this.el.object3D.updateMatrix();
+          }
+        }
+      });
+
       AFRAME.registerComponent('one-euro-smoother', {
         schema: {
           // Lower value = more smoothing, less responsive
@@ -671,13 +703,14 @@ export async function GET(
     >
       <a-assets>
         <video
-          id="videoTexture"
+          id="arVideo"
           src="${experience.video_url}"
           loop
           muted
           playsinline
           crossorigin="anonymous"
-          preload="auto"
+          preload="metadata"
+          webkit-playsinline
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
       </a-assets>
@@ -701,9 +734,9 @@ export async function GET(
           height="1.125"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1"
+          material="src: #arVideo; shader: standard; side: double"
           visible="false"
-          one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.005; freq: 10; mincutoff: 0.01; beta: 0.05; dcutoff: 1.0; posDeadzone: 0.00001; rotDeadzoneDeg: 0.05; emaFactor: 0.01; throttleHz: 8; medianWindow: 11; zeroRoll: true; minMovementThreshold: 0.000001"
+          video-freeze
         ></a-plane>
       </a-entity>
     </a-scene>
