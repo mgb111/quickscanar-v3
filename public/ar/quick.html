@@ -48,7 +48,7 @@
         <a-plane
           id="videoPlane"
           width="1"
-          height="0.5625"
+          height="1"
           position="0 0 0.01"
           material="shader: flat; src: #videoTexture"
         ></a-plane>
@@ -68,8 +68,19 @@
         function updateVideoAspectRatio() {
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
             const aspectRatio = video.videoWidth / video.videoHeight;
-            const planeWidth = 1; // Keep width constant
-            const planeHeight = planeWidth / aspectRatio;
+            
+            // Calculate dimensions to preserve aspect ratio
+            let planeWidth, planeHeight;
+            
+            if (aspectRatio > 1) {
+              // Landscape video - keep width at 1, adjust height
+              planeWidth = 1;
+              planeHeight = 1 / aspectRatio;
+            } else {
+              // Portrait or square video - keep height at 1, adjust width
+              planeHeight = 1;
+              planeWidth = aspectRatio;
+            }
             
             videoPlane.setAttribute('width', planeWidth);
             videoPlane.setAttribute('height', planeHeight);
@@ -77,12 +88,29 @@
             console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
             console.log(`Aspect ratio: ${aspectRatio}`);
             console.log(`Plane dimensions: ${planeWidth}x${planeHeight}`);
+          } else {
+            console.log('Video metadata not ready yet');
           }
         }
         
+        // Multiple event listeners to ensure we catch the video metadata
         if (video) {
-          video.addEventListener('loadedmetadata', updateVideoAspectRatio);
-          video.addEventListener('canplay', updateVideoAspectRatio);
+          video.addEventListener('loadstart', () => console.log('Video load started'));
+          video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+            updateVideoAspectRatio();
+          });
+          video.addEventListener('canplay', () => {
+            console.log('Video can play');
+            updateVideoAspectRatio();
+          });
+          video.addEventListener('loadeddata', () => {
+            console.log('Video data loaded');
+            updateVideoAspectRatio();
+          });
+          
+          // Force load the video
+          video.load();
         }
         
         if (scene) {
