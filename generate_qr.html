@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Smaller QR Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        canvas { border: 1px solid #ccc; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; background: #007cba; color: white; border: none; cursor: pointer; }
+        button:hover { background: #005a87; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Smaller QR Code for Demo Photo</h1>
+        
+        <div>
+            <label for="qrUrl">QR Code URL:</label><br>
+            <input type="text" id="qrUrl" value="https://your-domain.com/ar/quick.html" style="width: 400px; padding: 5px;">
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <label for="qrSize">QR Code Size:</label>
+            <select id="qrSize">
+                <option value="100">100x100</option>
+                <option value="120" selected>120x120</option>
+                <option value="150">150x150</option>
+            </select>
+        </div>
+        
+        <button onclick="generateQR()">Generate QR Code</button>
+        <button onclick="downloadQR()">Download QR Code</button>
+        
+        <div style="margin: 20px 0;">
+            <canvas id="qrCanvas"></canvas>
+        </div>
+        
+        <div>
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Update the URL above to match your actual domain</li>
+                <li>Select desired QR code size</li>
+                <li>Click "Generate QR Code"</li>
+                <li>Click "Download QR Code" to save it</li>
+                <li>Use image editing software to overlay this smaller QR code on the demo photo</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function generateQR() {
+            const url = document.getElementById('qrUrl').value;
+            const size = parseInt(document.getElementById('qrSize').value);
+            const canvas = document.getElementById('qrCanvas');
+            
+            QRCode.toCanvas(canvas, url, {
+                width: size,
+                height: size,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) console.error(error);
+                console.log('QR code generated successfully!');
+            });
+        }
+        
+        function downloadQR() {
+            const canvas = document.getElementById('qrCanvas');
+            const link = document.createElement('a');
+            link.download = 'small-qr-code.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Generate initial QR code
+        window.onload = function() {
+            generateQR();
+        };
+    </script>
+</body>
+</html>

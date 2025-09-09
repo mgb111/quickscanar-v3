@@ -2,6 +2,57 @@
 
 import Link from "next/link"
 import Header from "@/components/Header"
+import { useEffect, useRef } from "react"
+
+function QRCodeComponent() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  
+  useEffect(() => {
+    if (canvasRef.current) {
+      // Simple QR code pattern for demo - replace with actual QR generation
+      const canvas = canvasRef.current
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        // Create a simple QR-like pattern
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, 80, 80)
+        ctx.fillStyle = 'black'
+        
+        // Draw QR pattern (simplified)
+        const pattern = [
+          [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1],
+          [1,0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,1],
+          [1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1],
+          [1,0,1,1,1,0,1,0,0,1,1,0,1,1,1,0,1],
+          [1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1],
+          [1,0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,1],
+          [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1],
+          [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+          [1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,1,1],
+          [0,1,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0],
+          [1,0,1,0,1,1,1,0,1,0,1,1,0,1,0,1,1],
+          [0,1,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0],
+          [1,0,1,0,1,1,1,0,1,0,1,1,0,1,0,1,1],
+          [0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0],
+          [1,1,1,1,1,1,1,0,1,0,1,1,0,1,0,1,1],
+          [1,0,0,0,0,0,1,0,0,1,0,0,1,0,1,0,0],
+          [1,1,1,1,1,1,1,0,1,0,1,1,0,1,0,1,1]
+        ]
+        
+        const cellSize = 4
+        pattern.forEach((row, y) => {
+          row.forEach((cell, x) => {
+            if (cell) {
+              ctx.fillRect(x * cellSize + 2, y * cellSize + 2, cellSize, cellSize)
+            }
+          })
+        })
+      }
+    }
+  }, [])
+  
+  return <canvas ref={canvasRef} width={80} height={80} className="rounded" />
+}
 
 export default function DemoPage() {
   return (
@@ -16,14 +67,18 @@ export default function DemoPage() {
         </p>
 
         <div className="grid gap-8">
-          <div>
+          <div className="relative">
             <img
               src="/demo-photo.png"
               alt="Demo photo with QR code"
               className="w-full h-auto rounded-2xl border-2 border-black shadow"
             />
+            {/* Smaller QR Code Overlay */}
+            <div className="absolute top-4 right-4 bg-white p-2 rounded-lg shadow-lg border border-gray-200">
+              <QRCodeComponent />
+            </div>
             <p className="text-sm text-black/60 mt-2">
-              If the image doesn’t load, please upload your file to <code>public/demo-photo.png</code>.
+              Scan the small QR code in the top-right corner with your phone camera.
             </p>
           </div>
 
