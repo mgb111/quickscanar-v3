@@ -60,6 +60,7 @@
           height="1"
           position="0 0 0.01"
           material="shader: flat; src: #videoTexture"
+          visible="false"
         ></a-plane>
       </a-entity>
     </a-scene>
@@ -138,10 +139,21 @@
             if (video) {
               video.play().catch(e => console.log("Video play error:", e));
             }
+            // Show the video plane
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', true);
+            }
           });
           
           target.addEventListener("targetLost", () => {
-            console.log("Target lost");
+            console.log("Target lost - pausing video");
+            if (video) {
+              video.pause();
+            }
+            // Hide the video plane
+            if (videoPlane) {
+              videoPlane.setAttribute('visible', false);
+            }
           });
         }
         
