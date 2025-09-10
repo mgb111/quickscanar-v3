@@ -48,10 +48,10 @@
         <a-video
           id="videoPlane"
           src="#videoTexture"
-          width="0.56"
+          width="0.6"
           height="1"
           position="0 0 0.01"
-          rotation="90 0 0"
+          rotation="0 0 0"
           visible="false"
         ></a-video>
       </a-entity>
@@ -69,28 +69,16 @@
         // Function to force portrait orientation
         function updateVideoAspectRatio() {
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
-            // Always force portrait orientation (9:16 aspect ratio)
-            const targetAspect = 9/16;
-            let scaleX, scaleY;
+            // Force portrait by swapping width and height
+            const videoAspect = video.videoHeight / video.videoWidth; // Inverted for portrait
             
-            // Calculate scaling to fit the video in portrait mode
-            const videoAspect = video.videoWidth / video.videoHeight;
+            // Set the video plane scale to maintain aspect ratio
+            videoPlane.setAttribute('width', videoAspect);
+            videoPlane.setAttribute('height', 1);
             
-            if (videoAspect > targetAspect) {
-              // Video is wider than target aspect ratio
-              scaleX = targetAspect / videoAspect;
-              scaleY = 1;
-            } else {
-              // Video is taller than target aspect ratio
-              scaleX = 1;
-              scaleY = videoAspect / targetAspect;
-            }
-            
-            // Apply the scaling
-            videoPlane.object3D.scale.set(scaleX, scaleY, 1);
-            console.log('Forcing portrait orientation with scaling:', scaleX, scaleY);
-            console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
-            console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}`);
+            console.log('Video forced to portrait orientation');
+            console.log(`Original dimensions: ${video.videoWidth}x${video.videoHeight}`);
+            console.log(`Display dimensions: ${videoAspect.toFixed(2)}x1`);
           } else {
             console.log('Video metadata not ready yet');
           }
