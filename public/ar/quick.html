@@ -51,7 +51,6 @@
           width="1"
           height="1"
           position="0 0 0.01"
-          rotation="90 0 0"
           visible="false"
         ></a-video>
       </a-entity>
@@ -69,15 +68,19 @@
         // Function to update video plane dimensions based on video aspect ratio
         function updateVideoAspectRatio() {
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orientation = urlParams.get('orientation');
+
             let videoWidth = video.videoWidth;
             let videoHeight = video.videoHeight;
 
-            // Check for rotation attribute on the video plane
-            const rotation = videoPlane.getAttribute('rotation');
-            // If rotated by 90 or -90 degrees, swap width and height
-            if (rotation && (rotation.x === 90 || rotation.x === -90)) {
-              [videoWidth, videoHeight] = [videoHeight, videoWidth];
-              console.log('Video dimensions swapped due to rotation');
+            // If orientation is portrait, rotate the plane and swap dimensions for aspect ratio calculation
+            if (orientation === 'portrait') {
+              videoPlane.setAttribute('rotation', '90 0 0');
+              [videoWidth, videoHeight] = [videoHeight, videoWidth]; // Swap dimensions
+              console.log('Portrait orientation detected, swapping video dimensions.');
+            } else {
+              videoPlane.setAttribute('rotation', '0 0 0');
             }
 
             const aspectRatio = videoWidth / videoHeight;
