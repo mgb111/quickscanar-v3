@@ -804,7 +804,7 @@ export async function GET(
             } else {
               // Portrait or square video - scale to height
               height = markerHeight * scale;
-              width = (markerHeight * videoAspect) * scale;
+              width = markerHeight * videoAspect * scale;
             }
             
             // Update video plane
