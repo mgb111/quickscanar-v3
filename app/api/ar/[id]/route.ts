@@ -911,43 +911,13 @@ export async function GET(
         let targetLostTimeout = null;
         let isTargetVisible = false;
         
-        // Target lost handler
-        function handleTargetLost() {
-          console.log('Target lost!');
-          isTargetVisible = false;
-          
-          // Track target lost analytics
-          if (window.trackAREvent) {
-            window.trackAREvent('target_lost', {
-              visibilityDuration: Date.now() - sessionStartTime,
-              targetIndex: 0
-            });
-          }
-          
-          // Hide video and background immediately
-          if (backgroundPlane) {
-            backgroundPlane.setAttribute('visible', 'false');
-            backgroundPlane.removeAttribute('animation');
-          }
-          
-          if (videoPlane) {
-            videoPlane.setAttribute('visible', 'false');
-            videoPlane.removeAttribute('animation');
-            videoPlane.setAttribute('material', 'opacity', '0');
-          }
-          
-          if (video) {
-            video.pause();
-            video.currentTime = 0;
-          }
-        }
+        // Custom stabilization logic removed to rely on MindAR's built-in filtering.
 
         if (target) {
           console.log('Target element found, adding event listeners');
           
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
-            isTargetVisible = true;
             
             // Track target recognition analytics
             if (window.trackAREvent) {
@@ -957,28 +927,74 @@ export async function GET(
               });
             }
             
-            // Show video and background immediately
-            if (backgroundPlane) {
-              backgroundPlane.setAttribute('visible', 'true');
-              backgroundPlane.removeAttribute('animation');
-            }
-            
-            if (videoPlane) {
-              videoPlane.setAttribute('visible', 'true');
-              videoPlane.removeAttribute('animation');
-              videoPlane.setAttribute('material', 'opacity', '1');
-            }
-            
-            // Play video if not already playing
-            if (video && video.paused) {
-              video.play().catch(e => console.error('Video play error:', e));
-            }
-            
             // Clear any pending lost timeout
             if (targetLostTimeout) {
               clearTimeout(targetLostTimeout);
               targetLostTimeout = null;
             }
+            
+            // Debounce target found to reduce flickering
+            if (targetFoundTimeout) clearTimeout(targetFoundTimeout);
+            targetFoundTimeout = setTimeout(() => {
+              if (!isTargetVisible) {
+                isTargetVisible = true;
+                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
+                if (videoPlane) {
+                  videoPlane.setAttribute('visible', 'true');
+                  // Add smooth animation for appearance
+                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                }
+                if (video) {
+                  video.currentTime = 0; // Restart video
+                  video.muted = false; // Enable audio when target is found
+                  video.play().catch(() => {});
+                }
+                showStatus('Target Found!', 'AR content should be visible');
+                setTimeout(hideStatus, 1500);
+              }
+            }, 100); // 100ms debounce
+          });
+
+          target.addEventListener('targetLost', () => {
+            console.log('Target lost!');
+            
+            // Track target lost analytics
+            if (window.trackAREvent) {
+              window.trackAREvent('target_lost', {
+                targetIndex: 0,
+                sessionDuration: Date.now() - sessionStartTime
+              });
+            }
+            
+            // Clear any pending found timeout
+            if (targetFoundTimeout) {
+              clearTimeout(targetFoundTimeout);
+              targetFoundTimeout = null;
+            }
+            
+            // Debounce target lost to reduce flickering
+            if (targetLostTimeout) clearTimeout(targetLostTimeout);
+            targetLostTimeout = setTimeout(() => {
+              if (isTargetVisible) {
+                isTargetVisible = false;
+                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
+                if (videoPlane) {
+                  // Add smooth animation for disappearance
+                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
+                  setTimeout(() => {
+                    videoPlane.setAttribute('visible', 'false');
+                  }, 200);
+                }
+                if (video) {
+                  video.pause();
+                  video.muted = true; // Mute audio when target is lost
+                }
+                showStatus('Target Lost', 'Point camera at your marker again');
+              }
+            }, 300); // 300ms debounce for lost (longer to prevent flickering)
+          });
+        } else {
+          console.error('Target element not found!');
         }
 
         // Tap to start to satisfy autoplay/camera permissions
@@ -1006,13 +1022,6 @@ export async function GET(
             }, 500);
             
           }, { once: true });
-
-          // Add target lost event listener
-          target.addEventListener('targetLost', () => {
-            // Debounce target lost to prevent flickering
-            if (targetLostTimeout) clearTimeout(targetLostTimeout);
-            targetLostTimeout = setTimeout(handleTargetLost, 50);
-          });
 
           // Mobile touch improvements
           if ('ontouchstart' in window) {
