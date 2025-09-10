@@ -49,7 +49,7 @@
           id="videoPlane"
           src="#videoTexture"
           width="1"
-          height="0.5625"
+          height="1"
           position="0 0 0.01"
           visible="false"
         ></a-video>
@@ -70,25 +70,24 @@
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
             const aspectRatio = video.videoWidth / video.videoHeight;
             
-            let planeWidth, planeHeight;
+            let scaleX, scaleY;
             
             if (aspectRatio < 1) {
               // Portrait video (height > width)
-              planeHeight = 1;
-              planeWidth = aspectRatio;
+              scaleX = aspectRatio;
+              scaleY = 1;
             } else {
               // Landscape video (width >= height)
-              planeWidth = 1;
-              planeHeight = 1 / aspectRatio;
+              scaleX = 1;
+              scaleY = 1 / aspectRatio;
             }
             
-            // Update a-video dimensions directly
-            videoPlane.setAttribute('width', planeWidth);
-            videoPlane.setAttribute('height', planeHeight);
+            // Use scale instead of width/height attributes
+            videoPlane.object3D.scale.set(scaleX, scaleY, 1);
             
             console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
             console.log(`Aspect ratio: ${aspectRatio}`);
-            console.log(`Video plane dimensions: ${planeWidth}x${planeHeight}`);
+            console.log(`Video plane scale: ${scaleX}x${scaleY}`);
           } else {
             console.log('Video metadata not ready yet');
           }
