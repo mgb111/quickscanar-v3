@@ -697,8 +697,8 @@ export async function GET(
 
         <a-plane
           id="videoPlane"
-          width="2"
-          height="1.125"
+          width="1"
+          height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat"
@@ -782,6 +782,41 @@ export async function GET(
 
       nukeLoadingScreens();
 
+      // Function to update video plane dimensions based on video aspect ratio
+      function updateVideoAspectRatio(videoElement, videoPlane) {
+        if (!videoElement || !videoPlane) return;
+        
+        const updateDimensions = () => {
+          if (videoElement.videoWidth && videoElement.videoHeight) {
+            const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+            // Keep height at 1, adjust width to maintain aspect ratio
+            videoPlane.setAttribute('width', aspectRatio);
+            videoPlane.setAttribute('height', 1);
+            
+            // Also update the background plane to match
+            const backgroundPlane = document.querySelector('#backgroundPlane');
+            if (backgroundPlane) {
+              backgroundPlane.setAttribute('width', aspectRatio);
+              backgroundPlane.setAttribute('height', 1);
+            }
+            
+            console.log('Video aspect ratio set to:', aspectRatio.toFixed(2));
+            console.log('Original dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+          }
+        };
+        
+        // Try to update dimensions immediately if video is already loaded
+        if (videoElement.readyState >= 1) { // HAVE_ENOUGH_DATA
+          updateDimensions();
+        } else {
+          // Or wait for metadata to be loaded
+          videoElement.addEventListener('loadedmetadata', updateDimensions);
+        }
+        
+        // Also update on resize events if needed
+        videoElement.addEventListener('resize', updateDimensions);
+      }
+
       document.addEventListener("DOMContentLoaded", async () => {
         console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
@@ -854,6 +889,13 @@ export async function GET(
           scene.addEventListener('arReady', () => {
             console.log('MindAR arReady');
             scene.style.opacity = '1';
+            
+            if (video) {
+              video.play().then(() => {
+                // After video starts playing, update the aspect ratio
+                updateVideoAspectRatio(video, videoPlane);
+              }).catch(e => console.error('Video play error:', e));
+            }
             
             // Custom stabilization logic removed.
           });
