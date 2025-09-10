@@ -793,8 +793,8 @@ export async function GET(
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Calculate scale to make video slightly larger than marker (5% larger)
-            const scale = 1.05; // 5% larger than marker
+            // Calculate scale to make video larger than marker (20% larger)
+            const scale = 1.2; // 20% larger than marker
             let width, height;
             
             if (videoAspect > 1) {
@@ -811,11 +811,11 @@ export async function GET(
             videoPlane.setAttribute('width', width);
             videoPlane.setAttribute('height', height);
             
-            // Update background plane to be slightly larger than video (10% larger than marker)
+            // Update background plane to be larger than video (25% larger than marker)
             const backgroundPlane = document.querySelector('#backgroundPlane');
             if (backgroundPlane) {
-              backgroundPlane.setAttribute('width', markerWidth * 1.1);
-              backgroundPlane.setAttribute('height', markerHeight * 1.1);
+              backgroundPlane.setAttribute('width', markerWidth * 1.25);
+              backgroundPlane.setAttribute('height', markerHeight * 1.25);
             }
             
             console.log('Video dimensions set to:', width.toFixed(2), 'x', height.toFixed(2));
