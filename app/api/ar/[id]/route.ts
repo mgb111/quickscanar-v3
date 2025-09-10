@@ -687,8 +687,8 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001"
         <a-plane
           id="backgroundPlane"
-          width="4"
-          height="2.25"
+          width="2"
+          height="1.125"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -697,8 +697,8 @@ export async function GET(
 
         <a-plane
           id="videoPlane"
-          width="2"
-          height="2"
+          width="1"
+          height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat"
@@ -789,16 +789,15 @@ export async function GET(
         const updateDimensions = () => {
           if (videoElement.videoWidth && videoElement.videoHeight) {
             const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-            // Double the size while maintaining aspect ratio
-            const scale = 2; // Doubling the size
-            videoPlane.setAttribute('width', aspectRatio * scale);
-            videoPlane.setAttribute('height', 1 * scale);
+            // Keep height at 1, adjust width to maintain aspect ratio
+            videoPlane.setAttribute('width', aspectRatio);
+            videoPlane.setAttribute('height', 1);
             
-            // Also update the background plane to match with a bit of padding
+            // Also update the background plane to match
             const backgroundPlane = document.querySelector('#backgroundPlane');
             if (backgroundPlane) {
-              backgroundPlane.setAttribute('width', aspectRatio * scale * 1.05); // 5% padding
-              backgroundPlane.setAttribute('height', 1 * scale * 1.05);
+              backgroundPlane.setAttribute('width', aspectRatio * 1.1); // 10% padding
+              backgroundPlane.setAttribute('height', 1.1);
             }
             
             console.log('Video aspect ratio set to:', aspectRatio.toFixed(2));
