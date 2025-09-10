@@ -687,8 +687,8 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001"
         <a-plane
           id="backgroundPlane"
-          width="2"
-          height="1.125"
+          width="1"
+          height="1"
           position="0 0 0.005"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="color: #000000"
@@ -782,26 +782,42 @@ export async function GET(
 
       nukeLoadingScreens();
 
-      // Function to update video plane dimensions based on video aspect ratio
+      // Function to update video plane to match marker dimensions
       function updateVideoAspectRatio(videoElement, videoPlane) {
         if (!videoElement || !videoPlane) return;
         
         const updateDimensions = () => {
           if (videoElement.videoWidth && videoElement.videoHeight) {
-            const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-            // Keep height at 1, adjust width to maintain aspect ratio
-            videoPlane.setAttribute('width', aspectRatio);
-            videoPlane.setAttribute('height', 1);
+            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+            // Marker dimensions (1.0 x 1.0 by default in MindAR)
+            const markerWidth = 1.0;
+            const markerHeight = 1.0;
             
-            // Also update the background plane to match
-            const backgroundPlane = document.querySelector('#backgroundPlane');
-            if (backgroundPlane) {
-              backgroundPlane.setAttribute('width', aspectRatio * 1.1); // 10% padding
-              backgroundPlane.setAttribute('height', 1.1);
+            // Calculate scale to fit video within marker bounds
+            let width, height;
+            if (videoAspect > 1) {
+              // Landscape video
+              width = markerWidth;
+              height = markerWidth / videoAspect;
+            } else {
+              // Portrait or square video
+              height = markerHeight;
+              width = markerHeight * videoAspect;
             }
             
-            console.log('Video aspect ratio set to:', aspectRatio.toFixed(2));
-            console.log('Original dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+            // Update video plane
+            videoPlane.setAttribute('width', width);
+            videoPlane.setAttribute('height', height);
+            
+            // Update background plane to match marker exactly
+            const backgroundPlane = document.querySelector('#backgroundPlane');
+            if (backgroundPlane) {
+              backgroundPlane.setAttribute('width', markerWidth);
+              backgroundPlane.setAttribute('height', markerHeight);
+            }
+            
+            console.log('Video dimensions set to:', width.toFixed(2), 'x', height.toFixed(2));
+            console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
           }
         };
         
