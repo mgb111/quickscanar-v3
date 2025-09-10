@@ -881,17 +881,11 @@ export async function GET(
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
 
+          // We'll handle the dimensions in updateVideoAspectRatio
           video.addEventListener('loadedmetadata', () => {
             console.log('Video metadata loaded');
-            const ratio = video.videoWidth / video.videoHeight || (16/9);
-            const baseWidth = 2.0; // 200% of marker width
-            const planeHeight = baseWidth / ratio;
-            
-            // Set video plane dimensions to match video aspect ratio
-            videoPlane.setAttribute('width', baseWidth);
-            videoPlane.setAttribute('height', planeHeight);
-            backgroundPlane.setAttribute('width', baseWidth);
-            backgroundPlane.setAttribute('height', planeHeight);
+            // Trigger the aspect ratio update
+            updateVideoAspectRatio(video, videoPlane);
             
             console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight, 'ratio:', ratio, 'plane height:', planeHeight);
             
