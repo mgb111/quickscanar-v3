@@ -793,27 +793,29 @@ export async function GET(
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Calculate scale to fit video within marker bounds
+            // Calculate scale to make video slightly larger than marker (5% larger)
+            const scale = 1.05; // 5% larger than marker
             let width, height;
+            
             if (videoAspect > 1) {
-              // Landscape video
-              width = markerWidth;
-              height = markerWidth / videoAspect;
+              // Landscape video - scale to width
+              width = markerWidth * scale;
+              height = (markerWidth / videoAspect) * scale;
             } else {
-              // Portrait or square video
-              height = markerHeight;
-              width = markerHeight * videoAspect;
+              // Portrait or square video - scale to height
+              height = markerHeight * scale;
+              width = (markerHeight * videoAspect) * scale;
             }
             
             // Update video plane
             videoPlane.setAttribute('width', width);
             videoPlane.setAttribute('height', height);
             
-            // Update background plane to match marker exactly
+            // Update background plane to be slightly larger than video (10% larger than marker)
             const backgroundPlane = document.querySelector('#backgroundPlane');
             if (backgroundPlane) {
-              backgroundPlane.setAttribute('width', markerWidth);
-              backgroundPlane.setAttribute('height', markerHeight);
+              backgroundPlane.setAttribute('width', markerWidth * 1.1);
+              backgroundPlane.setAttribute('height', markerHeight * 1.1);
             }
             
             console.log('Video dimensions set to:', width.toFixed(2), 'x', height.toFixed(2));
