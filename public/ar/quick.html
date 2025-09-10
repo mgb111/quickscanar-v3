@@ -48,9 +48,10 @@
         <a-video
           id="videoPlane"
           src="#videoTexture"
-          width="1"
+          width="0.56"
           height="1"
           position="0 0 0.01"
+          rotation="90 0 0"
           visible="false"
         ></a-video>
       </a-entity>
@@ -65,46 +66,31 @@
         const target = document.querySelector("#target");
         const scene = document.querySelector("a-scene");
         
-        // Function to update video plane dimensions based on video aspect ratio
+        // Function to force portrait orientation
         function updateVideoAspectRatio() {
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
-            let videoWidth = video.videoWidth;
-            let videoHeight = video.videoHeight;
-            
-            // Automatically detect if video is portrait (height > width)
-            const isPortrait = video.videoHeight > video.videoWidth;
-            
-            if (isPortrait) {
-              // For portrait videos, rotate the plane 90 degrees and swap dimensions for scaling
-              videoPlane.setAttribute('rotation', '90 0 0');
-              [videoWidth, videoHeight] = [videoHeight, videoWidth]; // Swap for aspect ratio calculation
-              console.log('Portrait video detected, applying rotation and dimension swap.');
-            } else {
-              // For landscape videos, no rotation needed
-              videoPlane.setAttribute('rotation', '0 0 0');
-              console.log('Landscape video detected, no rotation applied.');
-            }
-
-            const aspectRatio = videoWidth / videoHeight;
-
+            // Always force portrait orientation (9:16 aspect ratio)
+            const targetAspect = 9/16;
             let scaleX, scaleY;
-
-            if (aspectRatio < 1) {
-              // Portrait video (height > width)
-              scaleX = aspectRatio;
+            
+            // Calculate scaling to fit the video in portrait mode
+            const videoAspect = video.videoWidth / video.videoHeight;
+            
+            if (videoAspect > targetAspect) {
+              // Video is wider than target aspect ratio
+              scaleX = targetAspect / videoAspect;
               scaleY = 1;
             } else {
-              // Landscape video (width >= height)
+              // Video is taller than target aspect ratio
               scaleX = 1;
-              scaleY = 1 / aspectRatio;
+              scaleY = videoAspect / targetAspect;
             }
-
-            // Use scale instead of width/height attributes
+            
+            // Apply the scaling
             videoPlane.object3D.scale.set(scaleX, scaleY, 1);
-
-            console.log(`Effective video dimensions: ${videoWidth}x${videoHeight}`);
-            console.log(`Aspect ratio: ${aspectRatio}`);
-            console.log(`Video plane scale: ${scaleX}x${scaleY}`);
+            console.log('Forcing portrait orientation with scaling:', scaleX, scaleY);
+            console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
+            console.log(`Video aspect ratio: ${videoAspect.toFixed(2)}`);
           } else {
             console.log('Video metadata not ready yet');
           }
