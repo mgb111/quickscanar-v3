@@ -70,17 +70,25 @@
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
             const aspectRatio = video.videoWidth / video.videoHeight;
             
-            // Calculate dimensions to preserve exact aspect ratio
-            const baseWidth = 1;
-            const calculatedHeight = baseWidth / aspectRatio;
+            let planeWidth, planeHeight;
+            
+            if (aspectRatio < 1) {
+              // Portrait video (height > width)
+              planeHeight = 1;
+              planeWidth = aspectRatio;
+            } else {
+              // Landscape video (width >= height)
+              planeWidth = 1;
+              planeHeight = 1 / aspectRatio;
+            }
             
             // Update a-video dimensions directly
-            videoPlane.setAttribute('width', baseWidth);
-            videoPlane.setAttribute('height', calculatedHeight);
+            videoPlane.setAttribute('width', planeWidth);
+            videoPlane.setAttribute('height', planeHeight);
             
             console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
             console.log(`Aspect ratio: ${aspectRatio}`);
-            console.log(`Video plane dimensions: ${baseWidth}x${calculatedHeight}`);
+            console.log(`Video plane dimensions: ${planeWidth}x${planeHeight}`);
           } else {
             console.log('Video metadata not ready yet');
           }
@@ -116,15 +124,22 @@
           });
         }
         
+        // Add debug logging for target events
+        let isTargetFound = false;
+        
         if (target) {
           target.addEventListener("targetFound", () => {
-            console.log("Target found - playing video and showing plane");
+            console.log("*** TARGET FOUND EVENT ***");
+            isTargetFound = true;
+            
             if (video) {
-              video.currentTime = 0; // Reset to start
+              console.log("Playing video...");
+              video.currentTime = 0;
               video.play().catch(e => console.log("Video play error:", e));
             }
-            // Show the video plane
+            
             if (videoPlane) {
+              console.log("Showing video plane...");
               videoPlane.setAttribute('visible', true);
               videoPlane.object3D.visible = true;
               videoPlane.object3D.scale.set(1, 1, 1);
@@ -132,18 +147,53 @@
           });
           
           target.addEventListener("targetLost", () => {
-            console.log("Target lost - pausing video and hiding plane");
+            console.log("*** TARGET LOST EVENT ***");
+            isTargetFound = false;
+            
             if (video) {
+              console.log("Pausing video...");
               video.pause();
+              video.currentTime = 0;
             }
-            // Hide the video plane completely
+            
             if (videoPlane) {
+              console.log("Hiding video plane...");
               videoPlane.setAttribute('visible', false);
               videoPlane.object3D.visible = false;
               videoPlane.object3D.scale.set(0, 0, 0);
             }
           });
         }
+        
+        // Force check target state every 100ms as backup
+        setInterval(() => {
+          if (target && target.object3D.visible !== isTargetFound) {
+            console.log(`Target visibility mismatch - forcing ${target.object3D.visible ? 'show' : 'hide'}`);
+            if (target.object3D.visible && !isTargetFound) {
+              // Target is visible but we think it's lost - force show
+              if (video && video.paused) {
+                video.play().catch(e => console.log("Force play error:", e));
+              }
+              if (videoPlane) {
+                videoPlane.setAttribute('visible', true);
+                videoPlane.object3D.visible = true;
+                videoPlane.object3D.scale.set(1, 1, 1);
+              }
+              isTargetFound = true;
+            } else if (!target.object3D.visible && isTargetFound) {
+              // Target is hidden but we think it's found - force hide
+              if (video && !video.paused) {
+                video.pause();
+              }
+              if (videoPlane) {
+                videoPlane.setAttribute('visible', false);
+                videoPlane.object3D.visible = false;
+                videoPlane.object3D.scale.set(0, 0, 0);
+              }
+              isTargetFound = false;
+            }
+          }
+        }, 100);
         
         // Request camera permissions explicitly
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
