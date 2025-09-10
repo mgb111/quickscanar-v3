@@ -803,14 +803,15 @@ export async function GET(
               videoWidth = markerWidth * videoScale;
               videoHeight = videoWidth / videoAspect;
             } else {
-              // Portrait or square video - scale to height
-              videoHeight = markerHeight * videoScale;
+              // Portrait or square video - use larger scale for better visibility
+              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              videoHeight = markerHeight * portraitScale;
               videoWidth = videoHeight * videoAspect;
             }
             
             // Ensure minimum dimensions
-            videoWidth = Math.max(0.1, videoWidth);
-            videoHeight = Math.max(0.1, videoHeight);
+            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
+            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
             
             // Get the target element that contains the video plane
             const target = document.querySelector('#target');
