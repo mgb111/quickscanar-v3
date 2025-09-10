@@ -797,14 +797,16 @@ export async function GET(
             const scaleFactor = 1.2; // 20% larger than marker
             let videoWidth, videoHeight;
             
-            // Calculate dimensions to maintain aspect ratio while being 20% larger than marker
+            // Calculate dimensions with different scaling for portrait and landscape
             if (videoAspect >= 1) {
-              // Landscape or square video - scale width to 1.2x marker width
-              videoWidth = markerWidth * scaleFactor;
+              // Landscape or square video - scale width to 1.2x marker width (20% larger)
+              const landscapeScale = 1.2;
+              videoWidth = markerWidth * landscapeScale;
               videoHeight = videoWidth / videoAspect;
             } else {
-              // Portrait video - scale height to 1.2x marker height
-              videoHeight = markerHeight * scaleFactor;
+              // Portrait video - scale height to 1.6x marker height (60% larger)
+              const portraitScale = 1.6;
+              videoHeight = markerHeight * portraitScale;
               videoWidth = videoHeight * videoAspect;
             }
             
@@ -822,8 +824,9 @@ export async function GET(
               backgroundPlane.setAttribute('height', videoHeight * 1.1);
               
               // Log the dimensions for debugging
+              const isPortrait = videoAspect < 1;
               console.log('Marker dimensions: 1.0 x 1.0');
-              console.log('Video dimensions (20% larger):', 
+              console.log('Video dimensions (' + (isPortrait ? '60%' : '20%') + ' larger):', 
                 videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
               console.log('Background dimensions (10% larger than video):', 
                 (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
