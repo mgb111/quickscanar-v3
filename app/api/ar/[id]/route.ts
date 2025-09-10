@@ -797,15 +797,20 @@ export async function GET(
             const videoScale = 1.2; // 20% larger than marker
             let videoWidth, videoHeight;
             
+            // For both portrait and landscape, we'll scale based on the video's natural orientation
             if (videoAspect > 1) {
               // Landscape video - scale to width
               videoWidth = markerWidth * videoScale;
-              videoHeight = markerWidth / videoAspect * videoScale;
+              videoHeight = videoWidth / videoAspect;
             } else {
               // Portrait or square video - scale to height
               videoHeight = markerHeight * videoScale;
-              videoWidth = markerHeight * videoAspect * videoScale;
+              videoWidth = videoHeight * videoAspect;
             }
+            
+            // Ensure minimum dimensions
+            videoWidth = Math.max(0.1, videoWidth);
+            videoHeight = Math.max(0.1, videoHeight);
             
             // Get the target element that contains the video plane
             const target = document.querySelector('#target');
@@ -887,7 +892,8 @@ export async function GET(
             // Trigger the aspect ratio update
             updateVideoAspectRatio(video, videoPlane);
             
-            console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight, 'ratio:', ratio, 'plane height:', planeHeight);
+            // Log video dimensions for debugging
+            console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
             
             // Enable hardware acceleration for video
             video.style.transform = 'translateZ(0)';
