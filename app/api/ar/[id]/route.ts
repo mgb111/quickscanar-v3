@@ -793,29 +793,37 @@ export async function GET(
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Calculate scale to make video larger than marker (20% larger)
-            const scale = 1.2; // 20% larger than marker
-            let width, height;
+            // Calculate video dimensions to be 20% larger than marker
+            const videoScale = 1.2; // 20% larger than marker
+            let videoWidth, videoHeight;
             
             if (videoAspect > 1) {
               // Landscape video - scale to width
-              width = markerWidth * scale;
-              height = (markerWidth / videoAspect) * scale;
+              videoWidth = markerWidth * videoScale;
+              videoHeight = markerWidth / videoAspect * videoScale;
             } else {
               // Portrait or square video - scale to height
-              height = markerHeight * scale;
-              width = markerHeight * videoAspect * scale;
+              videoHeight = markerHeight * videoScale;
+              videoWidth = markerHeight * videoAspect * videoScale;
             }
             
-            // Update video plane
-            videoPlane.setAttribute('width', width);
-            videoPlane.setAttribute('height', height);
+            // Get the target element that contains the video plane
+            const target = document.querySelector('#target');
             
-            // Update background plane to be larger than video (25% larger than marker)
+            // Update video plane
+            videoPlane.setAttribute('width', videoWidth);
+            videoPlane.setAttribute('height', videoHeight);
+            
+            // Update background plane to be slightly larger than video
             const backgroundPlane = document.querySelector('#backgroundPlane');
             if (backgroundPlane) {
-              backgroundPlane.setAttribute('width', markerWidth * 1.25);
-              backgroundPlane.setAttribute('height', markerHeight * 1.25);
+              // Make background 10% larger than video
+              backgroundPlane.setAttribute('width', videoWidth * 1.1);
+              backgroundPlane.setAttribute('height', videoHeight * 1.1);
+              
+              // Log the dimensions for debugging
+              console.log('Video dimensions:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
+              console.log('Background dimensions:', (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
             }
             
             console.log('Video dimensions set to:', width.toFixed(2), 'x', height.toFixed(2));
