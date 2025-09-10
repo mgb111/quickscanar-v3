@@ -95,23 +95,9 @@
         
         // Multiple event listeners to ensure we catch the video metadata
         if (video) {
-          video.addEventListener('loadstart', () => console.log('Video load started'));
-          video.addEventListener('loadedmetadata', () => {
-            console.log('Video metadata loaded');
-            updateVideoAspectRatio();
-          });
-          video.addEventListener('canplay', () => {
-            console.log('Video can play');
-            updateVideoAspectRatio();
-          });
-          video.addEventListener('loadeddata', () => {
-            console.log('Video data loaded');
-            updateVideoAspectRatio();
-          });
-          
-          // Force load the video
-          video.load();
-        }
+        // 'loadedmetadata' is all you need.
+        video.addEventListener('loadedmetadata', updateVideoAspectRatio);
+      }
         
         if (scene) {
           scene.addEventListener("loaded", () => {
@@ -128,71 +114,18 @@
         
         if (target) {
           target.addEventListener("targetFound", () => {
-            console.log("*** TARGET FOUND EVENT ***");
-            isTargetFound = true;
-            
-            if (video) {
-              console.log("Playing video...");
-              video.currentTime = 0;
-              video.play().catch(e => console.log("Video play error:", e));
-            }
-            
-            if (videoPlane) {
-              console.log("Showing video plane...");
-              videoPlane.setAttribute('visible', true);
-              videoPlane.object3D.visible = true;
-              videoPlane.object3D.scale.set(1, 1, 1);
-            }
-          });
-          
-          target.addEventListener("targetLost", () => {
-            console.log("*** TARGET LOST EVENT ***");
-            isTargetFound = false;
-            
-            if (video) {
-              console.log("Pausing video...");
-              video.pause();
-              video.currentTime = 0;
-            }
-            
-            if (videoPlane) {
-              console.log("Hiding video plane...");
-              videoPlane.setAttribute('visible', false);
-              videoPlane.object3D.visible = false;
-              videoPlane.object3D.scale.set(0, 0, 0);
-            }
-          });
-        }
+          console.log("Target found");
+          video.currentTime = 0;
+          video.play().catch(e => console.error("Video play error:", e));
+          videoPlane.setAttribute('visible', true);
+        });
         
-        // Force check target state every 100ms as backup
-        setInterval(() => {
-          if (target && target.object3D.visible !== isTargetFound) {
-            console.log(`Target visibility mismatch - forcing ${target.object3D.visible ? 'show' : 'hide'}`);
-            if (target.object3D.visible && !isTargetFound) {
-              // Target is visible but we think it's lost - force show
-              if (video && video.paused) {
-                video.play().catch(e => console.log("Force play error:", e));
-              }
-              if (videoPlane) {
-                videoPlane.setAttribute('visible', true);
-                videoPlane.object3D.visible = true;
-                videoPlane.object3D.scale.set(1, 1, 1);
-              }
-              isTargetFound = true;
-            } else if (!target.object3D.visible && isTargetFound) {
-              // Target is hidden but we think it's found - force hide
-              if (video && !video.paused) {
-                video.pause();
-              }
-              if (videoPlane) {
-                videoPlane.setAttribute('visible', false);
-                videoPlane.object3D.visible = false;
-                videoPlane.object3D.scale.set(0, 0, 0);
-              }
-              isTargetFound = false;
-            }
-          }
-        }, 100);
+        target.addEventListener("targetLost", () => {
+          console.log("Target lost");
+          video.pause();
+          videoPlane.setAttribute('visible', false);
+        });
+        
         
         // Request camera permissions explicitly
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
