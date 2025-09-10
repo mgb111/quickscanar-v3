@@ -782,7 +782,7 @@ export async function GET(
 
       nukeLoadingScreens();
 
-      // Function to update video plane to match marker dimensions
+      // Function to update video plane to be 20% larger than marker image
       function updateVideoAspectRatio(videoElement, videoPlane) {
         if (!videoElement || !videoPlane) return;
         
@@ -794,45 +794,41 @@ export async function GET(
             const markerHeight = 1.0;
             
             // Calculate video dimensions to be 20% larger than marker
-            const videoScale = 1.2; // 20% larger than marker
+            const scaleFactor = 1.2; // 20% larger than marker
             let videoWidth, videoHeight;
             
-            // For both portrait and landscape, we'll scale based on the video's natural orientation
-            if (videoAspect > 1) {
-              // Landscape video - scale to width
-              videoWidth = markerWidth * videoScale;
+            // Calculate dimensions to maintain aspect ratio while being 20% larger than marker
+            if (videoAspect >= 1) {
+              // Landscape or square video - scale width to 1.2x marker width
+              videoWidth = markerWidth * scaleFactor;
               videoHeight = videoWidth / videoAspect;
             } else {
-              // Portrait or square video - use larger scale for better visibility
-              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
-              videoHeight = markerHeight * portraitScale;
+              // Portrait video - scale height to 1.2x marker height
+              videoHeight = markerHeight * scaleFactor;
               videoWidth = videoHeight * videoAspect;
             }
-            
-            // Ensure minimum dimensions
-            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
-            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
             
             // Get the target element that contains the video plane
             const target = document.querySelector('#target');
             
-            // Update video plane
+            // Update video plane with the calculated dimensions
             videoPlane.setAttribute('width', videoWidth);
             videoPlane.setAttribute('height', videoHeight);
             
-            // Update background plane to be slightly larger than video
+            // Update background plane to be 10% larger than video
             const backgroundPlane = document.querySelector('#backgroundPlane');
             if (backgroundPlane) {
-              // Make background 10% larger than video
               backgroundPlane.setAttribute('width', videoWidth * 1.1);
               backgroundPlane.setAttribute('height', videoHeight * 1.1);
               
               // Log the dimensions for debugging
-              console.log('Video dimensions:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
-              console.log('Background dimensions:', (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
+              console.log('Marker dimensions: 1.0 x 1.0');
+              console.log('Video dimensions (20% larger):', 
+                videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
+              console.log('Background dimensions (10% larger than video):', 
+                (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
             }
             
-            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
             console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
           }
         };
