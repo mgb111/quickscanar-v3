@@ -660,7 +660,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 100; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 10; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -991,7 +991,7 @@ export async function GET(
                 }
                 showStatus('Target Lost', 'Point camera at your marker again');
               }
-            }, 300); // 300ms debounce for lost (longer to prevent flickering)
+            }, 50); // 300ms debounce for lost (longer to prevent flickering)
           });
         } else {
           console.error('Target element not found!');
