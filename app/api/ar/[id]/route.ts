@@ -826,7 +826,7 @@ export async function GET(
               console.log('Background dimensions:', (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
             }
             
-            console.log('Video dimensions set to:', width.toFixed(2), 'x', height.toFixed(2));
+            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
             console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
           }
         };
