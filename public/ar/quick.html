@@ -22,7 +22,7 @@
   </head>
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: /uploads/demo-marker.mind; filterBeta: 0.05; filterMinCF: 0.02; warmupTolerance: 10; missTolerance: 10"
+      mindar-image="imageTargetSrc: /uploads/demo-marker.mind; filterBeta: 0.001; filterMinCF: 0.0001; warmupTolerance: 5; missTolerance: 5"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
@@ -50,7 +50,8 @@
           width="1"
           height="1"
           position="0 0 0.01"
-          material="shader: flat; src: #videoTexture"
+          material="shader: flat; src: #videoTexture; transparent: true"
+          geometry="primitive: plane"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -70,19 +71,29 @@
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
             const aspectRatio = video.videoWidth / video.videoHeight;
             
-            // Calculate dimensions to preserve aspect ratio
+            // Calculate dimensions to preserve aspect ratio - use consistent scaling
+            const baseSize = 1;
             let planeWidth, planeHeight;
             
+            // Always maintain aspect ratio by scaling both dimensions proportionally
             if (aspectRatio > 1) {
-              // Landscape video - keep width at 1, adjust height
-              planeWidth = 1;
-              planeHeight = 1 / aspectRatio;
+              // Landscape video
+              planeWidth = baseSize;
+              planeHeight = baseSize / aspectRatio;
             } else {
-              // Portrait or square video - keep height at 1, adjust width
-              planeHeight = 1;
-              planeWidth = aspectRatio;
+              // Portrait or square video
+              planeWidth = baseSize * aspectRatio;
+              planeHeight = baseSize;
             }
             
+            // Update both geometry and material to ensure proper scaling
+            videoPlane.setAttribute('geometry', {
+              primitive: 'plane',
+              width: planeWidth,
+              height: planeHeight
+            });
+            
+            // Also update the width/height attributes
             videoPlane.setAttribute('width', planeWidth);
             videoPlane.setAttribute('height', planeHeight);
             
