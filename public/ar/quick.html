@@ -45,15 +45,14 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-plane
+        <a-video
           id="videoPlane"
+          src="#videoTexture"
           width="1"
-          height="1"
+          height="0.5625"
           position="0 0 0.01"
-          material="shader: flat; src: #videoTexture; transparent: true"
-          geometry="primitive: plane"
           visible="false"
-        ></a-plane>
+        ></a-video>
       </a-entity>
     </a-scene>
 
@@ -71,35 +70,17 @@
           if (video && videoPlane && video.videoWidth && video.videoHeight) {
             const aspectRatio = video.videoWidth / video.videoHeight;
             
-            // Calculate dimensions to preserve aspect ratio - use consistent scaling
-            const baseSize = 1;
-            let planeWidth, planeHeight;
+            // Calculate dimensions to preserve exact aspect ratio
+            const baseWidth = 1;
+            const calculatedHeight = baseWidth / aspectRatio;
             
-            // Always maintain aspect ratio by scaling both dimensions proportionally
-            if (aspectRatio > 1) {
-              // Landscape video
-              planeWidth = baseSize;
-              planeHeight = baseSize / aspectRatio;
-            } else {
-              // Portrait or square video
-              planeWidth = baseSize * aspectRatio;
-              planeHeight = baseSize;
-            }
-            
-            // Update both geometry and material to ensure proper scaling
-            videoPlane.setAttribute('geometry', {
-              primitive: 'plane',
-              width: planeWidth,
-              height: planeHeight
-            });
-            
-            // Also update the width/height attributes
-            videoPlane.setAttribute('width', planeWidth);
-            videoPlane.setAttribute('height', planeHeight);
+            // Update a-video dimensions directly
+            videoPlane.setAttribute('width', baseWidth);
+            videoPlane.setAttribute('height', calculatedHeight);
             
             console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
             console.log(`Aspect ratio: ${aspectRatio}`);
-            console.log(`Plane dimensions: ${planeWidth}x${planeHeight}`);
+            console.log(`Video plane dimensions: ${baseWidth}x${calculatedHeight}`);
           } else {
             console.log('Video metadata not ready yet');
           }
@@ -137,24 +118,29 @@
         
         if (target) {
           target.addEventListener("targetFound", () => {
-            console.log("Target found - playing video");
+            console.log("Target found - playing video and showing plane");
             if (video) {
+              video.currentTime = 0; // Reset to start
               video.play().catch(e => console.log("Video play error:", e));
             }
             // Show the video plane
             if (videoPlane) {
               videoPlane.setAttribute('visible', true);
+              videoPlane.object3D.visible = true;
+              videoPlane.object3D.scale.set(1, 1, 1);
             }
           });
           
           target.addEventListener("targetLost", () => {
-            console.log("Target lost - pausing video");
+            console.log("Target lost - pausing video and hiding plane");
             if (video) {
               video.pause();
             }
-            // Hide the video plane
+            // Hide the video plane completely
             if (videoPlane) {
               videoPlane.setAttribute('visible', false);
+              videoPlane.object3D.visible = false;
+              videoPlane.object3D.scale.set(0, 0, 0);
             }
           });
         }
