@@ -650,7 +650,7 @@ export async function GET(
             </svg>
           </div>
           <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
-          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the image you used to generate the .mind file. <strong>Audio will play when the marker is tracked.</strong></p>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the marker image to start the AR experience.</p>
         </div>
         <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
       </div>
