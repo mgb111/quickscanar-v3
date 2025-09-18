@@ -277,7 +277,51 @@ function HomePage() {
           </div>
         </div>
       </section>
-      
+      {/* Customer Results (ROI Testimonials) */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Customer Results</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Real ROI outcomes from teams using QuickScanAR</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* ROI Story 1 */}
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg leading-8">
+                “We saw a <span className='font-semibold'>35% higher scan‑to‑site CTR</span> in the first 30 days after making print and packaging scannable with AR.”
+              </p>
+              <div className="mt-6 border-t border-black/10 pt-4">
+                <div className="text-black opacity-70 text-sm">Growth Lead, DTC Brand</div>
+              </div>
+            </div>
+
+            {/* ROI Story 2 */}
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg leading-8">
+                “Adding AR to booth materials <span className='font-semibold'>2× our demo signups</span> and gave us cleaner attribution via QR scans.”
+              </p>
+              <div className="mt-6 border-t border-black/10 pt-4">
+                <div className="text-black opacity-70 text-sm">Event Marketing Manager, B2B SaaS</div>
+              </div>
+            </div>
+
+            {/* ROI Story 3 */}
+            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
+              <Quote className="h-8 w-8 text-red-600 mb-4" />
+              <p className="text-black text-lg leading-8">
+                “We reduced <span className='font-semibold'>time‑to‑first‑action by 48%</span> from print by turning brochures into scannable AR explainers.”
+              </p>
+              <div className="mt-6 border-t border-black/10 pt-4">
+                <div className="text-black opacity-70 text-sm">Marketing Ops, Enterprise</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
