@@ -185,12 +185,12 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Use Cases (image grid) */}
+      {/* Use Cases (ROI-oriented image grid) */}
       <section className="py-20 bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Use Cases</h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">These common touchpoints can be AR‑enabled</p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">Use Cases That Drive ROI</h2>
+            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Turn everyday touchpoints into measurable outcomes — scans, clicks, and conversions</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -200,7 +200,7 @@ function HomePage() {
                 <User className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Business Cards</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Play an intro video, showcase your work, or link to your portfolio.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Increase recall and scan-to-profile rates by showcasing a quick intro with clear next steps.</p>
             </div>
 
             {/* 2. Flyers & brochures */}
@@ -209,7 +209,7 @@ function HomePage() {
                 <FileText className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Flyers & Brochures</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scanning pulls up an AR demo or highlight reel.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Lift brochure response rates with instant AR demos that shorten the path to action.</p>
             </div>
 
             {/* 3. Yard sign riders */}
@@ -218,7 +218,7 @@ function HomePage() {
                 <Tag className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Signage</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Each sign can trigger unique AR content (e.g., product reveal).</p>
+              <p className="text-black opacity-80 text-sm mt-2">Drive foot-traffic conversions with product reveals and time-bound CTAs at the point of decision.</p>
             </div>
 
             {/* 4. Event signage */}
@@ -227,7 +227,7 @@ function HomePage() {
                 <HomeIcon className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Event Signage</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scan to see highlights, team intro, or book a meeting.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Boost on-site engagement and qualified meetings with scannable highlights and signups.</p>
             </div>
 
             {/* 5. Window posters / office displays */}
@@ -236,7 +236,7 @@ function HomePage() {
                 <Monitor className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Window Posters & Displays</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Passersby can scan after hours and view AR experiences.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Capture after-hours interest and convert window shoppers with AR experiences and QR CTAs.</p>
             </div>
 
             {/* 6. One‑pagers & sell sheets */}
@@ -244,8 +244,8 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <Files className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">One‑pagers & Sell Sheets</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Scan to view AR video demos or additional information.</p>
+              <h3 className="text-xl font-bold text-black">One‑Pagers & Sell Sheets</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Reduce friction with scannable explainers that lift understanding and form-completion rates.</p>
             </div>
 
             {/* 7. Direct mail postcards */}
@@ -254,7 +254,7 @@ function HomePage() {
                 <Mail className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Direct Mail Postcards</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Trigger a product demo or a compelling brand pitch.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Increase mail ROI by turning static postcards into interactive demos with trackable CTAs.</p>
             </div>
 
             {/* 8. Print ad photos */}
@@ -263,7 +263,7 @@ function HomePage() {
                 <Newspaper className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-black">Print Ads & Editorial</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Magazine or newspaper photos jump to AR experiences.</p>
+              <p className="text-black opacity-80 text-sm mt-2">Lift print-to-digital CTR with scannable ads that jump to AR offers or product try-ons.</p>
             </div>
 
             {/* 9. Sold signs */}
@@ -271,56 +271,13 @@ function HomePage() {
               <div className="bg-red-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-4 border-2 border-black mx-auto">
                 <CheckCircle className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-black">Badges & Signs</h3>
-              <p className="text-black opacity-80 text-sm mt-2">Show success reels, testimonials, or current campaigns.</p>
+              <h3 className="text-xl font-bold text-black">Badges & Displays</h3>
+              <p className="text-black opacity-80 text-sm mt-2">Turn moments of attention into action with testimonials, promos, and instant follow-ups.</p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-black mb-6">What Customers Say</h2>
-            <p className="text-xl text-black opacity-80 max-w-3xl mx-auto">Real stories from teams using QuickScanAR</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Customer Story 1 */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
-              <Quote className="h-8 w-8 text-red-600 mb-4" />
-              <p className="text-black text-lg italic leading-8">
-                "Our clients expect innovation. When we showed how a simple poster could trigger an AR film of the product, they were blown away. It set us apart from every other vendor."
-              </p>
-              <div className="mt-6 border-t border-black/10 pt-4">
-                <div className="text-black opacity-70 text-sm">Creative Director, Media Agency</div>
-              </div>
-            </div>
-
-            {/* Customer Story 2 */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
-              <Quote className="h-8 w-8 text-red-600 mb-4" />
-              <p className="text-black text-lg italic leading-8">
-                "Competition is intense. With QuickScanAR, our content stands out immediately. People scan and see a polished walkthrough without any friction. It’s a powerful first impression."
-              </p>
-              <div className="mt-6 border-t border-black/10 pt-4">
-                <div className="text-black opacity-70 text-sm">Digital Marketing Manager, Consumer Goods</div>
-              </div>
-            </div>
-            {/* Customer Story 3 */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-black shadow transition-shadow">
-              <Quote className="h-8 w-8 text-red-600 mb-4" />
-              <p className="text-black text-lg italic leading-8">
-                "We rolled QuickScanAR across our teams. Now every business card, sign, and brochure is interactive. It’s consistent, simple, and makes our brand look cutting-edge."
-              </p>
-              <div className="mt-6 border-t border-black/10 pt-4">
-                <div className="text-black opacity-70 text-sm">Operations Lead, Retail Brand</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -354,12 +311,6 @@ function HomePage() {
               <h3 className="text-xl font-bold text-black mb-4">Will this work for printed materials too?</h3>
               <p className="text-black opacity-80 text-lg">
                 Yes! Flyers, brochures, and posters all work — just make sure the image is clear. Perfect for events and trade shows.
-              </p>
-            </div>
-            <div className="bg-cream rounded-2xl p-8 border-2 border-black">
-              <h3 className="text-xl font-bold text-black mb-4">Can I track engagement on my AR experiences?</h3>
-              <p className="text-black opacity-80 text-lg">
-                You can see how many people scanned and watched the AR video via our dashboard. Track performance and optimize your campaigns.
               </p>
             </div>
           </div>
