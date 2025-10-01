@@ -267,6 +267,77 @@ Check your API request:
 
 ---
 
+### 🔴 Issue 9: 3D Model Animations Not Playing
+
+**Symptoms:**
+- Model appears correctly
+- But animations from the GLB file don't play
+
+**Possible Causes & Solutions:**
+
+#### A. Model Has No Animations
+**Check:**
+- Open your GLB file in [glTF Viewer](https://gltf-viewer.donmccurdy.com/)
+- Look for "Animations" section
+- Verify animations play in the viewer
+
+**Solution:**
+If no animations exist, you need to:
+- Add animations in Blender/3D software
+- Re-export as GLB with animations included
+- Ensure "Export Animations" is checked
+
+#### B. Animation-Mixer Not Configured
+**Check browser console for:**
+```
+Animation mixer found
+Available animations: [...]
+```
+
+**Solution:**
+The animation-mixer component should be configured as:
+```html
+animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
+```
+
+This is now included in the updated code.
+
+#### C. Animations Not Auto-Playing
+**Solution:**
+Animations should auto-play when the model loads. If not:
+
+```javascript
+// In browser console, manually trigger:
+const model = document.querySelector('#model3D');
+const mixer = model.components['animation-mixer'];
+if (mixer && mixer.mixer) {
+  mixer.mixer._actions.forEach(action => action.play());
+}
+```
+
+#### D. Animation Speed Issues
+**Check:**
+- Some animations may be very slow or fast
+- Check timeScale in the GLB file
+
+**Solution:**
+Adjust animation speed in your 3D software before export, or add to the component:
+```html
+animation-mixer="clip: *; loop: repeat; timeScale: 1.0"
+```
+
+#### E. Multiple Animations
+**Issue:**
+GLB has multiple animations but only one plays.
+
+**Solution:**
+Current implementation plays all animations with `clip: *`. To play specific animation:
+```html
+animation-mixer="clip: AnimationName; loop: repeat"
+```
+
+---
+
 ## Debugging Checklist
 
 ### Database

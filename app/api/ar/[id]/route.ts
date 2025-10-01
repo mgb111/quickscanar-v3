@@ -724,7 +724,7 @@ export async function GET(
           rotation="0 ${experience.model_rotation || 0} 0"
           scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
           visible="false"
-          animation-mixer
+          animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
         ></a-entity>
         ` : ''}
       </a-entity>
@@ -940,6 +940,20 @@ export async function GET(
           });
         }
 
+        // Setup 3D model animation
+        if (is3D && model3D) {
+          model3D.addEventListener('model-loaded', () => {
+            console.log('3D model loaded successfully');
+            
+            // Get the animation mixer component
+            const mixer = model3D.components['animation-mixer'];
+            if (mixer) {
+              console.log('Animation mixer found');
+              console.log('Available animations:', mixer.mixer ? mixer.mixer._actions : 'none');
+            }
+          });
+        }
+
         // A-Frame/MindAR lifecycle
         if (scene) {
           scene.addEventListener('arReady', () => {
@@ -953,7 +967,10 @@ export async function GET(
               }).catch(e => console.error('Video play error:', e));
             }
             
-            // Custom stabilization logic removed.
+            // For 3D models, ensure animations are ready
+            if (is3D && model3D) {
+              console.log('3D AR mode - animations will auto-play when target is found');
+            }
           });
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
@@ -1014,6 +1031,13 @@ export async function GET(
                   model3D.setAttribute('visible', 'true');
                   // Add smooth animation for appearance
                   model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
+                  
+                  // Explicitly play the model animations
+                  const mixer = model3D.components['animation-mixer'];
+                  if (mixer && mixer.mixer) {
+                    console.log('Playing model animations');
+                    mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
+                  }
                 }
                 
                 showStatus('Target Found!', 'AR content should be visible');
