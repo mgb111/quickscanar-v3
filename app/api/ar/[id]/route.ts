@@ -946,8 +946,12 @@ export async function GET(
 
         // Setup 3D model animation
         if (is3D && model3D) {
+          console.log('✅ Setting up 3D model listeners');
+          console.log('Model element:', model3D);
+          console.log('Model src:', model3D.getAttribute('gltf-model'));
+          
           model3D.addEventListener('model-loaded', () => {
-            console.log('3D model loaded successfully');
+            console.log('✅ 3D model loaded successfully');
             
             // Get the animation mixer component
             const mixer = model3D.components['animation-mixer'];
@@ -956,6 +960,14 @@ export async function GET(
               console.log('Available animations:', mixer.mixer ? mixer.mixer._actions : 'none');
             }
           });
+          
+          model3D.addEventListener('model-error', (e) => {
+            console.error('❌ 3D model failed to load:', e);
+          });
+        } else {
+          if (is3D && !model3D) {
+            console.error('❌ is3D is true but model3D element not found!');
+          }
         }
 
         // A-Frame/MindAR lifecycle
@@ -1038,6 +1050,10 @@ export async function GET(
                 
                 // Handle 3D model AR
                 if (is3D && model3D) {
+                  console.log('🎯 Showing 3D model');
+                  console.log('Model position:', model3D.getAttribute('position'));
+                  console.log('Model scale:', model3D.getAttribute('scale'));
+                  
                   model3D.setAttribute('visible', 'true');
                   // Add smooth animation for appearance
                   model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
@@ -1047,6 +1063,10 @@ export async function GET(
                   if (mixer && mixer.mixer) {
                     console.log('Playing model animations');
                     mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
+                  }
+                } else {
+                  if (is3D && !model3D) {
+                    console.error('❌ Should show 3D but model3D not found!');
                   }
                 }
                 
