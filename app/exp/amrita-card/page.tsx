@@ -77,6 +77,15 @@ export default function Page() {
           // eslint-disable-next-line @next/next/no-sync-scripts
           <div dangerouslySetInnerHTML={{ __html: `
             <style>
+              /* Core styles inspired by API route */
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              a-scene { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; transform: translateZ(0); will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); -webkit-perspective: 1000; perspective: 1000; }
+              a-scene canvas { transform: translateZ(0); will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+              .status-indicator { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: black; text-align: center; z-index: 1002; background: white; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 24px; border-radius: 20px; border: 2px solid black; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); display: none; max-width: 90vw; min-width: 280px; }
+              .status-indicator h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #dc2626; margin: 0 0 8px 0; }
+              .status-indicator p { font-size: 14px; color: black; line-height: 1.4; margin: 0; }
+              /* Hide A-Frame default UI */
+              .a-loader, .a-loader-title, .a-loader-spinner, .a-loader-logo, .a-loader-progress, .a-loader-progress-bar, .a-loader-progress-text, .a-loader-progress-container, .a-enter-vr, .a-orientation-modal, .a-fullscreen, .a-enter-ar, .a-enter-vr-button, [class*="a-loader"], [class*="a-enter"], [class*="a-orientation"], [class*="a-fullscreen"], [class*="loading"], [class*="spinner"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; position: absolute !important; left: -9999px !important; top: -9999px !important; }
               #diagBox { position: fixed; bottom: 12px; left: 12px; z-index: 9999; background: rgba(0,0,0,0.75); color: #fff; padding: 10px 12px; border-radius: 10px; max-width: 90vw; font-size: 12px; line-height: 1.3; }
               #diagBox h4 { margin: 0 0 6px 0; font-size: 12px; font-weight: 700; }
               #diagBox .log { max-height: 120px; overflow: auto; }
@@ -84,6 +93,10 @@ export default function Page() {
               #diagBox .warn { color: #fde047; }
               #diagBox .err { color: #fca5a5; }
             </style>
+            <div class="status-indicator" id="status-indicator">
+              <h3 id="status-title">Point camera at your marker</h3>
+              <p id="status-message">Look for your uploaded image</p>
+            </div>
             <div id="diagBox">
               <h4>AR Status</h4>
               <div class="log" id="diagLog"></div>
@@ -120,6 +133,13 @@ export default function Page() {
                   sceneEl.addEventListener('camera-init', () => log('camera-init', 'ok'));
                   sceneEl.addEventListener('camera-error', (e) => log('camera-error: ' + (e && e.detail && e.detail.error && e.detail.error.message ? e.detail.error.message : 'unknown'), 'err'));
                 }
+              })();
+            </script>
+            <script>
+              // Hide A-Frame default loading screens and UI
+              (function nukeLoadingScreens(){
+                const selectors = ['.a-loader', '.a-loader-title', '.a-loader-spinner', '.a-loader-logo', '.a-loader-progress', '.a-loader-progress-bar', '.a-loader-progress-text', '.a-loader-progress-container', '.a-enter-vr', '.a-orientation-modal', '.a-fullscreen', '.a-enter-ar', '.a-enter-vr-button', '[class*="a-loader"]', '[class*="a-enter"]', '[class*="a-orientation"]', '[class*="a-fullscreen"]', '[class*="loading"]', '[class*="spinner"]'];
+                selectors.forEach(selector => { document.querySelectorAll(selector).forEach(el => { try { el.style.display = 'none'; el.style.visibility = 'hidden'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.position = 'absolute'; el.style.left = '-9999px'; el.style.top = '-9999px'; } catch(e){} }); });
               })();
             </script>
             <script>
