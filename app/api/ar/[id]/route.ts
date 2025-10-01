@@ -720,7 +720,7 @@ export async function GET(
         <a-entity
           id="model3D"
           gltf-model="#arModel"
-          position="0 0 0"
+          position="0 ${contentType === 'both' ? '0.3' : '0'} ${contentType === 'both' ? '0.15' : '0'}"
           rotation="0 ${experience.model_rotation || 0} 0"
           scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
           visible="false"
@@ -886,8 +886,8 @@ export async function GET(
         const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
         const contentType = '${contentType}';
-        const isVideo = contentType === 'video';
-        const is3D = contentType === '3d';
+        const isVideo = contentType === 'video' || contentType === 'both';
+        const is3D = contentType === '3d' || contentType === 'both';
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -896,7 +896,11 @@ export async function GET(
           target: !!target,
           videoPlane: !!videoPlane,
           backgroundPlane: !!backgroundPlane,
-          contentType: contentType
+          contentType: contentType,
+          isVideo: isVideo,
+          is3D: is3D,
+          videoUrl: '${experience.video_url ? "present" : "missing"}',
+          modelUrl: '${experience.model_url ? "present" : "missing"}'
         });
 
         // Preflight check for .mind URL
@@ -970,6 +974,12 @@ export async function GET(
             // For 3D models, ensure animations are ready
             if (is3D && model3D) {
               console.log('3D AR mode - animations will auto-play when target is found');
+            }
+            
+            // Log combined mode
+            if (contentType === 'both') {
+              console.log('🎬 Combined AR mode - Both video and 3D model will appear together');
+              console.log('Video plane at z: 0.01, 3D model at y: 0.3, z: 0.15');
             }
           });
           scene.addEventListener('arError', (e) => {
