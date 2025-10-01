@@ -939,7 +939,7 @@ export async function GET(
           video.addEventListener('timeupdate', () => {
             if (video.readyState >= 3) { // HAVE_FUTURE_DATA
               // Force repaint for smooth updates
-              videoPlane.setAttribute('material', 'shader: flat; src: #videoTexture; transparent: true; alphaTest: 0.1');
+              videoPlane.setAttribute('material', 'shader: flat; src: #arVideo; transparent: true; alphaTest: 0.1');
             }
           });
         }
