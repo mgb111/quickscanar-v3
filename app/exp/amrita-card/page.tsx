@@ -76,6 +76,52 @@ export default function Page() {
         {sceneReady && (
           // eslint-disable-next-line @next/next/no-sync-scripts
           <div dangerouslySetInnerHTML={{ __html: `
+            <style>
+              #diagBox { position: fixed; bottom: 12px; left: 12px; z-index: 9999; background: rgba(0,0,0,0.75); color: #fff; padding: 10px 12px; border-radius: 10px; max-width: 90vw; font-size: 12px; line-height: 1.3; }
+              #diagBox h4 { margin: 0 0 6px 0; font-size: 12px; font-weight: 700; }
+              #diagBox .log { max-height: 120px; overflow: auto; }
+              #diagBox .ok { color: #86efac; }
+              #diagBox .warn { color: #fde047; }
+              #diagBox .err { color: #fca5a5; }
+            </style>
+            <div id="diagBox">
+              <h4>AR Status</h4>
+              <div class="log" id="diagLog"></div>
+            </div>
+            <script>
+              (function(){
+                const logEl = document.getElementById('diagLog');
+                function log(msg, cls){
+                  try {
+                    const p = document.createElement('div');
+                    if (cls) p.className = cls;
+                    const ts = new Date().toLocaleTimeString();
+                    p.textContent = '['+ts+'] ' + msg;
+                    if (logEl) {
+                      logEl.appendChild(p);
+                      logEl.scrollTop = logEl.scrollHeight;
+                    }
+                    console.log('[AR]', msg);
+                  } catch(e){}
+                }
+                log('Diagnostics enabled', 'ok');
+                document.addEventListener('arReady', () => log('arReady (camera initialized)', 'ok'));
+                document.addEventListener('arError', (e) => log('arError: ' + (e && e.detail ? JSON.stringify(e.detail) : 'unknown'), 'err'));
+                document.addEventListener('targetFound', () => log('targetFound', 'ok'));
+                document.addEventListener('targetLost', () => log('targetLost', 'warn'));
+                document.addEventListener('DOMContentLoaded', () => log('DOMContentLoaded', 'ok'));
+                const assets = document.querySelector('a-assets');
+                if (assets){
+                  assets.addEventListener('loaded', () => log('a-assets loaded', 'ok'));
+                  assets.addEventListener('timeout', () => log('a-assets timeout', 'warn'));
+                }
+                const sceneEl = document.querySelector('a-scene');
+                if (sceneEl){
+                  sceneEl.addEventListener('camera-init', () => log('camera-init', 'ok'));
+                  sceneEl.addEventListener('camera-error', (e) => log('camera-error: ' + (e && e.detail && e.detail.error && e.detail.error.message ? e.detail.error.message : 'unknown'), 'err'));
+                }
+              })();
+            </script>
             <script>
               !function(t,e){if("object"==typeof exports&&"object"==typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var i=e();for(var s in i)("object"==typeof exports?exports:t)[s]=i[s]}}("undefined"!=typeof self?self:this,(()=>(()=>{"use strict";var t={d:(e,i)=>{for(var s in i)t.o(i,s)&&!t.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:i[s]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{LowPassFilter:()=>i,OneEuroFilter:()=>s});class i{setAlpha(t){(t<=0||t>1)&&console.log("alpha should be in (0.0., 1.0]"),this.a=t}constructor(t,e=0){this.y=this.s=e,this.setAlpha(t),this.initialized=!1}filter(t){var e;return this.initialized?e=this.a*t+(1-this.a)*this.s:(e=t,this.initialized=!0),this.y=t,this.s=e,e}filterWithAlpha(t,e){return this.setAlpha(e),this.filter(t)}hasLastRawValue(){return this.initialized}lastRawValue(){return this.y}reset(){this.initialized=!1}}class s{alpha(t){var e=1/this.freq;return 1/(1+1/(2*Math.PI*t)/e)}setFrequency(t){t<=0&&console.log("freq should be >0"),this.freq=t}setMinCutoff(t){t<=0&&console.log("mincutoff should be >0"),this.mincutoff=t}setBeta(t){this.beta_=t}setDerivateCutoff(t){t<=0&&console.log("dcutoff should be >0"),this.dcutoff=t}constructor(t,e=1,s=0,h=1){this.setFrequency(t),this.setMinCutoff(e),this.setBeta(s),this.setDerivateCutoff(h),this.x=new i(this.alpha(e)),this.dx=new i(this.alpha(h)),this.lasttime=void 0}reset(){this.x.reset(),this.dx.reset(),this.lasttime=void 0}filter(t,e=undefined){null!=this.lasttime&&null!=e&&(this.freq=1/(e-this.lasttime)),this.lasttime=e;var i=this.x.hasLastRawValue()?(t-this.x.lastRawValue())*this.freq:0,s=this.dx.filterWithAlpha(i,this.alpha(this.dcutoff)),h=this.mincutoff+this.beta_*Math.abs(s);return this.x.filterWithAlpha(t,this.alpha(h))}}return e})()));
             </script>
