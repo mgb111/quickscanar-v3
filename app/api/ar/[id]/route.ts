@@ -665,7 +665,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 10; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 50; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -1063,7 +1063,7 @@ export async function GET(
               targetFoundTimeout = null;
             }
             
-            // Debounce target lost to reduce flickering
+            // Debounce target lost to reduce flickering - increased timeout for persistence
             if (targetLostTimeout) clearTimeout(targetLostTimeout);
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
@@ -1096,7 +1096,7 @@ export async function GET(
                 
                 showStatus('Target Lost', 'Point camera at your marker again');
               }
-            }, 50); // 50ms debounce for lost
+            }, 1000); // 1000ms (1 second) debounce - stays visible longer when marker lost
           });
         } else {
           console.error('Target element not found!');
