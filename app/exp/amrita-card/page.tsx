@@ -3,9 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 
 // Static assets provided by user
-const MIND_FILE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/targets72.mind'
-const VIDEO_URL = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/amrita-intro.mp4'
+const RAW_MIND_FILE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/targets72.mind'
+const RAW_VIDEO_URL = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/amrita-intro.mp4'
 const MARKER_IMAGE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/Amritafront.png'
+
+// Same-origin proxy to avoid CORS issues for MindAR/video fetches
+const proxify = (url: string) => `/api/proxy?url=${encodeURIComponent(url)}`
+const MIND_FILE = proxify(RAW_MIND_FILE)
+const VIDEO_URL = proxify(RAW_VIDEO_URL)
 
 export default function Page() {
   const [started, setStarted] = useState(false)
