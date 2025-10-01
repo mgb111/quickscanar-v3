@@ -133,9 +133,9 @@ export default function Page() {
               });
             </script>
             <a-scene
-              mindar-image="imageTargetSrc: ${MIND_FILE}; filterMinCF: 0.0001; filterBeta: 0.001; maxTrack: 1;"
+              mindar-image="imageTargetSrc: ${MIND_FILE}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 10; showStats: false; maxTrack: 1;"
               color-space="sRGB"
-              renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: false"
+              renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
               vr-mode-ui="enabled: false"
               device-orientation-permission-ui="enabled: false"
               embedded
