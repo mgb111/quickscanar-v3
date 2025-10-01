@@ -113,6 +113,19 @@ BEGIN
     ELSE
         RAISE NOTICE 'model_position_z column already exists';
     END IF;
+
+    -- Add video_scale column for video size adjustment
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'ar_experiences' 
+        AND column_name = 'video_scale'
+    ) THEN
+        ALTER TABLE ar_experiences 
+        ADD COLUMN video_scale DECIMAL DEFAULT 1.0;
+        RAISE NOTICE 'Added video_scale column';
+    ELSE
+        RAISE NOTICE 'video_scale column already exists';
+    END IF;
 END $$;
 
 -- Update existing records to have content_type = 'video' if they have video_url

@@ -697,19 +697,9 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         ${isVideo ? `
         <a-plane
-          id="backgroundPlane"
-          width="1"
-          height="1"
-          position="0 0 0.005"
-          rotation="0 0 ${experience.video_rotation || 0}"
-          material="color: #000000"
-          visible="false"
-        ></a-plane>
-
-        <a-plane
           id="videoPlane"
-          width="1"
-          height="1"
+          width="${experience.video_scale || 1}"
+          height="${experience.video_scale || 1}"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
           material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
@@ -884,7 +874,6 @@ export async function GET(
         const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
-        const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
@@ -896,11 +885,11 @@ export async function GET(
           model3D: !!model3D,
           target: !!target,
           videoPlane: !!videoPlane,
-          backgroundPlane: !!backgroundPlane,
           contentType: contentType,
           isVideo: isVideo,
           is3D: is3D,
           videoUrl: '${experience.video_url ? "present" : "missing"}',
+          videoScale: '${experience.video_scale || 1.0}',
           modelUrl: '${experience.model_url ? "present" : "missing"}'
         });
 
@@ -1030,7 +1019,6 @@ export async function GET(
                 
                 // Handle video AR
                 if (isVideo) {
-                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
                   if (videoPlane) {
                     videoPlane.setAttribute('visible', 'true');
                     // Add smooth animation for appearance
@@ -1096,7 +1084,6 @@ export async function GET(
                 
                 // Handle video AR
                 if (isVideo) {
-                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
                   if (videoPlane) {
                     // Add smooth animation for disappearance
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');

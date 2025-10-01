@@ -40,6 +40,7 @@ export default function CreateExperience() {
   const [linkUrl, setLinkUrl] = useState('')
   const [modelScale, setModelScale] = useState(1.0)
   const [modelRotation, setModelRotation] = useState(0)
+  const [videoScale, setVideoScale] = useState(1.0)
 
   // Preview states
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
@@ -371,6 +372,7 @@ export default function CreateExperience() {
         title: title.trim(),
         content_type: determinedContentType,
         video_file_url: videoUrl || null,
+        video_scale: videoUrl ? videoScale : 1.0,
         model_url: modelUrl || null,
         model_scale: modelUrl ? modelScale : 1.0,
         model_rotation: modelUrl ? modelRotation : 0,
@@ -833,9 +835,10 @@ export default function CreateExperience() {
                           
                           {/* Position Info */}
                           <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-xs z-10">
-                            <div className="flex justify-between items-center">
-                              <span>Position: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</span>
-                              <span>Scale: {modelScale.toFixed(1)}x</span>
+                            <div className="flex justify-between items-center flex-wrap gap-2">
+                              <span>3D: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</span>
+                              <span>Model: {modelScale.toFixed(1)}x</span>
+                              <span>Video: {videoScale.toFixed(1)}x</span>
                               <span>Rotation: {modelRotation}°</span>
                             </div>
                           </div>
@@ -917,14 +920,36 @@ export default function CreateExperience() {
                             </div>
                           </div>
 
-                          {/* Scale and Rotation Controls */}
+                          {/* Video Scale Control */}
                           <div>
-                            <h6 className="text-sm font-semibold text-black mb-3">Scale & Rotation</h6>
+                            <h6 className="text-sm font-semibold text-black mb-3">Video Size</h6>
+                            <div>
+                              <label className="block text-xs font-medium text-black mb-2">
+                                Video Scale
+                              </label>
+                              <input
+                                type="range"
+                                min="0.5"
+                                max="2"
+                                step="0.1"
+                                value={videoScale}
+                                onChange={(e) => setVideoScale(parseFloat(e.target.value))}
+                                className="w-full"
+                              />
+                              <div className="text-center text-xs text-black font-semibold mt-1">
+                                {videoScale.toFixed(1)}x
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3D Model Scale and Rotation Controls */}
+                          <div>
+                            <h6 className="text-sm font-semibold text-black mb-3">3D Model Scale & Rotation</h6>
                             <div className="grid md:grid-cols-2 gap-4">
                               {/* Scale */}
                               <div>
                                 <label className="block text-xs font-medium text-black mb-2">
-                                  Scale (Size)
+                                  Model Scale
                                 </label>
                                 <input
                                   type="range"
@@ -943,7 +968,7 @@ export default function CreateExperience() {
                               {/* Rotation */}
                               <div>
                                 <label className="block text-xs font-medium text-black mb-2">
-                                  Rotation (Y-axis)
+                                  Model Rotation
                                 </label>
                                 <input
                                   type="range"

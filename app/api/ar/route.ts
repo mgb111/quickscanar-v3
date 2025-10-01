@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { 
       title, 
-      video_file_url, 
+      video_file_url,
+      video_scale,
       model_url,
       content_type,
       model_scale,
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
         mind_file_url: mind_file_url || null,
         marker_image_url: marker_image_url || null,
         video_url: video_file_url || null,
+        video_scale: video_scale || 1.0,
         model_url: model_url || null,
         content_type: actualContentType,
         model_scale: model_scale || 1.0,
