@@ -11,26 +11,54 @@ const supabase = createClient(supabaseUrl, serviceKey, {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, video_file_url, mind_file_url, marker_image_url, user_id, link_url } = body
+    const { 
+      title, 
+      video_file_url, 
+      model_url,
+      content_type,
+      model_scale,
+      model_rotation,
+      mind_file_url, 
+      marker_image_url, 
+      user_id, 
+      link_url 
+    } = body
     
     console.log('📝 Creating AR experience with data:', {
       title,
       video_file_url,
+      model_url,
+      content_type,
       mind_file_url,
       marker_image_url,
       user_id,
       hasTitle: !!title,
       hasVideo: !!video_file_url,
+      hasModel: !!model_url,
+      contentType: content_type,
       hasMind: !!mind_file_url,
       hasMarkerImage: !!marker_image_url,
       hasUserId: !!user_id,
       hasLink: !!link_url
     })
 
-    // Validate required fields
-    if (!title || !video_file_url || !user_id) {
+    // Validate required fields - need either video or 3D model
+    if (!title || !user_id) {
       return NextResponse.json({ 
-        error: 'Missing required fields: title, video_file_url, and user_id are required' 
+        error: 'Missing required fields: title and user_id are required' 
+      }, { status: 400 })
+    }
+
+    // Validate content type and corresponding URL
+    const actualContentType = content_type || 'video'
+    if (actualContentType === 'video' && !video_file_url) {
+      return NextResponse.json({ 
+        error: 'video_file_url is required when content_type is "video"' 
+      }, { status: 400 })
+    }
+    if (actualContentType === '3d' && !model_url) {
+      return NextResponse.json({ 
+        error: 'model_url is required when content_type is "3d"' 
       }, { status: 400 })
     }
 
@@ -128,7 +156,11 @@ export async function POST(request: NextRequest) {
 
         mind_file_url: mind_file_url || null,
         marker_image_url: marker_image_url || null,
-        video_url: video_file_url,
+        video_url: video_file_url || null,
+        model_url: model_url || null,
+        content_type: actualContentType,
+        model_scale: model_scale || 1.0,
+        model_rotation: model_rotation || 0,
         link_url: link_url ? String(link_url).trim() : null,
         user_id: user_id,
         

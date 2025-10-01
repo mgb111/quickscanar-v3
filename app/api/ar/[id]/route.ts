@@ -26,10 +26,15 @@ export async function GET(
       title: experience.title,
       marker_image_url: experience.marker_image_url,
       mind_file_url: experience.mind_file_url,
-      video_url: experience.video_url
+      video_url: experience.video_url,
+      model_url: experience.model_url,
+      content_type: experience.content_type
     })
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
+    const contentType = experience.content_type || 'video'
+    const isVideo = contentType === 'video'
+    const is3D = contentType === '3d'
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -670,6 +675,7 @@ export async function GET(
       style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
+        ${isVideo ? `
         <video
           id="arVideo"
           src="${experience.video_url}"
@@ -680,11 +686,16 @@ export async function GET(
           preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
+        ` : ''}
+        ${is3D && experience.model_url ? `
+        <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
+        ` : ''}
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001"
+      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001">
+        ${isVideo ? `
         <a-plane
           id="backgroundPlane"
           width="1"
@@ -704,6 +715,18 @@ export async function GET(
           material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat"
           visible="false"
         ></a-plane>
+        ` : ''}
+        ${is3D ? `
+        <a-entity
+          id="model3D"
+          gltf-model="#arModel"
+          position="0 0 0"
+          rotation="0 ${experience.model_rotation || 0} 0"
+          scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
+          visible="false"
+          animation-mixer
+        ></a-entity>
+        ` : ''}
       </a-entity>
     </a-scene>
 
@@ -857,17 +880,23 @@ export async function GET(
         const overlay = document.getElementById('overlay');
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
+        const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
         const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
+        const contentType = '${contentType}';
+        const isVideo = contentType === 'video';
+        const is3D = contentType === '3d';
 
         console.log('AR Elements found:', {
           scene: !!scene,
           video: !!video,
+          model3D: !!model3D,
           target: !!target,
           videoPlane: !!videoPlane,
-          backgroundPlane: !!backgroundPlane
+          backgroundPlane: !!backgroundPlane,
+          contentType: contentType
         });
 
         // Preflight check for .mind URL
@@ -964,17 +993,29 @@ export async function GET(
             targetFoundTimeout = setTimeout(() => {
               if (!isTargetVisible) {
                 isTargetVisible = true;
-                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
-                if (videoPlane) {
-                  videoPlane.setAttribute('visible', 'true');
+                
+                // Handle video AR
+                if (isVideo) {
+                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
+                  if (videoPlane) {
+                    videoPlane.setAttribute('visible', 'true');
+                    // Add smooth animation for appearance
+                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                  }
+                  if (video) {
+                    video.currentTime = 0; // Restart video
+                    video.muted = false; // Enable audio when target is found
+                    video.play().catch(() => {});
+                  }
+                }
+                
+                // Handle 3D model AR
+                if (is3D && model3D) {
+                  model3D.setAttribute('visible', 'true');
                   // Add smooth animation for appearance
-                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                  model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
                 }
-                if (video) {
-                  video.currentTime = 0; // Restart video
-                  video.muted = false; // Enable audio when target is found
-                  video.play().catch(() => {});
-                }
+                
                 showStatus('Target Found!', 'AR content should be visible');
                 setTimeout(hideStatus, 1500);
               }
@@ -1003,21 +1044,35 @@ export async function GET(
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
                 isTargetVisible = false;
-                if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
-                if (videoPlane) {
+                
+                // Handle video AR
+                if (isVideo) {
+                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
+                  if (videoPlane) {
+                    // Add smooth animation for disappearance
+                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
+                    setTimeout(() => {
+                      videoPlane.setAttribute('visible', 'false');
+                    }, 200);
+                  }
+                  if (video) {
+                    video.pause();
+                    video.muted = true; // Mute audio when target is lost
+                  }
+                }
+                
+                // Handle 3D model AR
+                if (is3D && model3D) {
                   // Add smooth animation for disappearance
-                  videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
+                  model3D.setAttribute('animation', 'property: scale; from: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; to: 0 0 0; dur: 200');
                   setTimeout(() => {
-                    videoPlane.setAttribute('visible', 'false');
+                    model3D.setAttribute('visible', 'false');
                   }, 200);
                 }
-                if (video) {
-                  video.pause();
-                  video.muted = true; // Mute audio when target is lost
-                }
+                
                 showStatus('Target Lost', 'Point camera at your marker again');
               }
-            }, 50); // 300ms debounce for lost (longer to prevent flickering)
+            }, 50); // 50ms debounce for lost
           });
         } else {
           console.error('Target element not found!');

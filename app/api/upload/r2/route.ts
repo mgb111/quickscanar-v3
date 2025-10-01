@@ -46,12 +46,14 @@ export async function POST(request: NextRequest) {
     // Validate content type
     const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const allowed3DTypes = ['model/gltf-binary', 'model/gltf+json', 'application/octet-stream']
     const isMind = fileType === 'mind'
     const isMarkerImage = fileType === 'markerImage'
+    const is3DModel = fileType === '3d' || fileType === 'model'
     
-    if (!isMind && !isMarkerImage && !allowedVideoTypes.includes(contentType)) {
+    if (!isMind && !isMarkerImage && !is3DModel && !allowedVideoTypes.includes(contentType)) {
       return NextResponse.json({
-        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')} or image files for marker images`
+        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')}, 3D models (GLB/GLTF), or image files for marker images`
       }, { status: 400 })
     }
     
@@ -64,8 +66,9 @@ export async function POST(request: NextRequest) {
         error: `Unsupported image type for marker. Allowed: ${allowedImageTypes.join(', ')}`
       }, { status: 400 })
     }
-    if (isMind && !fileName.endsWith('.mind')) {
-      return NextResponse.json({ error: 'For mind files, fileName must end with .mind' }, { status: 400 })
+    
+    if (is3DModel && !fileName.match(/\.(glb|gltf)$/i)) {
+      return NextResponse.json({ error: 'For 3D models, fileName must end with .glb or .gltf' }, { status: 400 })
     }
 
     // Generate unique key in bucket
@@ -80,6 +83,8 @@ export async function POST(request: NextRequest) {
       finalExt = '.mind'
     } else if (isMarkerImage && !safeExt.match(/\.(jpg|jpeg|png|webp)$/i)) {
       finalExt = '.png' // Default to PNG for marker images
+    } else if (is3DModel && !safeExt.match(/\.(glb|gltf)$/i)) {
+      finalExt = '.glb' // Default to GLB for 3D models
     }
     
     const key = `${fileType || 'upload'}-${timestamp}-${randomId}${finalExt}`

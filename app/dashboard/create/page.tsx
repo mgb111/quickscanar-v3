@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { Camera, Upload, Video, ArrowLeft, ArrowRight, Plus, X, CheckCircle } from 'lucide-react'
+import { Camera, Upload, Video, ArrowLeft, ArrowRight, Plus, X, CheckCircle, Box } from 'lucide-react'
 import Header from '@/components/Header'
 import toast from 'react-hot-toast'
 
@@ -22,10 +22,14 @@ export default function CreateExperience() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [title, setTitle] = useState('')
+  const [contentType, setContentType] = useState<'video' | '3d'>('video')
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [modelFile, setModelFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
   const [markerImageFile, setMarkerImageFile] = useState<File | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
+  const [modelScale, setModelScale] = useState(1.0)
+  const [modelRotation, setModelRotation] = useState(0)
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -48,6 +52,29 @@ export default function CreateExperience() {
 
       setVideoFile(file)
       toast.success('Video uploaded successfully!')
+    }
+  }, [])
+
+  const handleModelUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Check file size (50MB limit for 3D models)
+      const maxSizeInBytes = 50 * 1024 * 1024 // 50MB
+      if (file.size > maxSizeInBytes) {
+        toast.error(`3D model file too large. Maximum size is 50MB, your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`)
+        return
+      }
+
+      // Check file type
+      const allowedTypes = ['model/gltf-binary', 'model/gltf+json', 'application/octet-stream']
+      const fileName = file.name.toLowerCase()
+      if (!fileName.endsWith('.glb') && !fileName.endsWith('.gltf')) {
+        toast.error('Please upload a GLB or GLTF file')
+        return
+      }
+
+      setModelFile(file)
+      toast.success('3D model uploaded successfully!')
     }
   }, [])
 
@@ -81,15 +108,17 @@ export default function CreateExperience() {
     }
   }, [])
 
-  const removeFile = useCallback((type: 'video' | 'mind' | 'markerImage') => {
+  const removeFile = useCallback((type: 'video' | '3d' | 'mind' | 'markerImage') => {
     if (type === 'video') {
       setVideoFile(null)
+    } else if (type === '3d') {
+      setModelFile(null)
     } else if (type === 'mind') {
       setMindFile(null)
     } else if (type === 'markerImage') {
       setMarkerImageFile(null)
     }
-    toast.success(`${type === 'video' ? 'Video' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
+    toast.success(`${type === 'video' ? 'Video' : type === '3d' ? '3D model' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,8 +129,13 @@ export default function CreateExperience() {
       return
     }
     
-    if (!videoFile) {
+    if (contentType === 'video' && !videoFile) {
       toast.error('Please upload a video file')
+      return
+    }
+
+    if (contentType === '3d' && !modelFile) {
+      toast.error('Please upload a 3D model file')
       return
     }
 
@@ -118,39 +152,80 @@ export default function CreateExperience() {
     setSubmitting(true)
 
     try {
+      let videoUrl = ''
+      let modelUrl = ''
 
-      // Step 1: Get presigned URL for video upload to R2
-      const videoPresignedResponse = await fetch('/api/upload/r2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: videoFile.name,
-          fileType: 'video',
-          contentType: videoFile.type
+      // Upload video if content type is video
+      if (contentType === 'video' && videoFile) {
+        // Step 1: Get presigned URL for video upload to R2
+        const videoPresignedResponse = await fetch('/api/upload/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: videoFile.name,
+            fileType: 'video',
+            contentType: videoFile.type
+          })
         })
-      })
 
-      if (!videoPresignedResponse.ok) {
-        const err = await videoPresignedResponse.json().catch(() => null)
-        throw new Error(err?.error || 'Failed to get video upload URL')
+        if (!videoPresignedResponse.ok) {
+          const err = await videoPresignedResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get video upload URL')
+        }
+
+        const videoPresignedData = await videoPresignedResponse.json()
+        
+        // Step 2: Upload video directly to R2 using presigned URL
+        const videoUploadResponse = await fetch(videoPresignedData.signedUrl, {
+          method: 'PUT',
+          body: videoFile,
+          headers: {
+            'Content-Type': videoFile.type,
+          },
+        })
+
+        if (!videoUploadResponse.ok) {
+          throw new Error('Failed to upload video to R2')
+        }
+
+        videoUrl = videoPresignedData.publicUrl
       }
 
-      const videoPresignedData = await videoPresignedResponse.json()
-      
-      // Step 2: Upload video directly to R2 using presigned URL
-      const videoUploadResponse = await fetch(videoPresignedData.signedUrl, {
-        method: 'PUT',
-        body: videoFile,
-        headers: {
-          'Content-Type': videoFile.type,
-        },
-      })
+      // Upload 3D model if content type is 3d
+      if (contentType === '3d' && modelFile) {
+        // Step 1: Get presigned URL for 3D model upload to R2
+        const modelPresignedResponse = await fetch('/api/upload/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: modelFile.name,
+            fileType: '3d',
+            contentType: modelFile.type || 'application/octet-stream'
+          })
+        })
 
-      if (!videoUploadResponse.ok) {
-        throw new Error('Failed to upload video to R2')
+        if (!modelPresignedResponse.ok) {
+          const err = await modelPresignedResponse.json().catch(() => null)
+          throw new Error(err?.error || 'Failed to get 3D model upload URL')
+        }
+
+        const modelPresignedData = await modelPresignedResponse.json()
+        
+        // Step 2: Upload 3D model directly to R2 using presigned URL
+        const modelUploadResponse = await fetch(modelPresignedData.signedUrl, {
+          method: 'PUT',
+          body: modelFile,
+          headers: {
+            'Content-Type': modelFile.type || 'application/octet-stream',
+          },
+        })
+
+        if (!modelUploadResponse.ok) {
+          throw new Error('Failed to upload 3D model to R2')
+        }
+
+        modelUrl = modelPresignedData.publicUrl
       }
-
-      const videoUrl = videoPresignedData.publicUrl
 
       // Upload mind file to R2 (two-step: presign then upload)
       let mindUrl = ''
@@ -230,7 +305,11 @@ export default function CreateExperience() {
       // Create AR experience record
       const experienceData = {
         title: title.trim(),
-        video_file_url: videoUrl,
+        content_type: contentType,
+        video_file_url: contentType === 'video' ? videoUrl : null,
+        model_url: contentType === '3d' ? modelUrl : null,
+        model_scale: contentType === '3d' ? modelScale : 1.0,
+        model_rotation: contentType === '3d' ? modelRotation : 0,
         mind_file_url: mindUrl || null,
         marker_image_url: markerImageUrl || null,
         user_id: user!.id,
@@ -317,7 +396,7 @@ export default function CreateExperience() {
             Create AR Experience
           </h1>
           <p className="text-xl opacity-80 max-w-2xl mx-auto leading-relaxed">
-            Build an augmented reality experience that plays videos when you point your camera at specific images
+            Build an augmented reality experience that displays videos or 3D models when you point your camera at specific images
           </p>
         </div>
 
@@ -389,6 +468,41 @@ export default function CreateExperience() {
               />
             </div>
 
+            {/* Content Type Selection */}
+            <div>
+              <label className="block text-lg font-medium text-black mb-3">
+                Content Type *
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setContentType('video')}
+                  className={`p-6 border-2 rounded-xl transition-all ${
+                    contentType === 'video'
+                      ? 'border-red-600 bg-red-50'
+                      : 'border-black hover:border-red-600'
+                  }`}
+                >
+                  <Video className={`h-8 w-8 mx-auto mb-2 ${contentType === 'video' ? 'text-red-600' : 'text-black'}`} />
+                  <p className={`font-semibold ${contentType === 'video' ? 'text-red-600' : 'text-black'}`}>Video AR</p>
+                  <p className="text-sm text-black opacity-70 mt-1">Play videos on markers</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContentType('3d')}
+                  className={`p-6 border-2 rounded-xl transition-all ${
+                    contentType === '3d'
+                      ? 'border-red-600 bg-red-50'
+                      : 'border-black hover:border-red-600'
+                  }`}
+                >
+                  <Box className={`h-8 w-8 mx-auto mb-2 ${contentType === '3d' ? 'text-red-600' : 'text-black'}`} />
+                  <p className={`font-semibold ${contentType === '3d' ? 'text-red-600' : 'text-black'}`}>3D Model AR</p>
+                  <p className="text-sm text-black opacity-70 mt-1">Show 3D models on markers</p>
+                </button>
+              </div>
+            </div>
+
             {/* Optional Link URL */}
             <div>
               <label htmlFor="link_url" className="block text-lg font-medium text-black mb-3">
@@ -408,7 +522,8 @@ export default function CreateExperience() {
 
             {/* File Uploads */}
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Video Upload */}
+              {/* Video Upload - Only show if video type selected */}
+              {contentType === 'video' && (
             <div>
               <label className="block text-lg font-medium text-black mb-3">
                 Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
@@ -447,6 +562,49 @@ export default function CreateExperience() {
                   )}
                 </div>
             </div>
+              )}
+
+              {/* 3D Model Upload - Only show if 3d type selected */}
+              {contentType === '3d' && (
+                <div>
+                  <label className="block text-lg font-medium text-black mb-3">
+                    3D Model File * <span className="text-sm font-normal text-black opacity-70">(Max 50MB)</span>
+                  </label>
+                  <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                    {modelFile ? (
+                      <div className="space-y-3">
+                        <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                        <p className="text-base text-black font-medium">{modelFile.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeFile('3d')}
+                          className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <Box className="h-10 w-10 text-black mx-auto mb-3" />
+                        <p className="text-base text-black">
+                          <label htmlFor="model-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                            Click to upload 3D model
+                          </label>
+                        </p>
+                        <p className="text-sm text-black opacity-70 mt-2">GLB or GLTF format</p>
+                        <input
+                          id="model-upload"
+                          type="file"
+                          accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                          onChange={handleModelUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Mind File Upload */}
               <div>
@@ -490,6 +648,44 @@ export default function CreateExperience() {
 
 
             </div>
+
+            {/* 3D Model Settings - Only show if 3D type selected */}
+            {contentType === '3d' && (
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <label htmlFor="model_scale" className="block text-lg font-medium text-black mb-3">
+                    Model Scale
+                  </label>
+                  <input
+                    type="number"
+                    id="model_scale"
+                    value={modelScale}
+                    onChange={(e) => setModelScale(parseFloat(e.target.value) || 1.0)}
+                    min="0.1"
+                    max="10"
+                    step="0.1"
+                    className="w-full px-6 py-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-red-600 focus:border-transparent text-lg"
+                  />
+                  <p className="text-sm text-black opacity-70 mt-2">Scale of the 3D model (1.0 = normal size)</p>
+                </div>
+                <div>
+                  <label htmlFor="model_rotation" className="block text-lg font-medium text-black mb-3">
+                    Model Rotation (degrees)
+                  </label>
+                  <input
+                    type="number"
+                    id="model_rotation"
+                    value={modelRotation}
+                    onChange={(e) => setModelRotation(parseInt(e.target.value) || 0)}
+                    min="0"
+                    max="360"
+                    step="15"
+                    className="w-full px-6 py-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-red-600 focus:border-transparent text-lg"
+                  />
+                  <p className="text-sm text-black opacity-70 mt-2">Rotation around Y-axis (0-360 degrees)</p>
+                </div>
+              </div>
+            )}
 
             {/* Marker Image Upload */}
             <div className="col-span-full">
