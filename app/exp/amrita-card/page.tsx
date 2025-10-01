@@ -8,7 +8,8 @@ const RAW_VIDEO_URL = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/amrit
 const MARKER_IMAGE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/Amritafront.png'
 
 // Same-origin proxy to avoid CORS issues for MindAR/video fetches
-const proxify = (url: string) => `/api/proxy?url=${encodeURIComponent(url)}`
+// trailingSlash is enabled, so include the slash to avoid 308 redirects
+const proxify = (url: string) => `/api/proxy/?url=${encodeURIComponent(url)}`
 const MIND_FILE = proxify(RAW_MIND_FILE)
 const VIDEO_URL = proxify(RAW_VIDEO_URL)
 
@@ -95,7 +96,7 @@ export default function Page() {
               loading-screen="enabled: false"
               style="opacity:${started ? 1 : 0}; transition: opacity .3s ease;"
             >
-              <a-assets>
+              <a-assets timeout="20000">
                 <video id="arVideo" src="${VIDEO_URL}" loop muted playsinline crossorigin="anonymous" preload="auto"></video>
               </a-assets>
               <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
