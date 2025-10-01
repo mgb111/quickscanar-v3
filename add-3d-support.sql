@@ -3,6 +3,18 @@
 -- ========================================
 -- This script adds support for 3D models alongside video AR
 
+-- First, make video_url nullable since 3D AR won't have videos
+DO $$
+BEGIN
+    -- Remove NOT NULL constraint from video_url
+    ALTER TABLE ar_experiences 
+    ALTER COLUMN video_url DROP NOT NULL;
+    RAISE NOTICE 'Made video_url nullable';
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'video_url already nullable or error: %', SQLERRM;
+END $$;
+
 -- Add new columns to ar_experiences table
 DO $$ 
 BEGIN
@@ -67,4 +79,27 @@ WHERE video_url IS NOT NULL AND content_type IS NULL;
 -- Create index for faster queries by content_type
 CREATE INDEX IF NOT EXISTS idx_ar_experiences_content_type ON ar_experiences(content_type);
 
-RAISE NOTICE '✅ 3D model support added successfully!';
+-- Add constraint to ensure either video_url OR model_url is present
+DO $$
+BEGIN
+    -- Drop constraint if it exists
+    ALTER TABLE ar_experiences 
+    DROP CONSTRAINT IF EXISTS check_content_url;
+    
+    -- Add constraint: at least one of video_url or model_url must be present
+    ALTER TABLE ar_experiences 
+    ADD CONSTRAINT check_content_url 
+    CHECK (
+        (content_type = 'video' AND video_url IS NOT NULL) OR
+        (content_type = '3d' AND model_url IS NOT NULL)
+    );
+    RAISE NOTICE 'Added constraint to ensure content URL matches content type';
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Constraint already exists or error: %', SQLERRM;
+END $$;
+
+DO $$
+BEGIN
+    RAISE NOTICE '✅ 3D model support added successfully!';
+END $$;
