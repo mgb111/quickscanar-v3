@@ -764,8 +764,16 @@ export default function CreateExperience() {
                               <video 
                                 src={videoPreviewUrl!} 
                                 controls 
-                                className="w-full rounded-lg border-2 border-gray-300"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                className="w-full rounded-lg border-2 border-gray-300 bg-black"
                                 style={{ maxHeight: '300px' }}
+                                onLoadedMetadata={(e) => {
+                                  const video = e.target as HTMLVideoElement;
+                                  video.currentTime = 0;
+                                }}
                               />
                               <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                                 Layer 1
