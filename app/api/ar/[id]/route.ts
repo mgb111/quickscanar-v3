@@ -694,7 +694,7 @@ export async function GET(
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target" one-euro-smoother="mode: ultra_lock; smoothingFactor: 0.001; freq: 5; mincutoff: 0.001; beta: 0.001; dcutoff: 1.0; posDeadzone: 0.000001; rotDeadzoneDeg: 0.001; emaFactor: 0.001; throttleHz: 3; medianWindow: 15; zeroRoll: true; minMovementThreshold: 0.0000001">
+      <a-entity mindar-image-target="targetIndex: 0" id="target">
         ${isVideo ? `
         <a-plane
           id="backgroundPlane"
@@ -712,8 +712,9 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat"
+          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
           visible="false"
+          geometry="primitive: plane"
         ></a-plane>
         ` : ''}
         ${is3D ? `
@@ -935,13 +936,7 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Reduce video updates for smoother playback
-          video.addEventListener('timeupdate', () => {
-            if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-              // Force repaint for smooth updates
-              videoPlane.setAttribute('material', 'shader: flat; src: #arVideo; transparent: true; alphaTest: 0.1');
-            }
-          });
+          // Video is now stable - no need for constant updates
         }
 
         // Setup 3D model animation
