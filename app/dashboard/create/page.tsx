@@ -765,84 +765,85 @@ export default function CreateExperience() {
 
                   {showCombinedPreview && (
                     <div className="space-y-6 mt-6">
-                      {/* Preview Container */}
+                      {/* Preview Container - Overlaid View */}
                       <div className="bg-white rounded-xl p-6 border-2 border-black">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          {/* Video Preview */}
-                          <div>
-                            <h5 className="font-semibold text-black mb-3">Video Layer (Background)</h5>
-                            <div className="relative">
-                              {!videoError ? (
-                                <video 
-                                  key={videoPreviewUrl}
-                                  src={videoPreviewUrl!} 
-                                  controls 
-                                  autoPlay
-                                  muted
-                                  loop
-                                  playsInline
-                                  preload="metadata"
-                                  className="w-full rounded-lg border-2 border-gray-300 bg-black"
-                                  style={{ maxHeight: '300px', objectFit: 'contain' }}
-                                  onLoadedData={(e) => {
-                                    const video = e.target as HTMLVideoElement;
-                                    console.log('Video loaded:', video.videoWidth, 'x', video.videoHeight);
-                                    video.play().catch(err => console.error('Play error:', err));
-                                  }}
-                                  onError={(e) => {
-                                    console.error('Video error:', e);
-                                    setVideoError(true);
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-full rounded-lg border-2 border-gray-300 bg-gray-100 flex items-center justify-center" style={{ height: '300px' }}>
-                                  <div className="text-center p-4">
-                                    <p className="text-black font-semibold mb-2">Video Preview Unavailable</p>
-                                    <p className="text-sm text-black opacity-70">File: {videoFile?.name}</p>
-                                    <p className="text-xs text-black opacity-50 mt-2">Video will still work in AR</p>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                Layer 1
-                              </div>
+                        <h5 className="font-semibold text-black mb-3 text-center">Combined Preview (Overlaid)</h5>
+                        <div className="relative mx-auto" style={{ maxWidth: '600px', height: '450px' }}>
+                          {/* Video Layer (Background) */}
+                          {!videoError ? (
+                            <video 
+                              key={videoPreviewUrl}
+                              src={videoPreviewUrl!} 
+                              controls 
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="metadata"
+                              className="absolute inset-0 w-full h-full rounded-lg"
+                              style={{ objectFit: 'cover' }}
+                              onLoadedData={(e) => {
+                                const video = e.target as HTMLVideoElement;
+                                video.play().catch(() => {});
+                              }}
+                              onError={() => setVideoError(true)}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gray-900 rounded-lg flex items-center justify-center">
+                              <p className="text-white text-sm">Video: {videoFile?.name}</p>
                             </div>
+                          )}
+                          
+                          {/* 3D Model Layer (Foreground) - Overlaid */}
+                          <div 
+                            className="absolute rounded-lg pointer-events-none"
+                            style={{
+                              left: `${50 + (modelPositionX * 30)}%`,
+                              top: `${50 - (modelPositionY * 40)}%`,
+                              transform: `translate(-50%, -50%) translateZ(${modelPositionZ * 100}px)`,
+                              width: `${40 * modelScale}%`,
+                              height: `${40 * modelScale}%`,
+                              minWidth: '150px',
+                              minHeight: '150px'
+                            }}
+                          >
+                            <model-viewer
+                              id="combinedModelViewer"
+                              src={modelPreviewUrl!}
+                              alt="3D model preview"
+                              auto-rotate={false}
+                              camera-controls
+                              rotation-per-second="0deg"
+                              style={{ 
+                                width: '100%', 
+                                height: '100%',
+                                transform: `rotateY(${modelRotation}deg)`,
+                                pointerEvents: 'auto'
+                              }}
+                            />
                           </div>
 
-                          {/* 3D Model Preview */}
-                          <div>
-                            <h5 className="font-semibold text-black mb-3">3D Model Layer (Foreground)</h5>
-                            <div className="relative">
-                              <div className="w-full bg-gray-100 rounded-lg border-2 border-gray-300" style={{ height: '300px' }}>
-                                <model-viewer
-                                  src={modelPreviewUrl!}
-                                  alt="3D model preview"
-                                  auto-rotate
-                                  camera-controls
-                                  style={{ width: '100%', height: '100%' }}
-                                />
-                              </div>
-                              <div className="absolute top-2 left-2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                Layer 2
-                              </div>
+                          {/* Layer Indicators */}
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                            Video Layer
+                          </div>
+                          <div className="absolute top-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                            3D Model Layer
+                          </div>
+                          
+                          {/* Position Info */}
+                          <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-xs z-10">
+                            <div className="flex justify-between items-center">
+                              <span>Position: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</span>
+                              <span>Scale: {modelScale.toFixed(1)}x</span>
+                              <span>Rotation: {modelRotation}°</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Position Diagram */}
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
-                          <h5 className="font-semibold text-black mb-3">AR Positioning</h5>
-                          <div className="text-sm text-black space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-blue-600 rounded"></div>
-                              <span>Video: Position (0, 0, 0.01) - Flat on marker</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-purple-600 rounded"></div>
-                              <span>3D Model: Position ({modelPositionX}, {modelPositionY}, {modelPositionZ}) - Above video</span>
-                            </div>
-                          </div>
-                        </div>
+                        <p className="text-center text-sm text-black opacity-70 mt-4">
+                          💡 Adjust controls below to see changes in real-time
+                        </p>
                       </div>
 
                       {/* 3D Model Position Controls */}
@@ -852,67 +853,111 @@ export default function CreateExperience() {
                           <span className="text-xs font-normal bg-gray-200 px-2 py-1 rounded">Live Preview</span>
                         </h5>
                         
-                        <div className="grid md:grid-cols-3 gap-6">
-                          {/* X Position */}
+                        <div className="space-y-6">
+                          {/* Position Controls */}
                           <div>
-                            <label className="block text-sm font-medium text-black mb-2">
-                              X Position (Left ← → Right)
-                            </label>
-                            <input
-                              type="range"
-                              min="-1"
-                              max="1"
-                              step="0.1"
-                              value={modelPositionX}
-                              onChange={(e) => setModelPositionX(parseFloat(e.target.value))}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
-                              <span>Left</span>
-                              <span className="font-semibold">{modelPositionX.toFixed(1)}</span>
-                              <span>Right</span>
+                            <h6 className="text-sm font-semibold text-black mb-3">Position (X, Y, Z)</h6>
+                            <div className="grid md:grid-cols-3 gap-4">
+                              {/* X Position */}
+                              <div>
+                                <label className="block text-xs font-medium text-black mb-2">
+                                  X (Left ← → Right)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="-1"
+                                  max="1"
+                                  step="0.1"
+                                  value={modelPositionX}
+                                  onChange={(e) => setModelPositionX(parseFloat(e.target.value))}
+                                  className="w-full"
+                                />
+                                <div className="text-center text-xs text-black font-semibold mt-1">
+                                  {modelPositionX.toFixed(1)}
+                                </div>
+                              </div>
+
+                              {/* Y Position */}
+                              <div>
+                                <label className="block text-xs font-medium text-black mb-2">
+                                  Y (Down ↓ ↑ Up)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  step="0.05"
+                                  value={modelPositionY}
+                                  onChange={(e) => setModelPositionY(parseFloat(e.target.value))}
+                                  className="w-full"
+                                />
+                                <div className="text-center text-xs text-black font-semibold mt-1">
+                                  {modelPositionY.toFixed(2)}
+                                </div>
+                              </div>
+
+                              {/* Z Position */}
+                              <div>
+                                <label className="block text-xs font-medium text-black mb-2">
+                                  Z (Back ← → Front)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="0.5"
+                                  step="0.05"
+                                  value={modelPositionZ}
+                                  onChange={(e) => setModelPositionZ(parseFloat(e.target.value))}
+                                  className="w-full"
+                                />
+                                <div className="text-center text-xs text-black font-semibold mt-1">
+                                  {modelPositionZ.toFixed(2)}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Y Position */}
+                          {/* Scale and Rotation Controls */}
                           <div>
-                            <label className="block text-sm font-medium text-black mb-2">
-                              Y Position (Down ↓ ↑ Up)
-                            </label>
-                            <input
-                              type="range"
-                              min="0"
-                              max="1"
-                              step="0.05"
-                              value={modelPositionY}
-                              onChange={(e) => setModelPositionY(parseFloat(e.target.value))}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
-                              <span>Down</span>
-                              <span className="font-semibold">{modelPositionY.toFixed(2)}</span>
-                              <span>Up</span>
-                            </div>
-                          </div>
+                            <h6 className="text-sm font-semibold text-black mb-3">Scale & Rotation</h6>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {/* Scale */}
+                              <div>
+                                <label className="block text-xs font-medium text-black mb-2">
+                                  Scale (Size)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0.1"
+                                  max="3"
+                                  step="0.1"
+                                  value={modelScale}
+                                  onChange={(e) => setModelScale(parseFloat(e.target.value))}
+                                  className="w-full"
+                                />
+                                <div className="text-center text-xs text-black font-semibold mt-1">
+                                  {modelScale.toFixed(1)}x
+                                </div>
+                              </div>
 
-                          {/* Z Position */}
-                          <div>
-                            <label className="block text-sm font-medium text-black mb-2">
-                              Z Position (Back ← → Front)
-                            </label>
-                            <input
-                              type="range"
-                              min="0"
-                              max="0.5"
-                              step="0.05"
-                              value={modelPositionZ}
-                              onChange={(e) => setModelPositionZ(parseFloat(e.target.value))}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
-                              <span>Back</span>
-                              <span className="font-semibold">{modelPositionZ.toFixed(2)}</span>
-                              <span>Front</span>
+                              {/* Rotation */}
+                              <div>
+                                <label className="block text-xs font-medium text-black mb-2">
+                                  Rotation (Y-axis)
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="360"
+                                  step="15"
+                                  value={modelRotation}
+                                  onChange={(e) => setModelRotation(parseInt(e.target.value))}
+                                  className="w-full"
+                                />
+                                <div className="text-center text-xs text-black font-semibold mt-1">
+                                  {modelRotation}°
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -999,8 +1044,8 @@ export default function CreateExperience() {
               </div>
             )}
 
-            {/* 3D Model Settings - Show if 3D model is uploaded */}
-            {modelFile && (
+            {/* 3D Model Settings - Show if 3D model is uploaded but NOT in combined mode */}
+            {modelFile && !videoFile && (
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <label htmlFor="model_scale" className="block text-lg font-medium text-black mb-3">
