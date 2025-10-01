@@ -720,7 +720,7 @@ export async function GET(
         <a-entity
           id="model3D"
           gltf-model="#arModel"
-          position="0 ${contentType === 'both' ? '0.3' : '0'} ${contentType === 'both' ? '0.15' : '0'}"
+          position="${experience.model_position_x || 0} ${experience.model_position_y || (contentType === 'both' ? 0.3 : 0)} ${experience.model_position_z || (contentType === 'both' ? 0.15 : 0)}"
           rotation="0 ${experience.model_rotation || 0} 0"
           scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
           visible="false"

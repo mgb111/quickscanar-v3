@@ -74,6 +74,45 @@ BEGIN
     ELSE
         RAISE NOTICE 'model_rotation column already exists';
     END IF;
+
+    -- Add model_position_x column for 3D model X position
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'ar_experiences' 
+        AND column_name = 'model_position_x'
+    ) THEN
+        ALTER TABLE ar_experiences 
+        ADD COLUMN model_position_x DECIMAL DEFAULT 0;
+        RAISE NOTICE 'Added model_position_x column';
+    ELSE
+        RAISE NOTICE 'model_position_x column already exists';
+    END IF;
+
+    -- Add model_position_y column for 3D model Y position
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'ar_experiences' 
+        AND column_name = 'model_position_y'
+    ) THEN
+        ALTER TABLE ar_experiences 
+        ADD COLUMN model_position_y DECIMAL DEFAULT 0.3;
+        RAISE NOTICE 'Added model_position_y column';
+    ELSE
+        RAISE NOTICE 'model_position_y column already exists';
+    END IF;
+
+    -- Add model_position_z column for 3D model Z position
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'ar_experiences' 
+        AND column_name = 'model_position_z'
+    ) THEN
+        ALTER TABLE ar_experiences 
+        ADD COLUMN model_position_z DECIMAL DEFAULT 0.15;
+        RAISE NOTICE 'Added model_position_z column';
+    ELSE
+        RAISE NOTICE 'model_position_z column already exists';
+    END IF;
 END $$;
 
 -- Update existing records to have content_type = 'video' if they have video_url

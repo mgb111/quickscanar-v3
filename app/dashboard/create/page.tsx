@@ -45,6 +45,12 @@ export default function CreateExperience() {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null)
   const [markerPreviewUrl, setMarkerPreviewUrl] = useState<string | null>(null)
+  const [showCombinedPreview, setShowCombinedPreview] = useState(false)
+
+  // 3D model position controls (for combined preview)
+  const [modelPositionX, setModelPositionX] = useState(0)
+  const [modelPositionY, setModelPositionY] = useState(0.3)
+  const [modelPositionZ, setModelPositionZ] = useState(0.15)
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -367,6 +373,9 @@ export default function CreateExperience() {
         model_url: modelUrl || null,
         model_scale: modelUrl ? modelScale : 1.0,
         model_rotation: modelUrl ? modelRotation : 0,
+        model_position_x: modelUrl ? modelPositionX : 0,
+        model_position_y: modelUrl ? modelPositionY : 0.3,
+        model_position_z: modelUrl ? modelPositionZ : 0.15,
         mind_file_url: mindUrl || null,
         marker_image_url: markerImageUrl || null,
         user_id: user!.id,
@@ -719,6 +728,240 @@ export default function CreateExperience() {
 
 
             </div>
+
+            {/* Combined Preview - Show if both video and 3D model uploaded */}
+            {videoFile && modelFile && (
+              <div className="col-span-full">
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-600 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-xl font-semibold text-black flex items-center gap-2">
+                        🎬 Combined AR Preview
+                        <span className="text-sm font-normal bg-purple-600 text-white px-3 py-1 rounded-full">Both</span>
+                      </h4>
+                      <p className="text-sm text-black opacity-80 mt-1">
+                        See how your video and 3D model will look together in AR
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCombinedPreview(!showCombinedPreview)}
+                      className="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-colors"
+                    >
+                      {showCombinedPreview ? 'Hide Preview' : 'Show Preview & Edit'}
+                    </button>
+                  </div>
+
+                  {showCombinedPreview && (
+                    <div className="space-y-6 mt-6">
+                      {/* Preview Container */}
+                      <div className="bg-white rounded-xl p-6 border-2 border-black">
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {/* Video Preview */}
+                          <div>
+                            <h5 className="font-semibold text-black mb-3">Video Layer (Background)</h5>
+                            <div className="relative">
+                              <video 
+                                src={videoPreviewUrl!} 
+                                controls 
+                                className="w-full rounded-lg border-2 border-gray-300"
+                                style={{ maxHeight: '300px' }}
+                              />
+                              <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                Layer 1
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3D Model Preview */}
+                          <div>
+                            <h5 className="font-semibold text-black mb-3">3D Model Layer (Foreground)</h5>
+                            <div className="relative">
+                              <div className="w-full bg-gray-100 rounded-lg border-2 border-gray-300" style={{ height: '300px' }}>
+                                <model-viewer
+                                  src={modelPreviewUrl!}
+                                  alt="3D model preview"
+                                  auto-rotate
+                                  camera-controls
+                                  style={{ width: '100%', height: '100%' }}
+                                />
+                              </div>
+                              <div className="absolute top-2 left-2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                Layer 2
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Position Diagram */}
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
+                          <h5 className="font-semibold text-black mb-3">AR Positioning</h5>
+                          <div className="text-sm text-black space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                              <span>Video: Position (0, 0, 0.01) - Flat on marker</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-purple-600 rounded"></div>
+                              <span>3D Model: Position ({modelPositionX}, {modelPositionY}, {modelPositionZ}) - Above video</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3D Model Position Controls */}
+                      <div className="bg-white rounded-xl p-6 border-2 border-black">
+                        <h5 className="font-semibold text-black mb-4 flex items-center gap-2">
+                          🎮 Adjust 3D Model Position
+                          <span className="text-xs font-normal bg-gray-200 px-2 py-1 rounded">Live Preview</span>
+                        </h5>
+                        
+                        <div className="grid md:grid-cols-3 gap-6">
+                          {/* X Position */}
+                          <div>
+                            <label className="block text-sm font-medium text-black mb-2">
+                              X Position (Left ← → Right)
+                            </label>
+                            <input
+                              type="range"
+                              min="-1"
+                              max="1"
+                              step="0.1"
+                              value={modelPositionX}
+                              onChange={(e) => setModelPositionX(parseFloat(e.target.value))}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
+                              <span>Left</span>
+                              <span className="font-semibold">{modelPositionX.toFixed(1)}</span>
+                              <span>Right</span>
+                            </div>
+                          </div>
+
+                          {/* Y Position */}
+                          <div>
+                            <label className="block text-sm font-medium text-black mb-2">
+                              Y Position (Down ↓ ↑ Up)
+                            </label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={modelPositionY}
+                              onChange={(e) => setModelPositionY(parseFloat(e.target.value))}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
+                              <span>Down</span>
+                              <span className="font-semibold">{modelPositionY.toFixed(2)}</span>
+                              <span>Up</span>
+                            </div>
+                          </div>
+
+                          {/* Z Position */}
+                          <div>
+                            <label className="block text-sm font-medium text-black mb-2">
+                              Z Position (Back ← → Front)
+                            </label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="0.5"
+                              step="0.05"
+                              value={modelPositionZ}
+                              onChange={(e) => setModelPositionZ(parseFloat(e.target.value))}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-black opacity-70 mt-1">
+                              <span>Back</span>
+                              <span className="font-semibold">{modelPositionZ.toFixed(2)}</span>
+                              <span>Front</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="mt-6 pt-6 border-t-2 border-gray-200">
+                          <h6 className="text-sm font-semibold text-black mb-3">Quick Presets:</h6>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModelPositionX(0)
+                                setModelPositionY(0.3)
+                                setModelPositionZ(0.15)
+                              }}
+                              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Default (Center, Raised)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModelPositionX(0)
+                                setModelPositionY(0)
+                                setModelPositionZ(0.2)
+                              }}
+                              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Flat (On Video)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModelPositionX(0)
+                                setModelPositionY(0.5)
+                                setModelPositionZ(0.15)
+                              }}
+                              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              High (Above Video)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModelPositionX(0.3)
+                                setModelPositionY(0.3)
+                                setModelPositionZ(0.15)
+                              }}
+                              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Right Side
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModelPositionX(-0.3)
+                                setModelPositionY(0.3)
+                                setModelPositionZ(0.15)
+                              }}
+                              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Left Side
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tips */}
+                      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+                        <h6 className="font-semibold text-black mb-2 flex items-center gap-2">
+                          💡 Tips for Best Results
+                        </h6>
+                        <ul className="text-sm text-black space-y-1">
+                          <li>• <strong>Y Position:</strong> Higher values lift the 3D model above the video</li>
+                          <li>• <strong>Z Position:</strong> Higher values bring the model closer to camera</li>
+                          <li>• <strong>X Position:</strong> Negative = left, Positive = right</li>
+                          <li>• <strong>Scale:</strong> Adjust below if model is too large/small</li>
+                          <li>• <strong>Test:</strong> Try different positions to see what works best</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 3D Model Settings - Show if 3D model is uploaded */}
             {modelFile && (
