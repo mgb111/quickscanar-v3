@@ -43,7 +43,7 @@ export default function Page() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen">
       {/* Start overlay */}
       {!started && (
         <div className="fixed inset-0 z-20 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.9)' }}>
@@ -135,7 +135,7 @@ export default function Page() {
             <a-scene
               mindar-image="imageTargetSrc: ${MIND_FILE}; filterMinCF: 0.0001; filterBeta: 0.001; maxTrack: 1;"
               color-space="sRGB"
-              renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
+              renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: false"
               vr-mode-ui="enabled: false"
               device-orientation-permission-ui="enabled: false"
               embedded
