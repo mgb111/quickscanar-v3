@@ -1,12 +1,22 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { Camera, Upload, Video, ArrowLeft, ArrowRight, Plus, X, CheckCircle, Box } from 'lucide-react'
 import Header from '@/components/Header'
 import toast from 'react-hot-toast'
+import Script from 'next/script'
+
+// Declare model-viewer for TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'model-viewer': any
+    }
+  }
+}
 
 interface ARExperience {
   id: string
@@ -31,7 +41,21 @@ export default function CreateExperience() {
   const [modelScale, setModelScale] = useState(1.0)
   const [modelRotation, setModelRotation] = useState(0)
 
+  // Preview states
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
+  const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null)
+  const [markerPreviewUrl, setMarkerPreviewUrl] = useState<string | null>(null)
+
   const [submitting, setSubmitting] = useState(false)
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl)
+      if (modelPreviewUrl) URL.revokeObjectURL(modelPreviewUrl)
+      if (markerPreviewUrl) URL.revokeObjectURL(markerPreviewUrl)
+    }
+  }, [videoPreviewUrl, modelPreviewUrl, markerPreviewUrl])
 
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -51,6 +75,11 @@ export default function CreateExperience() {
       }
 
       setVideoFile(file)
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setVideoPreviewUrl(previewUrl)
+      
       toast.success('Video uploaded successfully!')
     }
   }, [])
@@ -74,6 +103,11 @@ export default function CreateExperience() {
       }
 
       setModelFile(file)
+      
+      // Create preview URL for 3D model
+      const previewUrl = URL.createObjectURL(file)
+      setModelPreviewUrl(previewUrl)
+      
       toast.success('3D model uploaded successfully!')
     }
   }, [])
@@ -104,6 +138,11 @@ export default function CreateExperience() {
         return
       }
       setMarkerImageFile(file)
+      
+      // Create preview URL for marker image
+      const previewUrl = URL.createObjectURL(file)
+      setMarkerPreviewUrl(previewUrl)
+      
       toast.success('Marker image uploaded successfully!')
     }
   }, [])
@@ -111,15 +150,27 @@ export default function CreateExperience() {
   const removeFile = useCallback((type: 'video' | '3d' | 'mind' | 'markerImage') => {
     if (type === 'video') {
       setVideoFile(null)
+      if (videoPreviewUrl) {
+        URL.revokeObjectURL(videoPreviewUrl)
+        setVideoPreviewUrl(null)
+      }
     } else if (type === '3d') {
       setModelFile(null)
+      if (modelPreviewUrl) {
+        URL.revokeObjectURL(modelPreviewUrl)
+        setModelPreviewUrl(null)
+      }
     } else if (type === 'mind') {
       setMindFile(null)
     } else if (type === 'markerImage') {
       setMarkerImageFile(null)
+      if (markerPreviewUrl) {
+        URL.revokeObjectURL(markerPreviewUrl)
+        setMarkerPreviewUrl(null)
+      }
     }
     toast.success(`${type === 'video' ? 'Video' : type === '3d' ? '3D model' : type === 'mind' ? 'Mind file' : 'Marker image'} removed`)
-  }, [])
+  }, [videoPreviewUrl, modelPreviewUrl, markerPreviewUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -370,14 +421,21 @@ export default function CreateExperience() {
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Navigation */}
-      <Header
-        showDashboard={false}
-        showSignOut={true}
-        userEmail={user?.email}
-        onSignOut={() => router.push('/auth/signout')}
+    <>
+      {/* Load model-viewer for 3D preview */}
+      <Script 
+        type="module" 
+        src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"
       />
+      
+      <div className="min-h-screen bg-cream">
+        {/* Navigation */}
+        <Header
+          showDashboard={false}
+          showSignOut={true}
+          userEmail={user?.email}
+          onSignOut={() => router.push('/auth/signout')}
+        />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -533,6 +591,16 @@ export default function CreateExperience() {
                     <div className="space-y-3">
                       <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
                       <p className="text-base text-black font-medium">{videoFile.name}</p>
+                      {videoPreviewUrl && (
+                        <div className="mt-4">
+                          <video 
+                            src={videoPreviewUrl} 
+                            controls 
+                            className="w-full max-h-64 rounded-lg border-2 border-black"
+                          />
+                          <p className="text-xs text-black opacity-70 mt-2">Preview</p>
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeFile('video')}
@@ -575,6 +643,20 @@ export default function CreateExperience() {
                       <div className="space-y-3">
                         <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
                         <p className="text-base text-black font-medium">{modelFile.name}</p>
+                        {modelPreviewUrl && (
+                          <div className="mt-4">
+                            <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-black flex items-center justify-center">
+                              <model-viewer
+                                src={modelPreviewUrl}
+                                alt="3D model preview"
+                                auto-rotate
+                                camera-controls
+                                style={{width: '100%', height: '100%'}}
+                              />
+                            </div>
+                            <p className="text-xs text-black opacity-70 mt-2">Preview - Drag to rotate</p>
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => removeFile('3d')}
@@ -697,6 +779,16 @@ export default function CreateExperience() {
                   <div className="space-y-3">
                     <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
                     <p className="text-base text-black font-medium">{markerImageFile.name}</p>
+                    {markerPreviewUrl && (
+                      <div className="mt-4">
+                        <img 
+                          src={markerPreviewUrl} 
+                          alt="Marker preview" 
+                          className="max-w-full max-h-64 mx-auto rounded-lg border-2 border-black"
+                        />
+                        <p className="text-xs text-black opacity-70 mt-2">Marker Image Preview</p>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeFile('markerImage')}
@@ -790,5 +882,6 @@ export default function CreateExperience() {
         </div>
       </div>
     </div>
+    </>
   )
 } 
