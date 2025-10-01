@@ -7,11 +7,6 @@ const MIND_FILE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/targets72
 const VIDEO_URL = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/amrita-intro.mp4'
 const MARKER_IMAGE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/Amritafront.png'
 
-export const metadata = {
-  title: 'Amrita Card – AR Experience',
-  description: 'Point your camera at the Amrita marker to play the AR video.'
-}
-
 export default function Page() {
   const [started, setStarted] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
