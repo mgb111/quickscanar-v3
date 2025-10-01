@@ -46,6 +46,7 @@ export default function CreateExperience() {
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null)
   const [markerPreviewUrl, setMarkerPreviewUrl] = useState<string | null>(null)
   const [showCombinedPreview, setShowCombinedPreview] = useState(false)
+  const [videoError, setVideoError] = useState(false)
 
   // 3D model position controls (for combined preview)
   const [modelPositionX, setModelPositionX] = useState(0)
@@ -595,11 +596,21 @@ export default function CreateExperience() {
                       {videoPreviewUrl && (
                         <div className="mt-4">
                           <video 
+                            key={videoPreviewUrl}
                             src={videoPreviewUrl} 
                             controls 
-                            className="w-full max-h-64 rounded-lg border-2 border-black"
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
+                            style={{ objectFit: 'contain' }}
+                            onLoadedData={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              video.play().catch(() => {});
+                            }}
                           />
-                          <p className="text-xs text-black opacity-70 mt-2">Preview</p>
+                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
                         </div>
                       )}
                       <button
@@ -761,20 +772,37 @@ export default function CreateExperience() {
                           <div>
                             <h5 className="font-semibold text-black mb-3">Video Layer (Background)</h5>
                             <div className="relative">
-                              <video 
-                                src={videoPreviewUrl!} 
-                                controls 
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                className="w-full rounded-lg border-2 border-gray-300 bg-black"
-                                style={{ maxHeight: '300px' }}
-                                onLoadedMetadata={(e) => {
-                                  const video = e.target as HTMLVideoElement;
-                                  video.currentTime = 0;
-                                }}
-                              />
+                              {!videoError ? (
+                                <video 
+                                  key={videoPreviewUrl}
+                                  src={videoPreviewUrl!} 
+                                  controls 
+                                  autoPlay
+                                  muted
+                                  loop
+                                  playsInline
+                                  preload="metadata"
+                                  className="w-full rounded-lg border-2 border-gray-300 bg-black"
+                                  style={{ maxHeight: '300px', objectFit: 'contain' }}
+                                  onLoadedData={(e) => {
+                                    const video = e.target as HTMLVideoElement;
+                                    console.log('Video loaded:', video.videoWidth, 'x', video.videoHeight);
+                                    video.play().catch(err => console.error('Play error:', err));
+                                  }}
+                                  onError={(e) => {
+                                    console.error('Video error:', e);
+                                    setVideoError(true);
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full rounded-lg border-2 border-gray-300 bg-gray-100 flex items-center justify-center" style={{ height: '300px' }}>
+                                  <div className="text-center p-4">
+                                    <p className="text-black font-semibold mb-2">Video Preview Unavailable</p>
+                                    <p className="text-sm text-black opacity-70">File: {videoFile?.name}</p>
+                                    <p className="text-xs text-black opacity-50 mt-2">Video will still work in AR</p>
+                                  </div>
+                                </div>
+                              )}
                               <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                                 Layer 1
                               </div>
