@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
 
     // Validate content type and corresponding URL
     const actualContentType = content_type || 'video'
+    
+    // Validate based on content type
     if (actualContentType === 'video' && !video_file_url) {
       return NextResponse.json({ 
         error: 'video_file_url is required when content_type is "video"' 
@@ -59,6 +61,18 @@ export async function POST(request: NextRequest) {
     if (actualContentType === '3d' && !model_url) {
       return NextResponse.json({ 
         error: 'model_url is required when content_type is "3d"' 
+      }, { status: 400 })
+    }
+    if (actualContentType === 'both' && (!video_file_url || !model_url)) {
+      return NextResponse.json({ 
+        error: 'Both video_file_url and model_url are required when content_type is "both"' 
+      }, { status: 400 })
+    }
+    
+    // Must have at least one content URL
+    if (!video_file_url && !model_url) {
+      return NextResponse.json({ 
+        error: 'At least video_file_url or model_url is required' 
       }, { status: 400 })
     }
 

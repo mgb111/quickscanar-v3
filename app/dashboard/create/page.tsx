@@ -180,13 +180,9 @@ export default function CreateExperience() {
       return
     }
     
-    if (contentType === 'video' && !videoFile) {
-      toast.error('Please upload a video file')
-      return
-    }
-
-    if (contentType === '3d' && !modelFile) {
-      toast.error('Please upload a 3D model file')
+    // Must have at least video OR 3D model (or both)
+    if (!videoFile && !modelFile) {
+      toast.error('Please upload at least a video file or a 3D model file (or both)')
       return
     }
 
@@ -206,8 +202,8 @@ export default function CreateExperience() {
       let videoUrl = ''
       let modelUrl = ''
 
-      // Upload video if content type is video
-      if (contentType === 'video' && videoFile) {
+      // Upload video if provided
+      if (videoFile) {
         // Step 1: Get presigned URL for video upload to R2
         const videoPresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -242,8 +238,8 @@ export default function CreateExperience() {
         videoUrl = videoPresignedData.publicUrl
       }
 
-      // Upload 3D model if content type is 3d
-      if (contentType === '3d' && modelFile) {
+      // Upload 3D model if provided
+      if (modelFile) {
         // Step 1: Get presigned URL for 3D model upload to R2
         const modelPresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -353,14 +349,24 @@ export default function CreateExperience() {
         markerImageUrl = markerImagePresignedData.publicUrl
       }
 
+      // Determine content type based on what was uploaded
+      let determinedContentType = 'video' // default
+      if (videoUrl && modelUrl) {
+        determinedContentType = 'both' // both video and 3D
+      } else if (modelUrl && !videoUrl) {
+        determinedContentType = '3d' // only 3D
+      } else if (videoUrl && !modelUrl) {
+        determinedContentType = 'video' // only video
+      }
+
       // Create AR experience record
       const experienceData = {
         title: title.trim(),
-        content_type: contentType,
-        video_file_url: contentType === 'video' ? videoUrl : null,
-        model_url: contentType === '3d' ? modelUrl : null,
-        model_scale: contentType === '3d' ? modelScale : 1.0,
-        model_rotation: contentType === '3d' ? modelRotation : 0,
+        content_type: determinedContentType,
+        video_file_url: videoUrl || null,
+        model_url: modelUrl || null,
+        model_scale: modelUrl ? modelScale : 1.0,
+        model_rotation: modelUrl ? modelRotation : 0,
         mind_file_url: mindUrl || null,
         marker_image_url: markerImageUrl || null,
         user_id: user!.id,
@@ -526,38 +532,25 @@ export default function CreateExperience() {
               />
             </div>
 
-            {/* Content Type Selection */}
-            <div>
-              <label className="block text-lg font-medium text-black mb-3">
-                Content Type *
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setContentType('video')}
-                  className={`p-6 border-2 rounded-xl transition-all ${
-                    contentType === 'video'
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-black hover:border-red-600'
-                  }`}
-                >
-                  <Video className={`h-8 w-8 mx-auto mb-2 ${contentType === 'video' ? 'text-red-600' : 'text-black'}`} />
-                  <p className={`font-semibold ${contentType === 'video' ? 'text-red-600' : 'text-black'}`}>Video AR</p>
-                  <p className="text-sm text-black opacity-70 mt-1">Play videos on markers</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setContentType('3d')}
-                  className={`p-6 border-2 rounded-xl transition-all ${
-                    contentType === '3d'
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-black hover:border-red-600'
-                  }`}
-                >
-                  <Box className={`h-8 w-8 mx-auto mb-2 ${contentType === '3d' ? 'text-red-600' : 'text-black'}`} />
-                  <p className={`font-semibold ${contentType === '3d' ? 'text-red-600' : 'text-black'}`}>3D Model AR</p>
-                  <p className="text-sm text-black opacity-70 mt-1">Show 3D models on markers</p>
-                </button>
+            {/* Content Type Info */}
+            <div className="bg-blue-50 border-2 border-blue-600 rounded-xl p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xl">💡</span>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-black mb-2">Upload Video, 3D Model, or Both!</h4>
+                  <p className="text-sm text-black opacity-80">
+                    You can upload just a video, just a 3D model, or both together. If you upload both, they'll appear together in AR.
+                  </p>
+                  <ul className="text-sm text-black opacity-80 mt-2 space-y-1">
+                    <li>• <strong>Video only:</strong> Video plays on the marker</li>
+                    <li>• <strong>3D model only:</strong> 3D model appears on the marker</li>
+                    <li>• <strong>Both:</strong> Video plays with 3D model displayed together</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -580,11 +573,10 @@ export default function CreateExperience() {
 
             {/* File Uploads */}
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Video Upload - Only show if video type selected */}
-              {contentType === 'video' && (
+              {/* Video Upload - Always show, optional */}
             <div>
               <label className="block text-lg font-medium text-black mb-3">
-                Video File * <span className="text-sm font-normal text-black opacity-70">(Max 100MB)</span>
+                Video File <span className="text-sm font-normal text-black opacity-70">(Optional, Max 100MB)</span>
               </label>
               <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                   {videoFile ? (
@@ -630,13 +622,11 @@ export default function CreateExperience() {
                   )}
                 </div>
             </div>
-              )}
 
-              {/* 3D Model Upload - Only show if 3d type selected */}
-              {contentType === '3d' && (
+              {/* 3D Model Upload - Always show, optional */}
                 <div>
                   <label className="block text-lg font-medium text-black mb-3">
-                    3D Model File * <span className="text-sm font-normal text-black opacity-70">(Max 50MB)</span>
+                    3D Model File <span className="text-sm font-normal text-black opacity-70">(Optional, Max 50MB)</span>
                   </label>
                   <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
                     {modelFile ? (
@@ -686,7 +676,6 @@ export default function CreateExperience() {
                     )}
                   </div>
                 </div>
-              )}
 
               {/* Mind File Upload */}
               <div>
@@ -731,8 +720,8 @@ export default function CreateExperience() {
 
             </div>
 
-            {/* 3D Model Settings - Only show if 3D type selected */}
-            {contentType === '3d' && (
+            {/* 3D Model Settings - Show if 3D model is uploaded */}
+            {modelFile && (
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <label htmlFor="model_scale" className="block text-lg font-medium text-black mb-3">

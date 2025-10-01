@@ -33,8 +33,8 @@ export async function GET(
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
     const contentType = experience.content_type || 'video'
-    const isVideo = contentType === 'video'
-    const is3D = contentType === '3d'
+    const isVideo = contentType === 'video' || contentType === 'both'
+    const is3D = contentType === '3d' || contentType === 'both'
 
     const arHTML = `<!DOCTYPE html>
 <html>

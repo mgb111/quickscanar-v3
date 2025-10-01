@@ -31,17 +31,22 @@ BEGIN
         RAISE NOTICE 'model_url column already exists';
     END IF;
 
-    -- Add content_type column to distinguish between video and 3D AR
+    -- Add content_type column to distinguish between video, 3D, or both
     IF NOT EXISTS (
         SELECT FROM information_schema.columns 
         WHERE table_name = 'ar_experiences' 
         AND column_name = 'content_type'
     ) THEN
         ALTER TABLE ar_experiences 
-        ADD COLUMN content_type TEXT DEFAULT 'video' CHECK (content_type IN ('video', '3d'));
+        ADD COLUMN content_type TEXT DEFAULT 'video' CHECK (content_type IN ('video', '3d', 'both'));
         RAISE NOTICE 'Added content_type column';
     ELSE
         RAISE NOTICE 'content_type column already exists';
+        -- Update constraint to include 'both'
+        ALTER TABLE ar_experiences 
+        DROP CONSTRAINT IF EXISTS ar_experiences_content_type_check;
+        ALTER TABLE ar_experiences 
+        ADD CONSTRAINT ar_experiences_content_type_check CHECK (content_type IN ('video', '3d', 'both'));
     END IF;
 
     -- Add model_scale column for 3D model scaling
@@ -86,12 +91,13 @@ BEGIN
     ALTER TABLE ar_experiences 
     DROP CONSTRAINT IF EXISTS check_content_url;
     
-    -- Add constraint: at least one of video_url or model_url must be present
+    -- Add constraint: content URLs must match content type
     ALTER TABLE ar_experiences 
     ADD CONSTRAINT check_content_url 
     CHECK (
         (content_type = 'video' AND video_url IS NOT NULL) OR
-        (content_type = '3d' AND model_url IS NOT NULL)
+        (content_type = '3d' AND model_url IS NOT NULL) OR
+        (content_type = 'both' AND video_url IS NOT NULL AND model_url IS NOT NULL)
     );
     RAISE NOTICE 'Added constraint to ensure content URL matches content type';
 EXCEPTION
