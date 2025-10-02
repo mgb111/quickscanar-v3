@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
@@ -47,6 +47,7 @@ export default function CreateExperience() {
   const [markerPreviewUrl, setMarkerPreviewUrl] = useState<string | null>(null)
   const [showCombinedPreview, setShowCombinedPreview] = useState(false)
   const [videoError, setVideoError] = useState(false)
+  const combinedVideoRef = useRef<HTMLVideoElement | null>(null)
 
   // 3D model position controls (for combined preview)
   const [modelPositionX, setModelPositionX] = useState(0)
@@ -56,6 +57,20 @@ export default function CreateExperience() {
   const [videoScale, setVideoScale] = useState(1.0)
 
   const [submitting, setSubmitting] = useState(false)
+
+  // Ensure combined preview video autoplays when shown
+  useEffect(() => {
+    if (showCombinedPreview && combinedVideoRef.current) {
+      const v = combinedVideoRef.current
+      try {
+        // ensure flags for autoplay on mobile
+        v.muted = true
+        // @ts-expect-error - playsInline is a valid property on HTMLVideoElement in browsers
+        v.playsInline = true
+        v.play().catch(() => {})
+      } catch {}
+    }
+  }, [showCombinedPreview, videoPreviewUrl])
 
   // Cleanup preview URLs on unmount
   useEffect(() => {
@@ -595,7 +610,7 @@ export default function CreateExperience() {
                     <div className="space-y-3">
                       <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
                       <p className="text-base text-black font-medium">{videoFile.name}</p>
-                      {videoPreviewUrl && (
+                      {videoPreviewUrl && !showCombinedPreview && (
                         <div className="mt-4">
                           <video 
                             key={videoPreviewUrl}
@@ -775,7 +790,6 @@ export default function CreateExperience() {
                           <video 
                             key={videoPreviewUrl || 'no-video'}
                             src={videoPreviewUrl || undefined}
-                            controls 
                             autoPlay
                             muted
                             loop
@@ -783,6 +797,7 @@ export default function CreateExperience() {
                             preload="metadata"
                             className="absolute inset-0 w-full h-full rounded-lg"
                             style={{ objectFit: 'cover', transform: `scale(${videoScale})`, transformOrigin: 'center center', border: 'none', outline: 'none' }}
+                            ref={combinedVideoRef}
                             onLoadedData={(e) => {
                               const video = e.target as HTMLVideoElement;
                               setVideoError(false);
