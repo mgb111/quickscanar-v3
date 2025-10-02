@@ -1,23 +1,23 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-// Static assets provided by user
-const RAW_MIND_FILE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/targets72.mind'
-const RAW_VIDEO_URL = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/amrita-intro.mp4'
-const MARKER_IMAGE = 'https://pub-cf0963a3225741748e1469cc318f690d.r2.dev/Amritafront.png'
-
-// Same-origin proxy to avoid CORS issues for MindAR/video fetches
-// trailingSlash is enabled, so include the slash to avoid 308 redirects
-const proxify = (url: string) => `/api/proxy/?url=${encodeURIComponent(url)}`
-const MIND_FILE = proxify(RAW_MIND_FILE)
-const VIDEO_URL = proxify(RAW_VIDEO_URL)
+// Instant redirect page
 
 export default function Page() {
-  const [started, setStarted] = useState(false)
-  const [sceneReady, setSceneReady] = useState(false)
-  const sceneRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  
 
+  // Instant redirect to target AR experience
+  useEffect(() => {
+    router.replace('/api/ar/05794247-ef58-44fb-a63b-4c818b1da444')
+  }, [router])
+
+  // Do not render legacy content when redirecting
+  return null
+
+  /*
   useEffect(() => {
     // Inject A-Frame and MindAR scripts on demand
     const addScript = (src: string) => new Promise<void>((resolve, reject) => {
@@ -200,4 +200,5 @@ export default function Page() {
       </div>
     </main>
   )
+*/
 }
