@@ -48,6 +48,7 @@ export default function CreateExperience() {
   const [showCombinedPreview, setShowCombinedPreview] = useState(false)
   const [videoError, setVideoError] = useState(false)
   const combinedVideoRef = useRef<HTMLVideoElement | null>(null)
+  const [aframeLoaded, setAframeLoaded] = useState(false)
 
   // 3D model position controls (for combined preview)
   const [modelPositionX, setModelPositionX] = useState(0)
@@ -455,8 +456,15 @@ export default function CreateExperience() {
   return (
     <>
       {/* Load A-Frame for accurate 3D preview */}
-      <Script src="https://aframe.io/releases/1.4.1/aframe.min.js" />
-      <Script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js" />
+      <Script 
+        src="https://aframe.io/releases/1.4.1/aframe.min.js" 
+        strategy="beforeInteractive"
+        onLoad={() => setAframeLoaded(true)}
+      />
+      <Script 
+        src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"
+        strategy="beforeInteractive"
+      />
       {/* Load model-viewer for standalone 3D preview */}
       <Script 
         type="module" 
@@ -782,7 +790,7 @@ export default function CreateExperience() {
                     </button>
                   </div>
 
-                  {showCombinedPreview && (
+                  {showCombinedPreview && aframeLoaded && (
                     <div className="space-y-6 mt-6">
                       {/* Preview Container - A-Frame 3D Scene */}
                       <div className="bg-white rounded-xl p-6 border-2 border-black">
@@ -802,7 +810,7 @@ export default function CreateExperience() {
                             renderer="antialias: true; colorManagement: true; sortObjects: true;"
                             style={{ width: '100%', height: '100%' }}
                           >
-                            <a-assets>
+                            <a-assets timeout="10000">
                               {videoPreviewUrl && (
                                 <video 
                                   id="previewARVideo"
@@ -811,6 +819,7 @@ export default function CreateExperience() {
                                   muted
                                   loop
                                   playsInline
+                                  preload="auto"
                                   crossOrigin="anonymous"
                                   ref={combinedVideoRef}
                                   onLoadedData={(e) => {
@@ -846,9 +855,7 @@ export default function CreateExperience() {
                                 height="0.9"
                                 position="0 0 0"
                                 rotation="0 0 0"
-                                src="#previewARVideo"
-                                shader="flat"
-                                side="double"
+                                material={`src: #previewARVideo; shader: flat; side: double`}
                               ></a-plane>
                             )}
 
