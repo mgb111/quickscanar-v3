@@ -772,27 +772,33 @@ export default function CreateExperience() {
                         <h5 className="font-semibold text-black mb-3 text-center">Combined Preview (Overlaid)</h5>
                         <div className="relative mx-auto" style={{ maxWidth: '600px', height: '450px' }}>
                           {/* Video Layer (Background) */}
-                          {!videoError ? (
-                            <video 
-                              key={videoPreviewUrl}
-                              src={videoPreviewUrl!} 
-                              controls 
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              preload="metadata"
-                              className="absolute inset-0 w-full h-full rounded-lg"
-                              style={{ objectFit: 'cover', transform: `scale(${videoScale})`, transformOrigin: 'center center', border: 'none', outline: 'none' }}
-                              onLoadedData={(e) => {
-                                const video = e.target as HTMLVideoElement;
-                                video.play().catch(() => {});
-                              }}
-                              onError={() => setVideoError(true)}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 bg-gray-900 rounded-lg flex items-center justify-center">
-                              <p className="text-white text-sm">Video: {videoFile?.name}</p>
+                          <video 
+                            key={videoPreviewUrl || 'no-video'}
+                            src={videoPreviewUrl || undefined}
+                            controls 
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            className="absolute inset-0 w-full h-full rounded-lg"
+                            style={{ objectFit: 'cover', transform: `scale(${videoScale})`, transformOrigin: 'center center', border: 'none', outline: 'none' }}
+                            onLoadedData={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              setVideoError(false);
+                              video.play().catch(() => {});
+                            }}
+                            onCanPlay={() => setVideoError(false)}
+                            onError={() => {
+                              // Keep showing the element; some formats (e.g., MOV) may not preview in-browser
+                              setVideoError(true);
+                            }}
+                          />
+                          {videoError && (
+                            <div className="absolute inset-0 rounded-lg flex items-center justify-center pointer-events-none">
+                              <div className="bg-black/60 text-white text-xs px-3 py-2 rounded">
+                                Preview may not be supported for this format. Try MP4/WebM for preview.
+                              </div>
                             </div>
                           )}
                           
@@ -815,10 +821,17 @@ export default function CreateExperience() {
                               alt="3D model preview"
                               auto-rotate={false}
                               camera-controls
-                              rotation-per-second="0deg"
+                              interaction-prompt="none"
+                              disable-zoom
+                              disable-tap
+                              disable-pan
+                              camera-orbit="0deg 90deg 100%"
+                              camera-target="0m 0m 0m"
+                              field-of-view="25deg"
                               style={{ 
                                 width: '100%', 
                                 height: '100%',
+                                // Apply Y-rotation for parity with runtime A-Frame rotation
                                 transform: `rotateY(${modelRotation}deg)`,
                                 pointerEvents: 'auto'
                               }}
