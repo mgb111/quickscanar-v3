@@ -789,12 +789,13 @@ export default function CreateExperience() {
                               video.play().catch(() => {});
                             }}
                             onCanPlay={() => setVideoError(false)}
-                            onError={() => {
-                              // Keep showing the element; some formats (e.g., MOV) may not preview in-browser
-                              setVideoError(true);
+                            onError={(e) => {
+                              // Some browsers fire a transient error despite being able to play.
+                              // Keep element visible and avoid false warning for valid MP4/WebM.
+                              console.warn('Preview video error (non-fatal):', (e as any)?.message || e);
                             }}
                           />
-                          {videoError && (
+                          {!videoPreviewUrl && (
                             <div className="absolute inset-0 rounded-lg flex items-center justify-center pointer-events-none">
                               <div className="bg-black/60 text-white text-xs px-3 py-2 rounded">
                                 Preview may not be supported for this format. Try MP4/WebM for preview.
