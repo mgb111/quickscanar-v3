@@ -65,7 +65,6 @@ export default function CreateExperience() {
       try {
         // ensure flags for autoplay on mobile
         v.muted = true
-        // @ts-expect-error - playsInline is a valid property on HTMLVideoElement in browsers
         v.playsInline = true
         v.play().catch(() => {})
       } catch {}
