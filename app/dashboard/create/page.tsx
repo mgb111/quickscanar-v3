@@ -48,7 +48,6 @@ export default function CreateExperience() {
   const [showCombinedPreview, setShowCombinedPreview] = useState(false)
   const [videoError, setVideoError] = useState(false)
   const combinedVideoRef = useRef<HTMLVideoElement | null>(null)
-  const [aframeLoaded, setAframeLoaded] = useState(false)
 
   // 3D model position controls (for combined preview)
   const [modelPositionX, setModelPositionX] = useState(0)
@@ -455,17 +454,7 @@ export default function CreateExperience() {
 
   return (
     <>
-      {/* Load A-Frame for accurate 3D preview */}
-      <Script 
-        src="https://aframe.io/releases/1.4.1/aframe.min.js" 
-        strategy="beforeInteractive"
-        onLoad={() => setAframeLoaded(true)}
-      />
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"
-        strategy="beforeInteractive"
-      />
-      {/* Load model-viewer for standalone 3D preview */}
+      {/* Load model-viewer for 3D preview */}
       <Script 
         type="module" 
         src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"
@@ -790,136 +779,100 @@ export default function CreateExperience() {
                     </button>
                   </div>
 
-                  {showCombinedPreview && aframeLoaded && (
+                  {showCombinedPreview && (
                     <div className="space-y-6 mt-6">
-                      {/* Preview Container - A-Frame 3D Scene */}
+                      {/* Preview Container - Overlaid View */}
                       <div className="bg-white rounded-xl p-6 border-2 border-black">
-                        <h5 className="font-semibold text-black mb-3 text-center">📱 AR Preview (Exact Output)</h5>
-                        <p className="text-center text-xs text-black opacity-70 mb-4">
-                          This preview uses the same AR engine as your final experience. What you see here is what users will see.
-                        </p>
-                        
-                        {/* A-Frame Scene */}
-                        <div className="relative mx-auto rounded-xl overflow-hidden border-2 border-gray-300" style={{ maxWidth: '800px', height: '600px', background: '#1a1a2e' }}>
-                          <a-scene
-                            key={`${videoPreviewUrl}-${modelPreviewUrl}`}
-                            embedded
-                            vr-mode-ui="enabled: false"
-                            device-orientation-permission-ui="enabled: false"
-                            loading-screen="enabled: false"
-                            renderer="antialias: true; colorManagement: true; sortObjects: true;"
-                            style={{ width: '100%', height: '100%' }}
+                        <h5 className="font-semibold text-black mb-3 text-center">Combined Preview (Overlaid)</h5>
+                        <div className="relative mx-auto" style={{ maxWidth: '600px', height: '450px' }}>
+                          {/* Video Layer (Background) */}
+                          <video 
+                            key={videoPreviewUrl || 'no-video'}
+                            src={videoPreviewUrl || undefined}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            className="absolute inset-0 w-full h-full rounded-lg"
+                            style={{ objectFit: 'cover', transform: `scale(${videoScale})`, transformOrigin: 'center center', border: 'none', outline: 'none' }}
+                            ref={combinedVideoRef}
+                            onLoadedData={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              setVideoError(false);
+                              video.play().catch(() => {});
+                            }}
+                            onCanPlay={() => setVideoError(false)}
+                            onError={(e) => {
+                              // Some browsers fire a transient error despite being able to play.
+                              // Keep element visible and avoid false warning for valid MP4/WebM.
+                              console.warn('Preview video error (non-fatal):', (e as any)?.message || e);
+                            }}
+                          />
+                          {!videoPreviewUrl && (
+                            <div className="absolute inset-0 rounded-lg flex items-center justify-center pointer-events-none">
+                              <div className="bg-black/60 text-white text-xs px-3 py-2 rounded">
+                                Preview may not be supported for this format. Try MP4/WebM for preview.
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* 3D Model Layer (Foreground) - Overlaid */}
+                          <div 
+                            className="absolute rounded-lg pointer-events-none"
+                            style={{
+                              left: `${50 + (modelPositionX * 30)}%`,
+                              top: `${50 - (modelPositionY * 40)}%`,
+                              transform: `translate(-50%, -50%) translateZ(${modelPositionZ * 100}px)`,
+                              width: `${40 * modelScale}%`,
+                              height: `${40 * modelScale}%`,
+                              minWidth: '150px',
+                              minHeight: '150px'
+                            }}
                           >
-                            <a-assets timeout="10000">
-                              {videoPreviewUrl && (
-                                <video 
-                                  id="previewARVideo"
-                                  src={videoPreviewUrl}
-                                  autoPlay
-                                  muted
-                                  loop
-                                  playsInline
-                                  preload="auto"
-                                  crossOrigin="anonymous"
-                                  ref={combinedVideoRef}
-                                  onLoadedData={(e) => {
-                                    const video = e.target as HTMLVideoElement;
-                                    setVideoError(false);
-                                    video.play().catch(() => {});
-                                  }}
-                                />
-                              )}
-                              {modelPreviewUrl && (
-                                <a-asset-item id="previewModel" src={modelPreviewUrl} crossOrigin="anonymous"></a-asset-item>
-                              )}
-                            </a-assets>
+                            <model-viewer
+                              id="combinedModelViewer"
+                              src={modelPreviewUrl!}
+                              alt="3D model preview"
+                              auto-rotate={false}
+                              camera-controls
+                              interaction-prompt="none"
+                              disable-zoom
+                              disable-tap
+                              disable-pan
+                              camera-orbit="0deg 90deg 100%"
+                              camera-target="0m 0m 0m"
+                              field-of-view="25deg"
+                              style={{ 
+                                width: '100%', 
+                                height: '100%',
+                                // Apply Y-rotation for parity with runtime A-Frame rotation
+                                transform: `rotateY(${modelRotation}deg)`,
+                                pointerEvents: 'auto'
+                              }}
+                            />
+                          </div>
 
-                            {/* Camera positioned to view the scene */}
-                            <a-entity 
-                              id="previewCamera"
-                              camera="active: true"
-                              position="0 0 2.5"
-                              look-controls="enabled: false"
-                              wasd-controls="enabled: false"
-                            ></a-entity>
-
-                            {/* Ambient lighting */}
-                            <a-entity light="type: ambient; color: #BBB; intensity: 1"></a-entity>
-                            <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-1 1 2"></a-entity>
-                            <a-entity light="type: directional; color: #FFF; intensity: 0.4" position="1 1 -2"></a-entity>
-
-                            {/* Video plane (simulating the marker) */}
-                            {videoPreviewUrl && (
-                              <a-plane
-                                width="1.6"
-                                height="0.9"
-                                position="0 0 0"
-                                rotation="0 0 0"
-                                material={`src: #previewARVideo; shader: flat; side: double`}
-                              ></a-plane>
-                            )}
-
-                            {/* 3D Model positioned relative to video plane */}
-                            {modelPreviewUrl && (
-                              <a-entity
-                                id="preview3DModel"
-                                gltf-model="#previewModel"
-                                position={`${modelPositionX} ${modelPositionY} ${modelPositionZ}`}
-                                rotation={`0 ${modelRotation} 0`}
-                                scale={`${modelScale} ${modelScale} ${modelScale}`}
-                                animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
-                              ></a-entity>
-                            )}
-
-                            {/* Reference grid to show positioning */}
-                            <a-plane 
-                              position="0 -0.5 0" 
-                              rotation="-90 0 0" 
-                              width="4" 
-                              height="4" 
-                              color="#333333" 
-                              opacity="0.5"
-                            ></a-plane>
-                            
-                            {/* Sky background */}
-                            <a-sky color="#1a1a2e"></a-sky>
-                          </a-scene>
-
-                          {/* Overlay UI */}
-                          <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
-                            <div className="bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur">
-                              🎬 Video Marker
-                            </div>
-                            <div className="bg-purple-600/90 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur">
-                              🎯 3D Model {modelPreviewUrl && '(Animating)'}
-                            </div>
+                          {/* Layer Indicators */}
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                            Video Layer
+                          </div>
+                          <div className="absolute top-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
+                            3D Model Layer
                           </div>
                           
                           {/* Position Info */}
-                          <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-white px-4 py-2 rounded-lg text-xs z-10 backdrop-blur pointer-events-none">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-                              <div>
-                                <div className="text-gray-400">Position</div>
-                                <div className="font-semibold">({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Scale</div>
-                                <div className="font-semibold">{modelScale.toFixed(1)}x</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Rotation</div>
-                                <div className="font-semibold">{modelRotation}°</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Status</div>
-                                <div className="font-semibold text-green-400">● Live</div>
-                              </div>
+                          <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-xs z-10">
+                            <div className="flex justify-between items-center">
+                              <span>Position: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</span>
+                              <span>Scale: {modelScale.toFixed(1)}x</span>
+                              <span>Rotation: {modelRotation}°</span>
                             </div>
                           </div>
                         </div>
 
                         <p className="text-center text-sm text-black opacity-70 mt-4">
-                          ✨ This is exactly what users will see in AR. Adjust controls below to position your model.
+                          💡 Adjust controls below to see changes in real-time
                         </p>
                       </div>
 

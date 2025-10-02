@@ -666,7 +666,7 @@ export async function GET(
 
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 50; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -1038,9 +1038,9 @@ export async function GET(
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
                   if (video) {
-                    video.currentTime = 0; // Restart video
-                    video.muted = false; // Enable audio when target is found
-                    video.play().catch(() => {});
+                    // Don't restart; just ensure it's playing
+                    video.muted = false;
+                    if (video.paused) video.play().catch(() => {});
                   }
                 }
                 
@@ -1089,40 +1089,16 @@ export async function GET(
               targetFoundTimeout = null;
             }
             
-            // Debounce target lost to reduce flickering - increased timeout for persistence
+            // Debounce target lost to reduce flickering - we persist content, so no visibility change
             if (targetLostTimeout) clearTimeout(targetLostTimeout);
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
                 isTargetVisible = false;
-                
-                // Handle video AR
-                if (isVideo) {
-                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'false');
-                  if (videoPlane) {
-                    // Add smooth animation for disappearance
-                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 1; to: 0; dur: 200');
-                    setTimeout(() => {
-                      videoPlane.setAttribute('visible', 'false');
-                    }, 200);
-                  }
-                  if (video) {
-                    video.pause();
-                    video.muted = true; // Mute audio when target is lost
-                  }
-                }
-                
-                // Handle 3D model AR
-                if (is3D && model3D) {
-                  // Add smooth animation for disappearance
-                  model3D.setAttribute('animation', 'property: scale; from: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; to: 0 0 0; dur: 200');
-                  setTimeout(() => {
-                    model3D.setAttribute('visible', 'false');
-                  }, 200);
-                }
-                
-                showStatus('Target Lost', 'Point camera at your marker again');
+                // Keep content playing and visible; rely on missTolerance and last pose.
+                // Optional: show a brief status without hiding content.
+                showStatus('Target Lost', 'Content will re-align when marker is visible');
               }
-            }, 1000); // 1000ms (1 second) debounce - stays visible longer when marker lost
+            }, 1000);
           });
         } else {
           console.error('Target element not found!');
