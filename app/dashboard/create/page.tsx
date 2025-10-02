@@ -793,44 +793,51 @@ export default function CreateExperience() {
                         
                         {/* A-Frame Scene */}
                         <div className="relative mx-auto rounded-xl overflow-hidden border-2 border-gray-300" style={{ maxWidth: '800px', height: '600px', background: '#1a1a2e' }}>
-                          {/* Hidden video element for A-Frame to use */}
-                          <video 
-                            id="previewARVideo"
-                            src={videoPreviewUrl || undefined}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            crossOrigin="anonymous"
-                            ref={combinedVideoRef}
-                            style={{ display: 'none' }}
-                            onLoadedData={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              setVideoError(false);
-                              video.play().catch(() => {});
-                            }}
-                          />
-                          
                           <a-scene
+                            key={`${videoPreviewUrl}-${modelPreviewUrl}`}
                             embedded
                             vr-mode-ui="enabled: false"
                             device-orientation-permission-ui="enabled: false"
                             loading-screen="enabled: false"
+                            renderer="antialias: true; colorManagement: true; sortObjects: true;"
                             style={{ width: '100%', height: '100%' }}
                           >
                             <a-assets>
+                              {videoPreviewUrl && (
+                                <video 
+                                  id="previewARVideo"
+                                  src={videoPreviewUrl}
+                                  autoPlay
+                                  muted
+                                  loop
+                                  playsInline
+                                  crossOrigin="anonymous"
+                                  ref={combinedVideoRef}
+                                  onLoadedData={(e) => {
+                                    const video = e.target as HTMLVideoElement;
+                                    setVideoError(false);
+                                    video.play().catch(() => {});
+                                  }}
+                                />
+                              )}
                               {modelPreviewUrl && (
-                                <a-asset-item id="previewModel" src={modelPreviewUrl}></a-asset-item>
+                                <a-asset-item id="previewModel" src={modelPreviewUrl} crossOrigin="anonymous"></a-asset-item>
                               )}
                             </a-assets>
 
                             {/* Camera positioned to view the scene */}
-                            <a-camera position="0 0 3" look-controls="enabled: false"></a-camera>
+                            <a-entity 
+                              id="previewCamera"
+                              camera="active: true"
+                              position="0 0 2.5"
+                              look-controls="enabled: false"
+                              wasd-controls="enabled: false"
+                            ></a-entity>
 
                             {/* Ambient lighting */}
-                            <a-light type="ambient" color="#BBB"></a-light>
-                            <a-light type="directional" color="#FFF" intensity="0.6" position="-1 1 2"></a-light>
-                            <a-light type="directional" color="#FFF" intensity="0.4" position="1 1 -2"></a-light>
+                            <a-entity light="type: ambient; color: #BBB; intensity: 1"></a-entity>
+                            <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-1 1 2"></a-entity>
+                            <a-entity light="type: directional; color: #FFF; intensity: 0.4" position="1 1 -2"></a-entity>
 
                             {/* Video plane (simulating the marker) */}
                             {videoPreviewUrl && (
@@ -839,7 +846,9 @@ export default function CreateExperience() {
                                 height="0.9"
                                 position="0 0 0"
                                 rotation="0 0 0"
-                                material={`src: #previewARVideo; shader: flat; side: double`}
+                                src="#previewARVideo"
+                                shader="flat"
+                                side="double"
                               ></a-plane>
                             )}
 
@@ -857,13 +866,16 @@ export default function CreateExperience() {
 
                             {/* Reference grid to show positioning */}
                             <a-plane 
-                              position="0 -0.01 0" 
+                              position="0 -0.5 0" 
                               rotation="-90 0 0" 
                               width="4" 
                               height="4" 
-                              color="#1a1a2e" 
-                              opacity="0.3"
+                              color="#333333" 
+                              opacity="0.5"
                             ></a-plane>
+                            
+                            {/* Sky background */}
+                            <a-sky color="#1a1a2e"></a-sky>
                           </a-scene>
 
                           {/* Overlay UI */}
