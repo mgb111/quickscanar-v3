@@ -785,88 +785,120 @@ export default function CreateExperience() {
                       <div className="bg-white rounded-xl p-6 border-2 border-black">
                         <h5 className="font-semibold text-black mb-3 text-center">Combined Preview (Overlaid)</h5>
                         <div className="relative mx-auto" style={{ maxWidth: '600px', height: '450px' }}>
-                          {/* Video Layer (Background) */}
-                          <video 
-                            key={videoPreviewUrl || 'no-video'}
-                            src={videoPreviewUrl || undefined}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            className="absolute inset-0 w-full h-full rounded-lg"
-                            style={{ objectFit: 'cover', transform: `scale(${videoScale})`, transformOrigin: 'center center', border: 'none', outline: 'none' }}
-                            ref={combinedVideoRef}
-                            onLoadedData={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              setVideoError(false);
-                              video.play().catch(() => {});
-                            }}
-                            onCanPlay={() => setVideoError(false)}
-                            onError={(e) => {
-                              // Some browsers fire a transient error despite being able to play.
-                              // Keep element visible and avoid false warning for valid MP4/WebM.
-                              console.warn('Preview video error (non-fatal):', (e as any)?.message || e);
-                            }}
-                          />
-                          {!videoPreviewUrl && (
-                            <div className="absolute inset-0 rounded-lg flex items-center justify-center pointer-events-none">
-                              <div className="bg-black/60 text-white text-xs px-3 py-2 rounded">
-                                Preview may not be supported for this format. Try MP4/WebM for preview.
+                          {/* Video Layer (Background) - Always show video window */}
+                          <div className="absolute inset-0 bg-gray-900 rounded-lg overflow-hidden">
+                            {videoPreviewUrl ? (
+                              <video 
+                                key={videoPreviewUrl}
+                                src={videoPreviewUrl}
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                preload="metadata"
+                                className="w-full h-full"
+                                style={{ 
+                                  objectFit: 'cover', 
+                                  transform: `scale(${videoScale})`, 
+                                  transformOrigin: 'center center',
+                                  border: 'none', 
+                                  outline: 'none' 
+                                }}
+                                ref={combinedVideoRef}
+                                onLoadedData={(e) => {
+                                  const video = e.target as HTMLVideoElement;
+                                  setVideoError(false);
+                                  video.play().catch(() => {});
+                                }}
+                                onCanPlay={() => setVideoError(false)}
+                                onError={(e) => {
+                                  console.warn('Preview video error (non-fatal):', (e as any)?.message || e);
+                                  setVideoError(true);
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white">
+                                <div className="text-center">
+                                  <div className="text-4xl mb-2">📹</div>
+                                  <div className="text-sm">Video Window</div>
+                                  <div className="text-xs opacity-70 mt-1">{videoFile?.name || 'No video'}</div>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                            
+                            {/* Video error overlay */}
+                            {videoError && videoPreviewUrl && (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <div className="text-white text-xs px-3 py-2 bg-red-600/80 rounded">
+                                  Preview failed - {videoFile?.name}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           
-                          {/* 3D Model Layer (Foreground) - Overlaid */}
+                          {/* 3D Model Layer (Foreground) - Accurately scaled relative to video */}
                           <div 
                             className="absolute rounded-lg pointer-events-none"
                             style={{
-                              left: `${50 + (modelPositionX * 30)}%`,
-                              top: `${50 - (modelPositionY * 40)}%`,
-                              transform: `translate(-50%, -50%) translateZ(${modelPositionZ * 100}px)`,
-                              width: `${40 * modelScale}%`,
-                              height: `${40 * modelScale}%`,
-                              minWidth: '150px',
-                              minHeight: '150px'
+                              // Position relative to video window center
+                              left: `${50 + (modelPositionX * 25)}%`,
+                              top: `${50 - (modelPositionY * 30)}%`,
+                              transform: `translate(-50%, -50%) translateZ(${modelPositionZ * 50}px)`,
+                              // Scale more accurately - base size represents 1.0 scale in AR
+                              width: `${Math.max(20, 30 * modelScale)}%`,
+                              height: `${Math.max(20, 30 * modelScale)}%`,
+                              // Ensure minimum visibility but respect scale
+                              minWidth: modelScale < 0.5 ? '60px' : '100px',
+                              minHeight: modelScale < 0.5 ? '60px' : '100px',
+                              maxWidth: modelScale > 2 ? '80%' : 'none',
+                              maxHeight: modelScale > 2 ? '80%' : 'none',
+                              zIndex: 10
                             }}
                           >
                             <model-viewer
+                              key={`model-${modelScale}-${modelRotation}`}
                               id="combinedModelViewer"
                               src={modelPreviewUrl!}
                               alt="3D model preview"
                               auto-rotate={false}
-                              camera-controls
+                              camera-controls={false}
                               interaction-prompt="none"
                               disable-zoom
                               disable-tap
                               disable-pan
-                              camera-orbit="0deg 90deg 100%"
+                              camera-orbit="0deg 75deg 120%"
                               camera-target="0m 0m 0m"
-                              field-of-view="25deg"
+                              field-of-view="30deg"
                               style={{ 
                                 width: '100%', 
                                 height: '100%',
-                                // Apply Y-rotation for parity with runtime A-Frame rotation
                                 transform: `rotateY(${modelRotation}deg)`,
-                                pointerEvents: 'auto'
+                                pointerEvents: 'none'
                               }}
                             />
                           </div>
 
                           {/* Layer Indicators */}
-                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
-                            Video Layer
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-semibold z-20">
+                            Video {videoScale.toFixed(1)}x
                           </div>
-                          <div className="absolute top-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
-                            3D Model Layer
+                          <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-semibold z-20">
+                            3D {modelScale.toFixed(1)}x
                           </div>
                           
                           {/* Position Info */}
-                          <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-xs z-10">
-                            <div className="flex justify-between items-center">
-                              <span>Position: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(2)}, {modelPositionZ.toFixed(2)})</span>
-                              <span>Scale: {modelScale.toFixed(1)}x</span>
-                              <span>Rotation: {modelRotation}°</span>
+                          <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-white px-3 py-2 rounded-lg text-xs z-20">
+                            <div className="grid grid-cols-2 gap-2 text-center">
+                              <div>
+                                <div className="font-semibold">3D Model</div>
+                                <div>Pos: ({modelPositionX.toFixed(1)}, {modelPositionY.toFixed(1)}, {modelPositionZ.toFixed(1)})</div>
+                                <div>Scale: {modelScale.toFixed(1)}x | Rot: {modelRotation}°</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold">Video</div>
+                                <div>Scale: {videoScale.toFixed(2)}x</div>
+                                <div className="text-gray-300">Background layer</div>
+                              </div>
                             </div>
                           </div>
                         </div>
