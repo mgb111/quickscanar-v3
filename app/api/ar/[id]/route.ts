@@ -800,25 +800,56 @@ export async function GET(
       // Function to update video plane to match marker dimensions
       function updateVideoAspectRatio(videoElement, videoPlane) {
         if (!videoElement || !videoPlane) return;
-
-        const applyMarkerDimensions = () => {
-          // Marker dimensions in MindAR default to 1x1 units
-          const markerWidth = 1.0;
-          const markerHeight = 1.0;
-
-          videoPlane.setAttribute('width', markerWidth);
-          videoPlane.setAttribute('height', markerHeight);
-
-          console.log('Video plane forced to marker size:', markerWidth, 'x', markerHeight);
+        
+        const updateDimensions = () => {
+          if (videoElement.videoWidth && videoElement.videoHeight) {
+            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+            // Marker dimensions (1.0 x 1.0 by default in MindAR)
+            const markerWidth = 1.0;
+            const markerHeight = 1.0;
+            
+            // Calculate video dimensions to be 20% larger than marker
+            const videoScale = 1.2; // 20% larger than marker
+            let videoWidth, videoHeight;
+            
+            // For both portrait and landscape, we'll scale based on the video's natural orientation
+            if (videoAspect > 1) {
+              // Landscape video - scale to width
+              videoWidth = markerWidth * videoScale;
+              videoHeight = videoWidth / videoAspect;
+            } else {
+              // Portrait or square video - use larger scale for better visibility
+              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              videoHeight = markerHeight * portraitScale;
+              videoWidth = videoHeight * videoAspect;
+            }
+            
+            // Ensure minimum dimensions
+            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
+            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
+            
+            // Get the target element that contains the video plane
+            const target = document.querySelector('#target');
+            
+            // Update video plane
+            videoPlane.setAttribute('width', videoWidth);
+            videoPlane.setAttribute('height', videoHeight);
+            
+            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
+            console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+          }
         };
-
-        if (videoElement.readyState >= 1) {
-          applyMarkerDimensions();
+        
+        // Try to update dimensions immediately if video is already loaded
+        if (videoElement.readyState >= 1) { // HAVE_ENOUGH_DATA
+          updateDimensions();
         } else {
-          videoElement.addEventListener('loadedmetadata', applyMarkerDimensions);
+          // Or wait for metadata to be loaded
+          videoElement.addEventListener('loadedmetadata', updateDimensions);
         }
-
-        videoElement.addEventListener('resize', applyMarkerDimensions);
+        
+        // Also update on resize events if needed
+        videoElement.addEventListener('resize', updateDimensions);
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
