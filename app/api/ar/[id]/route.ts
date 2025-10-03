@@ -706,6 +706,8 @@ export async function GET(
       </a-entity>
     </a-scene>
 
+    
+
     ${experience.link_url ? `
     <div id="externalLinkBtn">
       <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
@@ -868,8 +870,6 @@ export async function GET(
           video.playsInline = true;
           video.autoplay = false;
           video.controls = false;
-          // Ensure autoplay without gesture by keeping it muted
-          video.muted = true;
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
 
@@ -924,104 +924,46 @@ export async function GET(
             scene.style.opacity = '1';
             
             if (video) {
-              // Keep muted to allow autoplay
-              video.muted = true;
+              // Try to autoplay WITH audio first
+              video.muted = false;
               video.play().then(() => {
                 // After video starts playing, update the aspect ratio
                 updateVideoAspectRatio(video, videoPlane);
-              }).catch(e => console.error('Video play error:', e));
-            }
-            
-            // For 3D models, ensure animations are ready
-            if (is3D && model3D) {
-              console.log('3D AR mode - animations will auto-play when target is found');
-            }
-            
-            // Log combined mode
-            if (contentType === 'both') {
-              console.log('🎬 Combined AR mode - Both video and 3D model will appear together');
-              console.log('Video plane at z: 0.01, 3D model at y: 0.3, z: 0.15');
-            }
-          });
-          scene.addEventListener('arError', (e) => {
-            console.error('MindAR arError', e);
-            showStatus('AR Initialization Error', 'Please allow camera access and try again.');
-          });
-        }
-
-        // Add tracking stabilization
-        let targetFoundTimeout = null;
-        let targetLostTimeout = null;
-        let isTargetVisible = false;
-        
-        // Custom stabilization logic removed to rely on MindAR's built-in filtering.
-
-        if (target) {
-          console.log('Target element found, adding event listeners');
-          
-          target.addEventListener('targetFound', () => {
-            console.log('Target found!');
-            
-            // Track target recognition analytics
-            if (window.trackAREvent) {
-              window.trackAREvent('target_recognition', {
-                recognitionTime: Date.now() - sessionStartTime,
-                targetIndex: 0
+              }).catch(e => {
+                console.warn('Autoplay with audio blocked, will request gesture to unmute.', e?.name || e);
+                // Fallback: play muted, then ask to unmute on first interaction
+                video.muted = true;
+                video.play().catch(() => {});
+                
+                const tryUnmute = () => {
+                  video.muted = false;
+                  video.play().then(() => {
+                    window.removeEventListener('pointerdown', tryUnmute);
+                    window.removeEventListener('touchstart', tryUnmute);
+                  }).catch(() => {
+                    // keep prompt visible if still blocked
+                  });
+                };
+                window.addEventListener('pointerdown', tryUnmute, { once: true });
+                window.addEventListener('touchstart', tryUnmute, { once: true });
               });
             }
             
-            // Clear any pending lost timeout
-            if (targetLostTimeout) {
-              clearTimeout(targetLostTimeout);
-              targetLostTimeout = null;
-            }
-            
-            // Debounce target found to reduce flickering
-            if (targetFoundTimeout) clearTimeout(targetFoundTimeout);
-            targetFoundTimeout = setTimeout(() => {
-              if (!isTargetVisible) {
-                isTargetVisible = true;
-                
-                // Handle video AR
-                if (isVideo) {
-                  if (videoPlane) {
-                    videoPlane.setAttribute('visible', 'true');
-                    // Add smooth animation for appearance
-                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
-                  }
-                  if (video) {
-                    // Don't restart; just ensure it's playing (stay muted for autoplay compliance)
-                    video.muted = true;
-                    if (video.paused) video.play().catch(() => {});
-                  }
-                }
-                
-                // Handle 3D model AR
-                if (is3D && model3D) {
-                  console.log('🎯 Showing 3D model');
-                  console.log('Model position:', model3D.getAttribute('position'));
-                  console.log('Model scale:', model3D.getAttribute('scale'));
-                  
-                  model3D.setAttribute('visible', 'true');
-                  // Add smooth animation for appearance
-                  model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
-                  
-                  // Explicitly play the model animations
-                  const mixer = model3D.components['animation-mixer'];
-                  if (mixer && mixer.mixer) {
-                    console.log('Playing model animations');
-                    mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
-                  }
-                } else {
-                  if (is3D && !model3D) {
-                    console.error('❌ Should show 3D but model3D not found!');
-                  }
-                }
-                
-                showStatus('Target Found!', 'AR content should be visible');
-                setTimeout(hideStatus, 1500);
+            // Handle 3D model AR
+            if (is3D && model3D) {
+              console.log('Model position:', model3D.getAttribute('position'));
+              console.log('Model scale:', model3D.getAttribute('scale'));
+              
+              model3D.setAttribute('visible', 'true');
+              // Add smooth animation for appearance
+              model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
+              
+              // Explicitly play the model animations
+              const mixer = model3D.components['animation-mixer'];
+              if (mixer && mixer.mixer) {
+                console.log('Playing model animations');
+                mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
               }
-            }, 100); // 100ms debounce
           });
 
           target.addEventListener('targetLost', () => {
