@@ -646,6 +646,22 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
+    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
+      <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+        <div style="margin-bottom:20px;">
+          <div style="width:60px;height:60px;background:#dc2626;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
+          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the marker image to start the AR experience.</p>
+        </div>
+        <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
+      </div>
+    </div>
+
 
 
     <a-scene
@@ -705,8 +721,6 @@ export async function GET(
         ` : ''}
       </a-entity>
     </a-scene>
-
-    
 
     ${experience.link_url ? `
     <div id="externalLinkBtn">
@@ -794,19 +808,28 @@ export async function GET(
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Fit video INSIDE the marker: set the longer side to match marker length (1.0), preserve aspect
-            let videoWidth: number;
-            let videoHeight: number;
-
-            if (videoAspect >= 1) {
-              // Landscape: width equals marker width, height derived by aspect
-              videoWidth = markerWidth; // 1.0
+            // Calculate video dimensions to be 20% larger than marker
+            const videoScale = 1.2; // 20% larger than marker
+            let videoWidth, videoHeight;
+            
+            // For both portrait and landscape, we'll scale based on the video's natural orientation
+            if (videoAspect > 1) {
+              // Landscape video - scale to width
+              videoWidth = markerWidth * videoScale;
               videoHeight = videoWidth / videoAspect;
             } else {
-              // Portrait or square: height equals marker height, width derived by aspect
-              videoHeight = markerHeight; // 1.0
+              // Portrait or square video - use larger scale for better visibility
+              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              videoHeight = markerHeight * portraitScale;
               videoWidth = videoHeight * videoAspect;
             }
+            
+            // Ensure minimum dimensions
+            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
+            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
+            
+            // Get the target element that contains the video plane
+            const target = document.querySelector('#target');
             
             // Update video plane
             videoPlane.setAttribute('width', videoWidth);
@@ -833,6 +856,8 @@ export async function GET(
         console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
 
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
         const model3D = document.querySelector('#model3D');
@@ -924,46 +949,102 @@ export async function GET(
             scene.style.opacity = '1';
             
             if (video) {
-              // Try to autoplay WITH audio first
-              video.muted = false;
               video.play().then(() => {
                 // After video starts playing, update the aspect ratio
                 updateVideoAspectRatio(video, videoPlane);
-              }).catch(e => {
-                console.warn('Autoplay with audio blocked, will request gesture to unmute.', e?.name || e);
-                // Fallback: play muted, then ask to unmute on first interaction
-                video.muted = true;
-                video.play().catch(() => {});
-                
-                const tryUnmute = () => {
-                  video.muted = false;
-                  video.play().then(() => {
-                    window.removeEventListener('pointerdown', tryUnmute);
-                    window.removeEventListener('touchstart', tryUnmute);
-                  }).catch(() => {
-                    // keep prompt visible if still blocked
-                  });
-                };
-                window.addEventListener('pointerdown', tryUnmute, { once: true });
-                window.addEventListener('touchstart', tryUnmute, { once: true });
+              }).catch(e => console.error('Video play error:', e));
+            }
+            
+            // For 3D models, ensure animations are ready
+            if (is3D && model3D) {
+              console.log('3D AR mode - animations will auto-play when target is found');
+            }
+            
+            // Log combined mode
+            if (contentType === 'both') {
+              console.log('🎬 Combined AR mode - Both video and 3D model will appear together');
+              console.log('Video plane at z: 0.01, 3D model at y: 0.3, z: 0.15');
+            }
+          });
+          scene.addEventListener('arError', (e) => {
+            console.error('MindAR arError', e);
+            showStatus('AR Initialization Error', 'Please allow camera access and try again.');
+          });
+        }
+
+        // Add tracking stabilization
+        let targetFoundTimeout = null;
+        let targetLostTimeout = null;
+        let isTargetVisible = false;
+        
+        // Custom stabilization logic removed to rely on MindAR's built-in filtering.
+
+        if (target) {
+          console.log('Target element found, adding event listeners');
+          
+          target.addEventListener('targetFound', () => {
+            console.log('Target found!');
+            
+            // Track target recognition analytics
+            if (window.trackAREvent) {
+              window.trackAREvent('target_recognition', {
+                recognitionTime: Date.now() - sessionStartTime,
+                targetIndex: 0
               });
             }
             
-            // Handle 3D model AR
-            if (is3D && model3D) {
-              console.log('Model position:', model3D.getAttribute('position'));
-              console.log('Model scale:', model3D.getAttribute('scale'));
-              
-              model3D.setAttribute('visible', 'true');
-              // Add smooth animation for appearance
-              model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
-              
-              // Explicitly play the model animations
-              const mixer = model3D.components['animation-mixer'];
-              if (mixer && mixer.mixer) {
-                console.log('Playing model animations');
-                mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
+            // Clear any pending lost timeout
+            if (targetLostTimeout) {
+              clearTimeout(targetLostTimeout);
+              targetLostTimeout = null;
+            }
+            
+            // Debounce target found to reduce flickering
+            if (targetFoundTimeout) clearTimeout(targetFoundTimeout);
+            targetFoundTimeout = setTimeout(() => {
+              if (!isTargetVisible) {
+                isTargetVisible = true;
+                
+                // Handle video AR
+                if (isVideo) {
+                  if (videoPlane) {
+                    videoPlane.setAttribute('visible', 'true');
+                    // Add smooth animation for appearance
+                    videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
+                  }
+                  if (video) {
+                    // Don't restart; just ensure it's playing
+                    video.muted = false;
+                    if (video.paused) video.play().catch(() => {});
+                  }
+                }
+                
+                // Handle 3D model AR
+                if (is3D && model3D) {
+                  console.log('🎯 Showing 3D model');
+                  console.log('Model position:', model3D.getAttribute('position'));
+                  console.log('Model scale:', model3D.getAttribute('scale'));
+                  
+                  model3D.setAttribute('visible', 'true');
+                  // Add smooth animation for appearance
+                  model3D.setAttribute('animation', 'property: scale; from: 0 0 0; to: ${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}; dur: 300; easing: easeOutElastic');
+                  
+                  // Explicitly play the model animations
+                  const mixer = model3D.components['animation-mixer'];
+                  if (mixer && mixer.mixer) {
+                    console.log('Playing model animations');
+                    mixer.mixer.clipAction(mixer.mixer._actions[0]?._clip).play();
+                  }
+                } else {
+                  if (is3D && !model3D) {
+                    console.error('❌ Should show 3D but model3D not found!');
+                  }
+                }
+                
+                showStatus('Target Found!', 'AR content should be visible');
+                setTimeout(hideStatus, 1500);
               }
+            }, 100); // 100ms debounce
           });
 
           target.addEventListener('targetLost', () => {
@@ -998,9 +1079,42 @@ export async function GET(
           console.error('Target element not found!');
         }
 
-        // Show external link button immediately if exists
-        if (externalLinkBtn) {
-          externalLinkBtn.style.display = 'block';
+        // Tap to start to satisfy autoplay/camera permissions
+        if (startBtn && overlay) {
+          // Add loading state to button
+          startBtn.addEventListener('click', async () => {
+            startBtn.classList.add('loading');
+            startBtn.textContent = 'Starting...';
+            
+            // Don't start video here - wait for target to be found
+            // if (video) await video.play().catch(() => {});
+
+            // Smooth fade out for overlay
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.5s ease';
+            
+            setTimeout(() => {
+              overlay.style.display = 'none';
+              showStatus('Initializing...', 'Starting camera and tracker');
+              setTimeout(hideStatus, 1000);
+              // Show external link button if exists
+              if (externalLinkBtn) {
+                externalLinkBtn.style.display = 'block';
+              }
+            }, 500);
+            
+          }, { once: true });
+
+          // Mobile touch improvements
+          if ('ontouchstart' in window) {
+            startBtn.addEventListener('touchstart', () => {
+              startBtn.style.transform = 'scale(0.95)';
+            });
+            
+            startBtn.addEventListener('touchend', () => {
+              startBtn.style.transform = 'scale(1)';
+            });
+          }
         }
 
         // Setup profile selector event listener
