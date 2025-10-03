@@ -866,9 +866,10 @@ export async function GET(
         if (video && videoPlane) {
           // Optimize video for performance
           video.playsInline = true;
-          video.autoplay = true; // auto-start
+          video.autoplay = false;
           video.controls = false;
-          video.muted = true; // allow autoplay on mobile
+          // Ensure autoplay without gesture by keeping it muted
+          video.muted = true;
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
 
@@ -923,6 +924,8 @@ export async function GET(
             scene.style.opacity = '1';
             
             if (video) {
+              // Keep muted to allow autoplay
+              video.muted = true;
               video.play().then(() => {
                 // After video starts playing, update the aspect ratio
                 updateVideoAspectRatio(video, videoPlane);
@@ -987,8 +990,8 @@ export async function GET(
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
                   if (video) {
-                    // Don't restart; just ensure it's playing
-                    video.muted = false;
+                    // Don't restart; just ensure it's playing (stay muted for autoplay compliance)
+                    video.muted = true;
                     if (video.paused) video.play().catch(() => {});
                   }
                 }
@@ -1053,9 +1056,7 @@ export async function GET(
           console.error('Target element not found!');
         }
 
-        // Auto-start flow: show initializing status briefly and show external link button if present
-        showStatus('Initializing...', 'Starting camera and tracker');
-        setTimeout(hideStatus, 1000);
+        // Show external link button immediately if exists
         if (externalLinkBtn) {
           externalLinkBtn.style.display = 'block';
         }
