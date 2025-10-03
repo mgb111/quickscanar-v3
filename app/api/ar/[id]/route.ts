@@ -288,6 +288,11 @@ export async function GET(
             this._posHistory.length = 0;
           }
 
+        // Show external link button immediately if present (no overlay anymore)
+        if (externalLinkBtn) {
+          externalLinkBtn.style.display = 'block';
+        }
+
           const smoothedPosition = new THREE.Vector3(
             this.positionSmoother.x.filter(usePos.x, timestamp),
             this.positionSmoother.y.filter(usePos.y, timestamp),
@@ -646,21 +651,7 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:1003;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);">
-      <div style="text-align:center;color:black;max-width:90vw;padding:24px;background:white;border-radius:24px;border:2px solid black;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
-        <div style="margin-bottom:20px;">
-          <div style="width:60px;height:60px;background:#dc2626;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-          </div>
-          <h2 style="font-size:24px;font-weight:700;margin:0 0 12px 0;color:#dc2626;">Ready to start AR</h2>
-          <p style="font-size:16px;margin:0;line-height:1.5;color:black;">Tap the button below, then allow camera access. Point your camera at the marker image to start the AR experience.</p>
-        </div>
-        <button id="startBtn" style="background:#dc2626;color:white;border:2px solid black;border-radius:16px;padding:16px 32px;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s ease;box-shadow:0 8px 25px rgba(220,38,38,0.4);transform:scale(1);">Start AR Experience</button>
-      </div>
-    </div>
+    
 
 
 
@@ -802,42 +793,12 @@ export async function GET(
         if (!videoElement || !videoPlane) return;
         
         const updateDimensions = () => {
-          if (videoElement.videoWidth && videoElement.videoHeight) {
-            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
-            // Marker dimensions (1.0 x 1.0 by default in MindAR)
-            const markerWidth = 1.0;
-            const markerHeight = 1.0;
-            
-            // Calculate video dimensions to be 20% larger than marker
-            const videoScale = 1.2; // 20% larger than marker
-            let videoWidth, videoHeight;
-            
-            // For both portrait and landscape, we'll scale based on the video's natural orientation
-            if (videoAspect > 1) {
-              // Landscape video - scale to width
-              videoWidth = markerWidth * videoScale;
-              videoHeight = videoWidth / videoAspect;
-            } else {
-              // Portrait or square video - use larger scale for better visibility
-              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
-              videoHeight = markerHeight * portraitScale;
-              videoWidth = videoHeight * videoAspect;
-            }
-            
-            // Ensure minimum dimensions
-            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
-            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
-            
-            // Get the target element that contains the video plane
-            const target = document.querySelector('#target');
-            
-            // Update video plane
-            videoPlane.setAttribute('width', videoWidth);
-            videoPlane.setAttribute('height', videoHeight);
-            
-            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
-            console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
-          }
+          // Force the video plane to fill the marker exactly (1 x 1)
+          const markerWidth = 1.0;
+          const markerHeight = 1.0;
+          videoPlane.setAttribute('width', markerWidth);
+          videoPlane.setAttribute('height', markerHeight);
+          console.log('Video dimensions set to marker size:', markerWidth.toFixed(2), 'x', markerHeight.toFixed(2));
         };
         
         // Try to update dimensions immediately if video is already loaded
@@ -856,8 +817,6 @@ export async function GET(
         console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
 
-        const startBtn = document.getElementById('startBtn');
-        const overlay = document.getElementById('overlay');
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
         const model3D = document.querySelector('#model3D');
@@ -1079,43 +1038,7 @@ export async function GET(
           console.error('Target element not found!');
         }
 
-        // Tap to start to satisfy autoplay/camera permissions
-        if (startBtn && overlay) {
-          // Add loading state to button
-          startBtn.addEventListener('click', async () => {
-            startBtn.classList.add('loading');
-            startBtn.textContent = 'Starting...';
-            
-            // Don't start video here - wait for target to be found
-            // if (video) await video.play().catch(() => {});
-
-            // Smooth fade out for overlay
-            overlay.style.opacity = '0';
-            overlay.style.transition = 'opacity 0.5s ease';
-            
-            setTimeout(() => {
-              overlay.style.display = 'none';
-              showStatus('Initializing...', 'Starting camera and tracker');
-              setTimeout(hideStatus, 1000);
-              // Show external link button if exists
-              if (externalLinkBtn) {
-                externalLinkBtn.style.display = 'block';
-              }
-            }, 500);
-            
-          }, { once: true });
-
-          // Mobile touch improvements
-          if ('ontouchstart' in window) {
-            startBtn.addEventListener('touchstart', () => {
-              startBtn.style.transform = 'scale(0.95)';
-            });
-            
-            startBtn.addEventListener('touchend', () => {
-              startBtn.style.transform = 'scale(1)';
-            });
-          }
-        }
+        // Removed tap-to-start overlay/button; AR initializes immediately
 
         // Setup profile selector event listener
         // Removed profile selector logic
