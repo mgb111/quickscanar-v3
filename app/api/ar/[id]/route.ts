@@ -698,16 +698,6 @@ export async function GET(
       <a-entity mindar-image-target="targetIndex: 0" id="target">
         ${isVideo ? `
         <a-plane
-          id="backgroundPlane"
-          width="1"
-          height="1"
-          position="0 0 0.005"
-          rotation="0 0 ${experience.video_rotation || 0}"
-          material="color: #000000"
-          visible="false"
-        ></a-plane>
-
-        <a-plane
           id="videoPlane"
           width="1"
           height="1"
