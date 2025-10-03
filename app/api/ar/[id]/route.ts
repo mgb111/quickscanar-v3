@@ -808,28 +808,19 @@ export async function GET(
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Calculate video dimensions to be 20% larger than marker
-            const videoScale = 1.2; // 20% larger than marker
-            let videoWidth, videoHeight;
-            
-            // For both portrait and landscape, we'll scale based on the video's natural orientation
-            if (videoAspect > 1) {
-              // Landscape video - scale to width
-              videoWidth = markerWidth * videoScale;
+            // Fit video INSIDE the marker: set the longer side to match marker length (1.0), preserve aspect
+            let videoWidth: number;
+            let videoHeight: number;
+
+            if (videoAspect >= 1) {
+              // Landscape: width equals marker width, height derived by aspect
+              videoWidth = markerWidth; // 1.0
               videoHeight = videoWidth / videoAspect;
             } else {
-              // Portrait or square video - use larger scale for better visibility
-              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
-              videoHeight = markerHeight * portraitScale;
+              // Portrait or square: height equals marker height, width derived by aspect
+              videoHeight = markerHeight; // 1.0
               videoWidth = videoHeight * videoAspect;
             }
-            
-            // Ensure minimum dimensions
-            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
-            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
-            
-            // Get the target element that contains the video plane
-            const target = document.querySelector('#target');
             
             // Update video plane
             videoPlane.setAttribute('width', videoWidth);
