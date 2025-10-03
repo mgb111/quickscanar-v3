@@ -835,18 +835,6 @@ export async function GET(
             videoPlane.setAttribute('width', videoWidth);
             videoPlane.setAttribute('height', videoHeight);
             
-            // Update background plane to be slightly larger than video
-            const backgroundPlane = document.querySelector('#backgroundPlane');
-            if (backgroundPlane) {
-              // Make background 10% larger than video
-              backgroundPlane.setAttribute('width', videoWidth * 1.1);
-              backgroundPlane.setAttribute('height', videoHeight * 1.1);
-              
-              // Log the dimensions for debugging
-              console.log('Video dimensions:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
-              console.log('Background dimensions:', (videoWidth * 1.1).toFixed(2), 'x', (videoHeight * 1.1).toFixed(2));
-            }
-            
             console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
             console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
           }
@@ -875,7 +863,6 @@ export async function GET(
         const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
-        const backgroundPlane = document.querySelector('#backgroundPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
@@ -887,7 +874,6 @@ export async function GET(
           model3D: !!model3D,
           target: !!target,
           videoPlane: !!videoPlane,
-          backgroundPlane: !!backgroundPlane,
           contentType: contentType,
           isVideo: isVideo,
           is3D: is3D,
@@ -904,7 +890,7 @@ export async function GET(
           showStatus('Using fallback target', 'Your .mind file could not be loaded. Using a sample target to verify camera and tracking.');
         }
 
-        if (video && videoPlane && backgroundPlane) {
+        if (video && videoPlane) {
           // Optimize video for performance
           video.playsInline = true;
           video.autoplay = false;
@@ -1021,7 +1007,6 @@ export async function GET(
                 
                 // Handle video AR
                 if (isVideo) {
-                  if (backgroundPlane) backgroundPlane.setAttribute('visible', 'true');
                   if (videoPlane) {
                     videoPlane.setAttribute('visible', 'true');
                     // Add smooth animation for appearance
