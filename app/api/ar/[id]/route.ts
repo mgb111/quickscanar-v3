@@ -288,11 +288,6 @@ export async function GET(
             this._posHistory.length = 0;
           }
 
-        // Show external link button immediately if present (no overlay anymore)
-        if (externalLinkBtn) {
-          externalLinkBtn.style.display = 'block';
-        }
-
           const smoothedPosition = new THREE.Vector3(
             this.positionSmoother.x.filter(usePos.x, timestamp),
             this.positionSmoother.y.filter(usePos.y, timestamp),
@@ -651,8 +646,6 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
-    
-
 
 
     <a-scene
@@ -793,12 +786,42 @@ export async function GET(
         if (!videoElement || !videoPlane) return;
         
         const updateDimensions = () => {
-          // Force the video plane to fill the marker exactly (1 x 1)
-          const markerWidth = 1.0;
-          const markerHeight = 1.0;
-          videoPlane.setAttribute('width', markerWidth);
-          videoPlane.setAttribute('height', markerHeight);
-          console.log('Video dimensions set to marker size:', markerWidth.toFixed(2), 'x', markerHeight.toFixed(2));
+          if (videoElement.videoWidth && videoElement.videoHeight) {
+            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+            // Marker dimensions (1.0 x 1.0 by default in MindAR)
+            const markerWidth = 1.0;
+            const markerHeight = 1.0;
+            
+            // Calculate video dimensions to be 20% larger than marker
+            const videoScale = 1.2; // 20% larger than marker
+            let videoWidth, videoHeight;
+            
+            // For both portrait and landscape, we'll scale based on the video's natural orientation
+            if (videoAspect > 1) {
+              // Landscape video - scale to width
+              videoWidth = markerWidth * videoScale;
+              videoHeight = videoWidth / videoAspect;
+            } else {
+              // Portrait or square video - use larger scale for better visibility
+              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              videoHeight = markerHeight * portraitScale;
+              videoWidth = videoHeight * videoAspect;
+            }
+            
+            // Ensure minimum dimensions
+            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
+            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
+            
+            // Get the target element that contains the video plane
+            const target = document.querySelector('#target');
+            
+            // Update video plane
+            videoPlane.setAttribute('width', videoWidth);
+            videoPlane.setAttribute('height', videoHeight);
+            
+            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
+            console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+          }
         };
         
         // Try to update dimensions immediately if video is already loaded
@@ -816,7 +839,6 @@ export async function GET(
       document.addEventListener("DOMContentLoaded", async () => {
         console.log('AR Experience DOM loaded');
         nukeLoadingScreens();
-
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
         const model3D = document.querySelector('#model3D');
@@ -826,6 +848,15 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
+
+        // Auto show external link button if configured
+        if (externalLinkBtn) {
+          externalLinkBtn.style.display = 'block';
+        }
+
+        // Brief initializing message (no user interaction needed)
+        showStatus('Initializing...', 'Starting camera and tracker');
+        setTimeout(hideStatus, 1000);
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -1038,7 +1069,7 @@ export async function GET(
           console.error('Target element not found!');
         }
 
-        // Removed tap-to-start overlay/button; AR initializes immediately
+        // Overlay and start button removed; initialization proceeds automatically.
 
         // Setup profile selector event listener
         // Removed profile selector logic
