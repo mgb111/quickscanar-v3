@@ -859,7 +859,7 @@ export async function GET(
             videoPlane.dataset.baseWidth = String(videoWidth);
             videoPlane.dataset.baseHeight = String(videoHeight);
 
-            const slider = document.getElementById('videoScale') as HTMLInputElement | null;
+            const slider = document.getElementById('videoScale');
             const scale = slider ? Number(slider.value) || 1 : 1;
             applyVideoScale(scale, videoPlane);
             
@@ -893,7 +893,7 @@ export async function GET(
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
         const resizeControls = document.getElementById('resizeControls');
-        const scaleSlider = document.getElementById('videoScale') as HTMLInputElement | null;
+        const scaleSlider = document.getElementById('videoScale');
         const scaleDown = document.getElementById('scaleDown');
         const scaleUp = document.getElementById('scaleUp');
 
