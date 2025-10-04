@@ -849,9 +849,24 @@ export async function GET(
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
 
-        // Auto show external link button if configured
+        // Show external link only after content actually starts
         if (externalLinkBtn) {
-          externalLinkBtn.style.display = 'block';
+          if (isVideo && video) {
+            const revealLink = () => {
+              externalLinkBtn.style.display = 'block';
+            };
+            // Reveal when playback begins (handles autoplay or user-initiated play)
+            video.addEventListener('playing', revealLink, { once: true });
+            video.addEventListener('play', revealLink, { once: true });
+          } else if (is3D && !isVideo) {
+            // 3D-only fallback: reveal when target is first found
+            if (target) {
+              const revealOnTarget = () => {
+                externalLinkBtn.style.display = 'block';
+              };
+              target.addEventListener('targetFound', revealOnTarget, { once: true });
+            }
+          }
         }
 
         // Brief initializing message (no user interaction needed)
