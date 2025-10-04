@@ -638,38 +638,6 @@ export async function GET(
         #externalLinkBtn { bottom: 120px; }
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
-      
-      /* Video resize controls (video-only mode) */
-      #resizeControls {
-        position: fixed;
-        bottom: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1005;
-        display: none; /* only shown for video-only */
-        background: rgba(255,255,255,0.95);
-        border: 2px solid #000;
-        border-radius: 14px;
-        padding: 10px 12px;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.25);
-        align-items: center;
-        gap: 8px;
-      }
-      #resizeControls button {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: 2px solid #000;
-        background: #eee;
-        font-weight: 800;
-      }
-      #resizeControls input[type="range"] {
-        width: 220px;
-      }
-      @media (max-width: 768px) {
-        #resizeControls { bottom: 80px; padding: 8px 10px; }
-        #resizeControls input[type="range"] { width: 180px; }
-      }
     </style>
   </head>
   <body>
@@ -746,14 +714,6 @@ export async function GET(
     </div>
     ` : ''}
 
-    ${contentType === 'video' ? `
-    <div id="resizeControls" aria-label="Resize video">
-      <button id="scaleDown" aria-label="Scale down">−</button>
-      <input id="videoScale" type="range" min="0.5" max="2" step="0.01" value="1" />
-      <button id="scaleUp" aria-label="Scale up">+</button>
-    </div>
-    ` : ''}
-
     <script>
       async function preflightMind(url) {
         try {
@@ -821,7 +781,7 @@ export async function GET(
 
       nukeLoadingScreens();
 
-      // Function to update video plane to match marker dimensions; stores base size for scaling
+      // Function to update video plane to match marker dimensions
       function updateVideoAspectRatio(videoElement, videoPlane) {
         if (!videoElement || !videoPlane) return;
         
@@ -855,13 +815,9 @@ export async function GET(
             // Get the target element that contains the video plane
             const target = document.querySelector('#target');
             
-            // Store base dims and apply current scale factor (if any)
-            videoPlane.dataset.baseWidth = String(videoWidth);
-            videoPlane.dataset.baseHeight = String(videoHeight);
-
-            const slider = document.getElementById('videoScale');
-            const scale = slider ? Number(slider.value) || 1 : 1;
-            applyVideoScale(scale, videoPlane);
+            // Update video plane
+            videoPlane.setAttribute('width', videoWidth);
+            videoPlane.setAttribute('height', videoHeight);
             
             console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
             console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
@@ -892,10 +848,6 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
-        const resizeControls = document.getElementById('resizeControls');
-        const scaleSlider = document.getElementById('videoScale');
-        const scaleDown = document.getElementById('scaleDown');
-        const scaleUp = document.getElementById('scaleUp');
 
         // Show external link only after content actually starts
         if (externalLinkBtn) {
@@ -915,33 +867,6 @@ export async function GET(
               target.addEventListener('targetFound', revealOnTarget, { once: true });
             }
           }
-        }
-
-        // Show resize controls only for video-only experiences
-        if (resizeControls && isVideo && !is3D) {
-          resizeControls.style.display = 'flex';
-        }
-
-        // Wire resize controls
-        if (scaleSlider && videoPlane) {
-          scaleSlider.addEventListener('input', () => {
-            const val = Number(scaleSlider.value) || 1;
-            applyVideoScale(val, videoPlane);
-          });
-        }
-        if (scaleDown && scaleSlider && videoPlane) {
-          scaleDown.addEventListener('click', () => {
-            const next = Math.max(0.5, (Number(scaleSlider.value) || 1) - 0.05);
-            scaleSlider.value = String(next);
-            applyVideoScale(next, videoPlane);
-          });
-        }
-        if (scaleUp && scaleSlider && videoPlane) {
-          scaleUp.addEventListener('click', () => {
-            const next = Math.min(2, (Number(scaleSlider.value) || 1) + 0.05);
-            scaleSlider.value = String(next);
-            applyVideoScale(next, videoPlane);
-          });
         }
 
         // Brief initializing message (no user interaction needed)
