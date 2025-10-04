@@ -26,24 +26,58 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get user's subscription from user-scoped client first
-    let { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('plan, status, campaign_limit, end_date')
-      .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-      .order('created_at', { ascending: false })
-      .maybeSingle()
+    // Get user's subscription; be robust to email case
+    let subscription: any = null
+    let subError: any = null
 
-    // If no row or RLS blocked, try admin client as fallback (server-side only)
-    if ((!subscription || subError) && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-      const adminRes = await admin
+    // Try by user_id first
+    if (user.id) {
+      const resByUser = await supabase
         .from('subscriptions')
         .select('plan, status, campaign_limit, end_date')
-        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .maybeSingle()
-      subscription = adminRes.data as any
+      subscription = resByUser.data
+      subError = resByUser.error
+    }
+
+    // If not found, try by email (case-insensitive)
+    if ((!subscription && user.email) || subError) {
+      const resByEmail = await supabase
+        .from('subscriptions')
+        .select('plan, status, campaign_limit, end_date')
+        .ilike('email', user.email)
+        .order('created_at', { ascending: false })
+        .maybeSingle()
+      if (resByEmail.data) subscription = resByEmail.data
+    }
+
+    // If still no row or RLS blocked, try admin client as fallback (server-side only)
+    if (!subscription && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+      // Try by user_id
+      if (user.id && !subscription) {
+        const adminByUser = await admin
+          .from('subscriptions')
+          .select('plan, status, campaign_limit, end_date')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .maybeSingle()
+        if (adminByUser.data) subscription = adminByUser.data
+      }
+
+      // Try by email (case-insensitive)
+      if (user.email && !subscription) {
+        const adminByEmail = await admin
+          .from('subscriptions')
+          .select('plan, status, campaign_limit, end_date')
+          .ilike('email', user.email)
+          .order('created_at', { ascending: false })
+          .maybeSingle()
+        if (adminByEmail.data) subscription = adminByEmail.data
+      }
     }
 
     // Count total campaigns created (including deleted ones) using campaign claims table
