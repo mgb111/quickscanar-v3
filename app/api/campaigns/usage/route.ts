@@ -43,11 +43,11 @@ export async function GET(request: NextRequest) {
     }
 
     // If not found, try by email (case-insensitive)
-    if ((!subscription && user.email) || subError) {
+    if ((!subscription && typeof user.email === 'string' && user.email.length > 0) || subError) {
       const resByEmail = await supabase
         .from('subscriptions')
         .select('plan, status, campaign_limit, end_date')
-        .ilike('email', user.email)
+        .ilike('email', user.email as string)
         .order('created_at', { ascending: false })
         .maybeSingle()
       if (resByEmail.data) subscription = resByEmail.data
@@ -69,11 +69,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Try by email (case-insensitive)
-      if (user.email && !subscription) {
+      if (typeof user.email === 'string' && user.email.length > 0 && !subscription) {
         const adminByEmail = await admin
           .from('subscriptions')
           .select('plan, status, campaign_limit, end_date')
-          .ilike('email', user.email)
+          .ilike('email', user.email as string)
           .order('created_at', { ascending: false })
           .maybeSingle()
         if (adminByEmail.data) subscription = adminByEmail.data
