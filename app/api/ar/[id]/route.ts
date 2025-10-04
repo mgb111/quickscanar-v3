@@ -93,38 +93,6 @@ export async function GET(
           if (response.ok) {
             console.log('Analytics event tracked:', eventType);
           }
-      
-      /* Video resize controls (video-only mode) */
-      #resizeControls {
-        position: fixed;
-        bottom: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1005;
-        display: none; /* only shown for video-only */
-        background: rgba(255,255,255,0.95);
-        border: 2px solid #000;
-        border-radius: 14px;
-        padding: 10px 12px;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.25);
-        align-items: center;
-        gap: 8px;
-      }
-      #resizeControls button {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: 2px solid #000;
-        background: #eee;
-        font-weight: 800;
-      }
-      #resizeControls input[type="range"] {
-        width: 220px;
-      }
-      @media (max-width: 768px) {
-        #resizeControls { bottom: 80px; padding: 8px 10px; }
-        #resizeControls input[type="range"] { width: 180px; }
-      }
         } catch (error) {
           console.error('Failed to track analytics event:', error);
         }
@@ -669,6 +637,38 @@ export async function GET(
       @media (max-width: 768px) { 
         #externalLinkBtn { bottom: 120px; }
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
+      }
+      
+      /* Video resize controls (video-only mode) */
+      #resizeControls {
+        position: fixed;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1005;
+        display: none; /* only shown for video-only */
+        background: rgba(255,255,255,0.95);
+        border: 2px solid #000;
+        border-radius: 14px;
+        padding: 10px 12px;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+        align-items: center;
+        gap: 8px;
+      }
+      #resizeControls button {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 2px solid #000;
+        background: #eee;
+        font-weight: 800;
+      }
+      #resizeControls input[type="range"] {
+        width: 220px;
+      }
+      @media (max-width: 768px) {
+        #resizeControls { bottom: 80px; padding: 8px 10px; }
+        #resizeControls input[type="range"] { width: 180px; }
       }
     </style>
   </head>
