@@ -112,6 +112,7 @@ export async function GET(request: NextRequest) {
     // Determine plan limits based on subscription
     let usageLimit = 1 // Free plan default
     let planName = 'Free Plan'
+    let overriddenByCustomLimit = false
 
     const isActiveLike = (sub: any) => {
       if (!sub) return false
@@ -148,6 +149,7 @@ export async function GET(request: NextRequest) {
       // IMPORTANT: override with per-user campaign_limit when present
       if (typeof (subscription as any).campaign_limit === 'number' && (subscription as any).campaign_limit > 0) {
         usageLimit = (subscription as any).campaign_limit
+        overriddenByCustomLimit = true
       }
     }
 
@@ -159,6 +161,8 @@ export async function GET(request: NextRequest) {
     }
     if (nameByLimit[usageLimit]) {
       planName = nameByLimit[usageLimit]
+    } else if (overriddenByCustomLimit) {
+      planName = `Custom Plan (${usageLimit})`
     }
 
     return NextResponse.json({
