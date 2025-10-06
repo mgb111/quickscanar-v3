@@ -80,6 +80,23 @@ export default function CreateExperience() {
     }
   }, [videoPreviewUrl, modelPreviewUrl, markerPreviewUrl])
 
+  // Listen for scale selection from the scale preview window
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      try {
+        if (e.origin !== window.location.origin) return
+        const data: any = e.data
+        if (data?.type === 'VIDEO_SCALE_SELECTED' && typeof data.scale === 'number') {
+          const s = Math.min(5, Math.max(0.2, data.scale))
+          setVideoScale(s)
+          toast.success(`Video scale set to ${s.toFixed(2)}×`)
+        }
+      } catch {}
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [])
+
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -440,7 +457,8 @@ export default function CreateExperience() {
         mind_file_url: mindUrl || null,
         marker_image_url: markerImageUrl || null,
         user_id: user!.id,
-        link_url: linkUrl.trim() ? linkUrl.trim() : null
+        link_url: linkUrl.trim() ? linkUrl.trim() : null,
+        video_scale: videoFile ? videoScale : 1.0,
       }
 
       const experienceResponse = await fetch('/api/ar', {
