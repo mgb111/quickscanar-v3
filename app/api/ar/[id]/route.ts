@@ -52,6 +52,7 @@ export async function GET(
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+    ${isGifVideo ? '<script src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct.min.js"></script>' : ''}
     
     <!-- Analytics Tracking Script -->
     <script>
@@ -680,12 +681,7 @@ export async function GET(
       <a-assets>
         ${isVideo ? (
           isGifVideo ? `
-        <img
-          id="arGif"
-          src="${experience.video_url}"
-          crossorigin="anonymous"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-        />
+        <canvas id="arGifCanvas"></canvas>
         ` : `
         <video
           id="arVideo"
@@ -713,7 +709,7 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: ${isGifVideo ? '#arGif' : '#arVideo'}; transparent: true; alphaTest: 0.1; shader: flat; side: double"
+          material="src: ${isGifVideo ? '#arGifCanvas' : '#arVideo'}; transparent: true; alphaTest: 0.1; shader: flat; side: double"
           ${isGifVideo ? 'gif-texture-refresher' : ''}
           visible="false"
           geometry="primitive: plane"
@@ -812,11 +808,17 @@ export async function GET(
       function updateMediaAspectRatio(mediaEl, plane) {
         if (!mediaEl || !plane) return;
         const isVideoEl = mediaEl.tagName && mediaEl.tagName.toLowerCase() === 'video';
+        const isCanvasEl = mediaEl.tagName && mediaEl.tagName.toLowerCase() === 'canvas';
         const getDims = () => {
           if (isVideoEl) {
             return {
               w: mediaEl.videoWidth || 0,
               h: mediaEl.videoHeight || 0,
+            };
+          } else if (isCanvasEl) {
+            return {
+              w: mediaEl.width || 0,
+              h: mediaEl.height || 0,
             };
           } else {
             return {
@@ -852,9 +854,12 @@ export async function GET(
           if (mediaEl.readyState >= 1) updateDimensions();
           else mediaEl.addEventListener('loadedmetadata', updateDimensions);
           mediaEl.addEventListener('resize', updateDimensions);
-        } else {
+        } else if (!isCanvasEl) {
           if (mediaEl.complete) updateDimensions();
           mediaEl.addEventListener('load', updateDimensions);
+        } else {
+          // For canvas, caller should invoke updateDimensions after size set
+          updateDimensions();
         }
       }
 
@@ -864,6 +869,7 @@ export async function GET(
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
         const gifImg = document.querySelector('#arGif');
+        const gifCanvas = document.querySelector('#arGifCanvas');
         const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
@@ -965,8 +971,8 @@ export async function GET(
               video.play().then(() => {
                 updateMediaAspectRatio(video, videoPlane);
               }).catch(e => console.error('Video play error:', e));
-            } else if (gifImg) {
-              updateMediaAspectRatio(gifImg, videoPlane);
+            } else if (gifCanvas) {
+              updateMediaAspectRatio(gifCanvas, videoPlane);
             }
             
             // For 3D models, ensure animations are ready
@@ -1104,6 +1110,45 @@ export async function GET(
         // Removed profile selector logic
 
         setInterval(nukeLoadingScreens, 1000);
+
+        // Initialize GIF playback onto canvas using gifuct-js
+        if (${isGifVideo} && gifCanvas) {
+          try {
+            const ctx = gifCanvas.getContext('2d');
+            const resp = await fetch('${experience.video_url}');
+            const buf = await resp.arrayBuffer();
+            const gifLib = (window as any).gifuct || (window as any).GIFuct || (window as any).gifuctJs;
+            if (!gifLib || !gifLib.parseGIF || !gifLib.decompressFrames) {
+              console.warn('gifuct-js not available');
+              return;
+            }
+            const gif = gifLib.parseGIF(buf);
+            const frames = gifLib.decompressFrames(gif, true);
+            if (!frames || !frames.length) return;
+            // Set canvas size from first frame
+            const f0 = frames[0];
+            gifCanvas.width = f0.dims.width;
+            gifCanvas.height = f0.dims.height;
+            // Update plane size
+            if (videoPlane) updateMediaAspectRatio(gifCanvas, videoPlane);
+            let i = 0;
+            const drawFrame = () => {
+              const f = frames[i];
+              if (f.disposalType === 2) {
+                ctx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
+              }
+              const imageData = ctx.createImageData(f.dims.width, f.dims.height);
+              imageData.data.set(f.patch);
+              ctx.putImageData(imageData, f.dims.left, f.dims.top);
+              i = (i + 1) % frames.length;
+              const delayMs = Math.max(10, (f.delay || 10) * 10); // gif delay in 10ms units
+              setTimeout(drawFrame, delayMs);
+            };
+            drawFrame();
+          } catch (e) {
+            console.error('GIF playback init failed:', e);
+          }
+        }
       });
 
       window.addEventListener('error', (event) => {
