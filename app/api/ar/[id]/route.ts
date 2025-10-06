@@ -52,6 +52,7 @@ export async function GET(
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+    ${isGifVideo ? '<script src="https://unpkg.com/aframe-gif-shader@1.0.0/dist/aframe-gif-shader.min.js"></script>' : ''}
     ${isGifVideo ? '<script src="https://unpkg.com/aframe-gif-shader@^1.0.0/dist/aframe-gif-shader.min.js"></script>' : ''}
     
     <!-- Analytics Tracking Script -->
