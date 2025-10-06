@@ -611,22 +611,30 @@ export default function CreateExperience() {
                       <p className="text-base text-black font-medium">{videoFile.name}</p>
                       {videoPreviewUrl && !showCombinedPreview && (
                         <div className="mt-4">
-                          <video 
-                            key={videoPreviewUrl}
-                            src={videoPreviewUrl} 
-                            controls 
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
-                            style={{ objectFit: 'contain' }}
-                            onLoadedData={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              video.play().catch(() => {});
-                            }}
-                          />
-                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
+                          {videoFile?.type === 'image/gif' ? (
+                            <img
+                              src={videoPreviewUrl}
+                              alt="GIF preview"
+                              className="w-full max-h-64 rounded-lg border-2 border-black bg-black object-contain"
+                            />
+                          ) : (
+                            <video 
+                              key={videoPreviewUrl}
+                              src={videoPreviewUrl} 
+                              controls 
+                              muted
+                              loop
+                              playsInline
+                              preload="metadata"
+                              className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
+                              style={{ objectFit: 'contain' }}
+                              onLoadedData={(e) => {
+                                const video = e.target as HTMLVideoElement;
+                                video.play().catch(() => {});
+                              }}
+                            />
+                          )}
+                          <p className="text-xs text-black opacity-70 mt-2">Preview</p>
                         </div>
                       )}
                       <button
