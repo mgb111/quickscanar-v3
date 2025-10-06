@@ -80,31 +80,6 @@ export default function CreateExperience() {
     }
   }, [videoPreviewUrl, modelPreviewUrl, markerPreviewUrl])
 
-  // Open external scaling preview window (non-destructive)
-  const openScalePreview = useCallback(() => {
-    if (!videoPreviewUrl) return
-    const w = 900
-    const h = 800
-    const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2)
-    const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2)
-    const win = window.open(
-      '/tools/video-scale',
-      'video-scale-preview',
-      `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    )
-    if (!win) return
-    // Post the preview video URL once window is ready
-    const markerSizePx = 500 // 1.0 marker visual size in the tool
-    const send = () => {
-      try {
-        win.postMessage({ type: 'VIDEO_SCALE_PREVIEW', videoUrl: videoPreviewUrl, markerSizePx }, window.location.origin)
-      } catch {}
-    }
-    // Attempt a few times in case of load delay
-    const attempts = [100, 300, 700]
-    attempts.forEach((ms) => setTimeout(send, ms))
-  }, [videoPreviewUrl])
-
   const handleVideoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -171,6 +146,50 @@ export default function CreateExperience() {
       toast.success('Mind file uploaded successfully!')
     }
   }, [])
+
+  // Open a dedicated scaling preview window and send the current video preview URL
+  const openVideoScalePreview = useCallback(() => {
+    if (!videoPreviewUrl) {
+      toast.error('Upload a video first to preview scaling')
+      return
+    }
+
+    const w = 1100
+    const h = 850
+    const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2)
+    const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2)
+
+    const win = window.open(
+      '/preview/video-scale',
+      'video-scale-preview',
+      `width=${w},height=${h},left=${left},top=${top}`
+    )
+
+    if (!win) {
+      toast.error('Popup blocked. Please allow popups and try again.')
+      return
+    }
+
+    const send = () => {
+      try {
+        win.postMessage({ type: 'VIDEO_SCALE_PREVIEW', videoUrl: videoPreviewUrl }, window.location.origin)
+      } catch {}
+    }
+
+    // Listen for handshake from the preview window to resend the URL reliably
+    const onMsg = (e: MessageEvent) => {
+      try {
+        if (e.origin !== window.location.origin) return
+        if ((e.data as any)?.type === 'VIDEO_SCALE_PREVIEW_HANDSHAKE') {
+          send()
+        }
+      } catch {}
+    }
+    window.addEventListener('message', onMsg, { once: true } as any)
+
+    // Fallback send after slight delay in case handshake is missed
+    setTimeout(send, 400)
+  }, [videoPreviewUrl])
 
   const handleMarkerImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -651,17 +670,16 @@ export default function CreateExperience() {
                               video.play().catch(() => {});
                             }}
                           />
-                          {/* External non-destructive scaling preview */}
-                          <div className="flex items-center justify-center mt-3">
+                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
+                          <div className="mt-3 flex gap-2">
                             <button
                               type="button"
-                              onClick={openScalePreview}
-                              className="bg-white text-black border-2 border-black rounded-lg px-4 py-2 hover:bg-red-50 hover:border-red-600 transition-colors text-sm font-medium"
+                              onClick={openVideoScalePreview}
+                              className="bg-red-600 text-white px-3 py-2 rounded-lg border-2 border-black text-sm font-semibold hover:bg-red-700"
                             >
-                              Open Scaling Preview
+                              Open Scale Preview
                             </button>
                           </div>
-                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
                         </div>
                       )}
                       <button
