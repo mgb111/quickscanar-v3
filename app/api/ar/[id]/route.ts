@@ -649,6 +649,15 @@ export async function GET(
       <p id="status-message">Look for your uploaded image</p>
     </div>
 
+    <!-- Start overlay (shown if camera doesn't auto-start) -->
+    <div id="startOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1005;">
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid black; border-radius:16px; padding:20px; text-align:center;">
+        <h3 style="margin:0 0 10px 0;">Allow Camera to Start</h3>
+        <p style="margin:0 0 16px 0;">Tap Start to grant camera access</p>
+        <button id="startBtn" style="background:#dc2626; color:white; border:2px solid black; border-radius:12px; padding:12px 20px; font-weight:700;">Start AR</button>
+      </div>
+    </div>
+
 
 
     <a-scene
@@ -843,11 +852,35 @@ export async function GET(
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
         const externalLinkBtn = document.getElementById('externalLinkBtn');
+        const startOverlay = document.getElementById('startOverlay');
+        const startBtn = document.getElementById('startBtn');
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
 
         // Defer showing external link until marker is scanned (handled in targetFound)
+
+        // Camera permission preflight helper
+        async function preflightCamera() {
+          if (!navigator.mediaDevices?.getUserMedia) return false;
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            // immediately stop tracks; MindAR will manage its own stream
+            stream.getTracks().forEach(t => t.stop());
+            return true;
+          } catch (e) {
+            console.warn('Camera preflight failed:', e);
+            return false;
+          }
+        }
+
+        // If arReady doesn't fire quickly, show Start overlay to trigger permission
+        let arReadyFired = false;
+        let arFallbackTimer = setTimeout(async () => {
+          if (!arReadyFired && startOverlay) {
+            startOverlay.style.display = 'block';
+          }
+        }, 2000);
 
         // Brief initializing message (no user interaction needed)
         showStatus('Initializing...', 'Starting camera and tracker');
@@ -940,6 +973,9 @@ export async function GET(
           scene.addEventListener('arReady', () => {
             console.log('MindAR arReady');
             scene.style.opacity = '1';
+            arReadyFired = true;
+            if (arFallbackTimer) { clearTimeout(arFallbackTimer); arFallbackTimer = null; }
+            if (startOverlay) startOverlay.style.display = 'none';
             
             if (video && !${isGifVideo} ) {
               video.play().then(() => {
@@ -963,6 +999,27 @@ export async function GET(
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
             showStatus('AR Initialization Error', 'Please allow camera access and try again.');
+            if (startOverlay) startOverlay.style.display = 'block';
+          });
+        }
+
+        // Start button logic to request camera and kick AR
+        if (startBtn) {
+          startBtn.addEventListener('click', async () => {
+            startBtn.setAttribute('disabled', 'true');
+            startBtn.textContent = 'Starting...';
+            const ok = await preflightCamera();
+            if (ok) {
+              if (scene) scene.style.opacity = '1';
+              if (startOverlay) startOverlay.style.display = 'none';
+              if (video && !${isGifVideo} ) {
+                try { await video.play(); } catch {}
+              }
+            } else {
+              showStatus('Camera Permission Needed', 'Enable camera for this page in your browser settings.');
+            }
+            startBtn.removeAttribute('disabled');
+            startBtn.textContent = 'Start AR';
           });
         }
 
