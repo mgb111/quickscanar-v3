@@ -56,11 +56,6 @@ export default function CreateExperience() {
   // Video zoom for combined preview
   const [videoScale, setVideoScale] = useState(1.0)
 
-  // Marker-accurate video preview state
-  const [markerVideoScale, setMarkerVideoScale] = useState(1.0) // 0.2x - 5x
-  const [videoNaturalWidth, setVideoNaturalWidth] = useState<number | null>(null)
-  const [videoNaturalHeight, setVideoNaturalHeight] = useState<number | null>(null)
-
   const [submitting, setSubmitting] = useState(false)
 
   // Ensure combined preview video autoplays when shown
@@ -107,10 +102,6 @@ export default function CreateExperience() {
       // Create preview URL
       const previewUrl = URL.createObjectURL(file)
       setVideoPreviewUrl(previewUrl)
-      // Reset marker preview metadata and scale on new upload
-      setMarkerVideoScale(1.0)
-      setVideoNaturalWidth(null)
-      setVideoNaturalHeight(null)
       
       toast.success('Video uploaded successfully!')
     }
@@ -630,13 +621,6 @@ export default function CreateExperience() {
                             preload="metadata"
                             className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
                             style={{ objectFit: 'contain' }}
-                            onLoadedMetadata={(e) => {
-                              const v = e.currentTarget
-                              if (v?.videoWidth && v?.videoHeight) {
-                                setVideoNaturalWidth(v.videoWidth)
-                                setVideoNaturalHeight(v.videoHeight)
-                              }
-                            }}
                             onLoadedData={(e) => {
                               const video = e.target as HTMLVideoElement;
                               video.play().catch(() => {});
@@ -673,104 +657,6 @@ export default function CreateExperience() {
               </div>
                   )}
                 </div>
-
-                {/* Marker-Accurate Video Preview */}
-                {videoPreviewUrl && (
-                  <div className="mt-6 border-2 border-black rounded-xl p-6 bg-white">
-                    <h6 className="font-semibold text-black mb-3">Marker-Accurate Video Preview</h6>
-                    <div
-                      className="relative mx-auto border-2 border-dashed border-gray-400 rounded-lg bg-[repeating-linear-gradient(45deg,_#f7fafc,_#f7fafc_10px,_#edf2f7_10px,_#edf2f7_20px)]"
-                      style={{ width: 360, height: 360 }}
-                      title="1x1 marker area"
-                    >
-                      {(() => {
-                        const markerPx = 360 // maps 1.0 marker unit to 360px
-                        const vw = videoNaturalWidth || 0
-                        const vh = videoNaturalHeight || 0
-                        let baseW = markerPx
-                        let baseH = markerPx
-                        if (vw && vh) {
-                          const aspect = vw / vh
-                          if (aspect >= 1) {
-                            baseW = markerPx
-                            baseH = markerPx / aspect
-                          } else {
-                            baseH = markerPx
-                            baseW = markerPx * aspect
-                          }
-                        }
-                        const clamped = Math.max(0.2, Math.min(5, markerVideoScale))
-                        const scaledW = clamped * baseW
-                        const scaledH = clamped * baseH
-                        return (
-                          <video
-                            key={`marker-${videoPreviewUrl}`}
-                            src={videoPreviewUrl}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            onLoadedMetadata={(e) => {
-                              const v = e.currentTarget
-                              if (v?.videoWidth && v?.videoHeight) {
-                                setVideoNaturalWidth(v.videoWidth)
-                                setVideoNaturalHeight(v.videoHeight)
-                              }
-                            }}
-                            className="absolute"
-                            style={{
-                              width: `${scaledW}px`,
-                              height: `${scaledH}px`,
-                              left: '50%',
-                              top: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              objectFit: 'contain',
-                              border: '2px solid black',
-                              borderRadius: '8px',
-                              backgroundColor: 'black',
-                            }}
-                          />
-                        )
-                      })()}
-                      <div className="absolute top-2 left-2 text-[10px] font-semibold text-black bg-white/80 px-2 py-1 rounded border border-black">
-                        Marker 1×1
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-xs font-medium text-black mb-2">
-                        Video Scale (relative to marker plane)
-                      </label>
-                      <input
-                        type="range"
-                        min={0.2}
-                        max={5}
-                        step={0.05}
-                        value={markerVideoScale}
-                        onChange={(e) => setMarkerVideoScale(parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-black font-semibold mt-1">
-                        <span>{markerVideoScale.toFixed(2)}x</span>
-                        <span>
-                          {videoNaturalWidth && videoNaturalHeight
-                            ? (() => {
-                                const markerPx = 360
-                                const aspect = videoNaturalWidth / videoNaturalHeight
-                                const baseW = aspect >= 1 ? markerPx : markerPx * aspect
-                                const baseH = aspect >= 1 ? markerPx / aspect : markerPx
-                                const w = Math.round(baseW * markerVideoScale)
-                                const h = Math.round(baseH * markerVideoScale)
-                                return `${w}×${h}px`
-                              })()
-                            : 'Loading…'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
             </div>
 
               {/* 3D Model Upload - Always show, optional */}
