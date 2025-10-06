@@ -113,12 +113,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Video file logic
-    if (fileType === 'video' || (contentType && contentType.startsWith('video/'))) {
-      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'];
+    // Video file logic (also allow GIF as animated image treated like video)
+    if (fileType === 'video' || (contentType && (contentType.startsWith('video/') || contentType === 'image/gif'))) {
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime', 'image/gif'];
       if (!allowedTypes.includes(contentType || '')) {
         return NextResponse.json({ 
-          error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}` 
+          error: `Unsupported video format. Please use MP4, WebM, MOV, or GIF files. Current type: ${contentType}` 
         }, { status: 400 });
       }
       

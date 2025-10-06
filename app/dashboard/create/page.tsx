@@ -91,9 +91,9 @@ export default function CreateExperience() {
       }
 
       // Check file type
-      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime', 'image/gif']
       if (!allowedTypes.includes(file.type)) {
-        toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
+        toast.error(`Unsupported video format. Please use MP4, WebM, MOV, or GIF files. Current type: ${file.type}`)
         return
       }
 
@@ -650,7 +650,7 @@ export default function CreateExperience() {
                 <input
                           id="video-upload"
                   type="file"
-                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
+                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime,image/gif"
                           onChange={handleVideoUpload}
                   className="hidden"
                 />

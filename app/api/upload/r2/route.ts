@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate content type
-    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
+    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime', 'image/gif']
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     const allowed3DTypes = ['model/gltf-binary', 'model/gltf+json', 'application/octet-stream']
     const isMind = fileType === 'mind'
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     
     if (!isMind && !isMarkerImage && !is3DModel && !allowedVideoTypes.includes(contentType)) {
       return NextResponse.json({
-        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')}, 3D models (GLB/GLTF), or image files for marker images`
+        error: `Unsupported content type. Allowed: ${allowedVideoTypes.join(', ')} (videos incl. GIF), 3D models (GLB/GLTF), or image files for marker images`
       }, { status: 400 })
     }
     

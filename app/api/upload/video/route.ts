@@ -12,11 +12,11 @@ export async function POST(request: NextRequest) {
 
     // Validate file type (optional, but recommended)
     const allowedTypes = [
-      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime'
+      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime', 'image/gif'
     ];
     if (!allowedTypes.includes(contentType)) {
       return NextResponse.json({
-        error: `Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${contentType}`
+        error: `Unsupported video format. Please use MP4, WebM, MOV, or GIF files. Current type: ${contentType}`
       }, { status: 400 });
     }
 
