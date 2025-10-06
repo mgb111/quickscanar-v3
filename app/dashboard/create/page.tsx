@@ -55,6 +55,10 @@ export default function CreateExperience() {
   const [modelPositionZ, setModelPositionZ] = useState(0.15)
   // Video zoom for combined preview
   const [videoScale, setVideoScale] = useState(1.0)
+  // Intrinsic dimensions for accurate marker preview
+  const [mediaNaturalW, setMediaNaturalW] = useState<number | null>(null)
+  const [mediaNaturalH, setMediaNaturalH] = useState<number | null>(null)
+  const markerPreviewRef = useRef<HTMLDivElement | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -102,6 +106,10 @@ export default function CreateExperience() {
       // Create preview URL
       const previewUrl = URL.createObjectURL(file)
       setVideoPreviewUrl(previewUrl)
+
+      // Reset intrinsic dims until loaded
+      setMediaNaturalW(null)
+      setMediaNaturalH(null)
       
       toast.success('Video uploaded successfully!')
     }
@@ -558,6 +566,74 @@ export default function CreateExperience() {
               />
             </div>
 
+            {/* Marker-accurate Preview and Size Controls */}
+            {videoFile && (
+              <div className="col-span-full">
+                <div className="bg-white border-2 border-black rounded-xl p-6 mt-4">
+                  <h5 className="font-semibold text-black mb-3">Marker-Accurate Preview</h5>
+                  <p className="text-sm text-black opacity-70 mb-4">Shows how your media will size against the AR marker. Use the slider to adjust scale.</p>
+
+                  {/* Marker box (1x1 square) */}
+                  <div className="w-full flex justify-center">
+                    <div
+                      ref={markerPreviewRef}
+                      className="relative bg-[url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'><rect width=\'100\' height=\'100\' fill=\'%23f3f4f6\'/><rect x=\'10\' y=\'10\' width=\'80\' height=\'80\' fill=\'none\' stroke=\'%239ca3af\' stroke-width=\'2\'/></svg>')] bg-center bg-contain bg-no-repeat border-2 border-dashed border-gray-400"
+                      style={{ width: 360, height: 360 }}
+                    >
+                      {/* Media overlay sized using intrinsic dims and scale */}
+                      {mediaNaturalW && mediaNaturalH && (
+                        (() => {
+                          const markerPx = 360 // represents 1.0 marker unit visually
+                          const aspect = mediaNaturalW / mediaNaturalH
+                          const baseScale = 1.2
+                          let outW: number, outH: number
+                          if (aspect > 1) {
+                            outW = markerPx * baseScale * videoScale
+                            outH = outW / aspect
+                          } else {
+                            const portraitScale = baseScale * 1.5
+                            outH = markerPx * portraitScale * videoScale
+                            outW = outH * aspect
+                          }
+                          outW = Math.max(180, outW)
+                          outH = Math.max(180, outH)
+
+                          const commonProps = {
+                            className: 'absolute top-1/2 left-1/2 rounded-md border border-black',
+                            style: { width: outW, height: outH, transform: 'translate(-50%, -50%)', objectFit: 'contain' as const }
+                          }
+                          return (
+                            <>
+                              {videoFile.type === 'image/gif' ? (
+                                <img src={videoPreviewUrl || ''} alt="Marker preview GIF" {...commonProps} />
+                              ) : (
+                                <video src={videoPreviewUrl || ''} autoPlay muted loop playsInline {...commonProps as any} />
+                              )}
+                            </>
+                          )
+                        })()
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scale slider */}
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-black mb-2">Resize media (relative to marker)</label>
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={2.0}
+                      step={0.05}
+                      value={videoScale}
+                      onChange={(e) => setVideoScale(parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="text-xs text-black opacity-70 mt-2">Scale: {videoScale.toFixed(2)}x</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Content Type Info */}
             <div className="bg-blue-50 border-2 border-blue-600 rounded-xl p-6">
               <div className="flex items-start gap-3">
@@ -616,6 +692,11 @@ export default function CreateExperience() {
                               src={videoPreviewUrl}
                               alt="GIF preview"
                               className="w-full max-h-64 rounded-lg border-2 border-black bg-black object-contain"
+                              onLoad={(e) => {
+                                const img = e.currentTarget
+                                setMediaNaturalW(img.naturalWidth || null)
+                                setMediaNaturalH(img.naturalHeight || null)
+                              }}
                             />
                           ) : (
                             <video 
@@ -631,6 +712,9 @@ export default function CreateExperience() {
                               onLoadedData={(e) => {
                                 const video = e.target as HTMLVideoElement;
                                 video.play().catch(() => {});
+                                // capture intrinsic dimensions
+                                setMediaNaturalW(video.videoWidth || null)
+                                setMediaNaturalH(video.videoHeight || null)
                               }}
                             />
                           )}
