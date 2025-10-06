@@ -91,9 +91,9 @@ export default function CreateExperience() {
       }
 
       // Check file type
-      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime', 'image/gif']
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/quicktime']
       if (!allowedTypes.includes(file.type)) {
-        toast.error(`Unsupported video format. Please use MP4, WebM, MOV, or GIF files. Current type: ${file.type}`)
+        toast.error(`Unsupported video format. Please use MP4, WebM, or MOV files. Current type: ${file.type}`)
         return
       }
 
@@ -611,30 +611,22 @@ export default function CreateExperience() {
                       <p className="text-base text-black font-medium">{videoFile.name}</p>
                       {videoPreviewUrl && !showCombinedPreview && (
                         <div className="mt-4">
-                          {videoFile?.type === 'image/gif' ? (
-                            <img
-                              src={videoPreviewUrl}
-                              alt="GIF preview"
-                              className="w-full max-h-64 rounded-lg border-2 border-black bg-black object-contain"
-                            />
-                          ) : (
-                            <video 
-                              key={videoPreviewUrl}
-                              src={videoPreviewUrl} 
-                              controls 
-                              muted
-                              loop
-                              playsInline
-                              preload="metadata"
-                              className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
-                              style={{ objectFit: 'contain' }}
-                              onLoadedData={(e) => {
-                                const video = e.target as HTMLVideoElement;
-                                video.play().catch(() => {});
-                              }}
-                            />
-                          )}
-                          <p className="text-xs text-black opacity-70 mt-2">Preview</p>
+                          <video 
+                            key={videoPreviewUrl}
+                            src={videoPreviewUrl} 
+                            controls 
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
+                            style={{ objectFit: 'contain' }}
+                            onLoadedData={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              video.play().catch(() => {});
+                            }}
+                          />
+                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
                         </div>
                       )}
                       <button
@@ -658,7 +650,7 @@ export default function CreateExperience() {
                 <input
                           id="video-upload"
                   type="file"
-                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime,image/gif"
+                          accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
                           onChange={handleVideoUpload}
                   className="hidden"
                 />

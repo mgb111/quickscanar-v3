@@ -35,8 +35,6 @@ export async function GET(
     const contentType = experience.content_type || 'video'
     const isVideo = contentType === 'video' || contentType === 'both'
     const is3D = contentType === '3d' || contentType === 'both'
-    const videoUrl = experience.video_url as string | null
-    const isGifVideo = Boolean(isVideo && videoUrl && String(videoUrl).toLowerCase().endsWith('.gif'))
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -52,7 +50,6 @@ export async function GET(
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
-    ${isGifVideo ? '<script src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct.min.js"></script>' : ''}
     
     <!-- Analytics Tracking Script -->
     <script>
@@ -356,22 +353,6 @@ export async function GET(
           this.el.object3D.position.copy(smoothedPosition);
           this.el.object3D.quaternion.copy(smoothedQuaternion);
           this.el.object3D.scale.copy(rawScale); // Scale is usually not smoothed.
-        }
-      });
-    </script>
-    <script>
-      // Minimal component to refresh GIF-based textures so they animate on WebGL planes
-      // It sets material.map.needsUpdate each tick only for attached entity
-      AFRAME.registerComponent('gif-texture-refresher', {
-        tick: function () {
-          const mat = (this.el.getObject3D('mesh') && this.el.getObject3D('mesh').material) || null;
-          if (!mat) return;
-          const materialArray = Array.isArray(mat) ? mat : [mat];
-          for (const m of materialArray) {
-            if (m && m.map) {
-              m.map.needsUpdate = true;
-            }
-          }
         }
       });
     </script>
@@ -679,10 +660,7 @@ export async function GET(
       style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
-        ${isVideo ? (
-          isGifVideo ? `
-        <canvas id="arGifCanvas"></canvas>
-        ` : `
+        ${isVideo ? `
         <video
           id="arVideo"
           src="${experience.video_url}"
@@ -693,7 +671,7 @@ export async function GET(
           preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
-        `) : ''}
+        ` : ''}
         ${is3D && experience.model_url ? `
         <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
         ` : ''}
@@ -709,8 +687,7 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: ${isGifVideo ? '#arGifCanvas' : '#arVideo'}; transparent: true; alphaTest: 0.1; shader: flat; side: double"
-          ${isGifVideo ? 'gif-texture-refresher' : ''}
+          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
           visible="false"
           geometry="primitive: plane"
         ></a-plane>
@@ -804,63 +781,59 @@ export async function GET(
 
       nukeLoadingScreens();
 
-      // Function to update media plane (video or GIF image) to match marker dimensions
-      function updateMediaAspectRatio(mediaEl, plane) {
-        if (!mediaEl || !plane) return;
-        const isVideoEl = mediaEl.tagName && mediaEl.tagName.toLowerCase() === 'video';
-        const isCanvasEl = mediaEl.tagName && mediaEl.tagName.toLowerCase() === 'canvas';
-        const getDims = () => {
-          if (isVideoEl) {
-            return {
-              w: mediaEl.videoWidth || 0,
-              h: mediaEl.videoHeight || 0,
-            };
-          } else if (isCanvasEl) {
-            return {
-              w: mediaEl.width || 0,
-              h: mediaEl.height || 0,
-            };
-          } else {
-            return {
-              w: mediaEl.naturalWidth || 0,
-              h: mediaEl.naturalHeight || 0,
-            };
-          }
-        };
+      // Function to update video plane to match marker dimensions
+      function updateVideoAspectRatio(videoElement, videoPlane) {
+        if (!videoElement || !videoPlane) return;
+        
         const updateDimensions = () => {
-          const { w, h } = getDims();
-          if (w && h) {
-            const aspect = w / h;
+          if (videoElement.videoWidth && videoElement.videoHeight) {
+            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+            // Marker dimensions (1.0 x 1.0 by default in MindAR)
             const markerWidth = 1.0;
             const markerHeight = 1.0;
-            const baseScale = 1.2;
-            let outW, outH;
-            if (aspect > 1) {
-              outW = markerWidth * baseScale;
-              outH = outW / aspect;
+            
+            // Calculate video dimensions to be 20% larger than marker
+            const videoScale = 1.2; // 20% larger than marker
+            let videoWidth, videoHeight;
+            
+            // For both portrait and landscape, we'll scale based on the video's natural orientation
+            if (videoAspect > 1) {
+              // Landscape video - scale to width
+              videoWidth = markerWidth * videoScale;
+              videoHeight = videoWidth / videoAspect;
             } else {
-              const portraitScale = baseScale * 1.5;
-              outH = markerHeight * portraitScale;
-              outW = outH * aspect;
+              // Portrait or square video - use larger scale for better visibility
+              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              videoHeight = markerHeight * portraitScale;
+              videoWidth = videoHeight * videoAspect;
             }
-            outW = Math.max(0.5, outW);
-            outH = Math.max(0.5, outH);
-            plane.setAttribute('width', outW);
-            plane.setAttribute('height', outH);
-            console.log('Media plane size set:', outW.toFixed(2), 'x', outH.toFixed(2), 'from media:', w, 'x', h);
+            
+            // Ensure minimum dimensions
+            videoWidth = Math.max(0.5, videoWidth); // Increased minimum size
+            videoHeight = Math.max(0.5, videoHeight); // Increased minimum size
+            
+            // Get the target element that contains the video plane
+            const target = document.querySelector('#target');
+            
+            // Update video plane
+            videoPlane.setAttribute('width', videoWidth);
+            videoPlane.setAttribute('height', videoHeight);
+            
+            console.log('Video dimensions set to:', videoWidth.toFixed(2), 'x', videoHeight.toFixed(2));
+            console.log('Original video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
           }
         };
-        if (isVideoEl) {
-          if (mediaEl.readyState >= 1) updateDimensions();
-          else mediaEl.addEventListener('loadedmetadata', updateDimensions);
-          mediaEl.addEventListener('resize', updateDimensions);
-        } else if (!isCanvasEl) {
-          if (mediaEl.complete) updateDimensions();
-          mediaEl.addEventListener('load', updateDimensions);
-        } else {
-          // For canvas, caller should invoke updateDimensions after size set
+        
+        // Try to update dimensions immediately if video is already loaded
+        if (videoElement.readyState >= 1) { // HAVE_ENOUGH_DATA
           updateDimensions();
+        } else {
+          // Or wait for metadata to be loaded
+          videoElement.addEventListener('loadedmetadata', updateDimensions);
         }
+        
+        // Also update on resize events if needed
+        videoElement.addEventListener('resize', updateDimensions);
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
@@ -868,8 +841,6 @@ export async function GET(
         nukeLoadingScreens();
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
-        const gifImg = document.querySelector('#arGif');
-        const gifCanvas = document.querySelector('#arGifCanvas');
         const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
@@ -915,22 +886,19 @@ export async function GET(
           video.setAttribute('x5-playsinline', 'true');
 
           // We'll handle the dimensions in updateVideoAspectRatio
-          if (video) {
-            video.addEventListener('loadedmetadata', () => {
-              console.log('Video metadata loaded');
-              updateMediaAspectRatio(video, videoPlane);
-              console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
-              video.style.transform = 'translateZ(0)';
-              video.style.willChange = 'transform';
-              video.style.backfaceVisibility = 'hidden';
-            });
-          }
-          if (gifImg) {
-            gifImg.addEventListener('load', () => {
-              console.log('GIF image loaded');
-              updateMediaAspectRatio(gifImg, videoPlane);
-            });
-          }
+          video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+            // Trigger the aspect ratio update
+            updateVideoAspectRatio(video, videoPlane);
+            
+            // Log video dimensions for debugging
+            console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+            
+            // Enable hardware acceleration for video
+            video.style.transform = 'translateZ(0)';
+            video.style.willChange = 'transform';
+            video.style.backfaceVisibility = 'hidden';
+          });
 
           // Video is now stable - no need for constant updates
         }
@@ -967,12 +935,11 @@ export async function GET(
             console.log('MindAR arReady');
             scene.style.opacity = '1';
             
-            if (video && !${isGifVideo} ) {
+            if (video) {
               video.play().then(() => {
-                updateMediaAspectRatio(video, videoPlane);
+                // After video starts playing, update the aspect ratio
+                updateVideoAspectRatio(video, videoPlane);
               }).catch(e => console.error('Video play error:', e));
-            } else if (gifCanvas) {
-              updateMediaAspectRatio(gifCanvas, videoPlane);
             }
             
             // For 3D models, ensure animations are ready
@@ -1032,7 +999,7 @@ export async function GET(
                     // Add smooth animation for appearance
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
-                  if (video && !${isGifVideo} ) {
+                  if (video) {
                     // Don't restart; just ensure it's playing
                     video.muted = false;
                     if (video.paused) video.play().catch(() => {});
@@ -1110,45 +1077,6 @@ export async function GET(
         // Removed profile selector logic
 
         setInterval(nukeLoadingScreens, 1000);
-
-        // Initialize GIF playback onto canvas using gifuct-js
-        if (${isGifVideo} && gifCanvas) {
-          try {
-            const ctx = gifCanvas.getContext('2d');
-            const resp = await fetch('${experience.video_url}');
-            const buf = await resp.arrayBuffer();
-            const gifLib = (window as any).gifuct || (window as any).GIFuct || (window as any).gifuctJs;
-            if (!gifLib || !gifLib.parseGIF || !gifLib.decompressFrames) {
-              console.warn('gifuct-js not available');
-              return;
-            }
-            const gif = gifLib.parseGIF(buf);
-            const frames = gifLib.decompressFrames(gif, true);
-            if (!frames || !frames.length) return;
-            // Set canvas size from first frame
-            const f0 = frames[0];
-            gifCanvas.width = f0.dims.width;
-            gifCanvas.height = f0.dims.height;
-            // Update plane size
-            if (videoPlane) updateMediaAspectRatio(gifCanvas, videoPlane);
-            let i = 0;
-            const drawFrame = () => {
-              const f = frames[i];
-              if (f.disposalType === 2) {
-                ctx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
-              }
-              const imageData = ctx.createImageData(f.dims.width, f.dims.height);
-              imageData.data.set(f.patch);
-              ctx.putImageData(imageData, f.dims.left, f.dims.top);
-              i = (i + 1) % frames.length;
-              const delayMs = Math.max(10, (f.delay || 10) * 10); // gif delay in 10ms units
-              setTimeout(drawFrame, delayMs);
-            };
-            drawFrame();
-          } catch (e) {
-            console.error('GIF playback init failed:', e);
-          }
-        }
       });
 
       window.addEventListener('error', (event) => {
