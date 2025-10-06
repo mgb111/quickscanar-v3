@@ -35,6 +35,8 @@ export async function GET(
     const contentType = experience.content_type || 'video'
     const isVideo = contentType === 'video' || contentType === 'both'
     const is3D = contentType === '3d' || contentType === 'both'
+    const videoUrl = experience.video_url as string | null
+    const isGifVideo = Boolean(isVideo && videoUrl && String(videoUrl).toLowerCase().endsWith('.gif'))
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -660,7 +662,15 @@ export async function GET(
       style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
-        ${isVideo ? `
+        ${isVideo ? (
+          isGifVideo ? `
+        <img
+          id="arGif"
+          src="${experience.video_url}"
+          crossorigin="anonymous"
+          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
+        />
+        ` : `
         <video
           id="arVideo"
           src="${experience.video_url}"
@@ -671,7 +681,7 @@ export async function GET(
           preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
-        ` : ''}
+        `) : ''}
         ${is3D && experience.model_url ? `
         <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
         ` : ''}
@@ -687,7 +697,7 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double"
+          material="src: ${isGifVideo ? '#arGif' : '#arVideo'}; transparent: true; alphaTest: 0.1; shader: flat; side: double"
           visible="false"
           geometry="primitive: plane"
         ></a-plane>
