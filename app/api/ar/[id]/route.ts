@@ -698,7 +698,7 @@ export async function GET(
           height="1"
           position="0 0 0.01"
           rotation="0 0 ${experience.video_rotation || 0}"
-          material="src: ${isGifVideo ? '#arGif' : '#arVideo'}; transparent: true; alphaTest: 0.1; shader: flat; side: double"
+          material="${isGifVideo ? `shader: gif; src: url(${experience.video_url}); transparent: true; side: double` : 'src: #arVideo; transparent: true; alphaTest: 0.1; shader: flat; side: double'}"
           visible="false"
           geometry="primitive: plane"
         ></a-plane>
