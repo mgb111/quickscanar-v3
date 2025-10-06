@@ -53,7 +53,6 @@ export async function GET(
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
     ${isGifVideo ? '<script src="https://unpkg.com/aframe-gif-shader@1.0.0/dist/aframe-gif-shader.min.js"></script>' : ''}
-    ${isGifVideo ? '<script src="https://unpkg.com/aframe-gif-shader@^1.0.0/dist/aframe-gif-shader.min.js"></script>' : ''}
     
     <!-- Analytics Tracking Script -->
     <script>
@@ -664,15 +663,7 @@ export async function GET(
       style="opacity:0; transition: opacity .3s ease; transform: translateZ(0); will-change: transform;"
     >
       <a-assets>
-        ${isVideo ? (
-          isGifVideo ? `
-        <img
-          id="arGif"
-          src="${experience.video_url}"
-          crossorigin="anonymous"
-          style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
-        />
-        ` : `
+        ${isVideo && !isGifVideo ? `
         <video
           id="arVideo"
           src="${experience.video_url}"
@@ -683,7 +674,7 @@ export async function GET(
           preload="auto"
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
-        `) : ''}
+        ` : ''}
         ${is3D && experience.model_url ? `
         <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
         ` : ''}
@@ -848,7 +839,6 @@ export async function GET(
         nukeLoadingScreens();
         const scene = document.getElementById('arScene');
         const video = document.querySelector('#arVideo');
-        const gifImg = document.querySelector('#arGif');
         const model3D = document.querySelector('#model3D');
         const target = document.querySelector('#target');
         const videoPlane = document.querySelector('#videoPlane');
@@ -904,11 +894,16 @@ export async function GET(
               video.style.backfaceVisibility = 'hidden';
             });
           }
-          if (gifImg) {
-            gifImg.addEventListener('load', () => {
-              console.log('GIF image loaded');
-              updateMediaAspectRatio(gifImg, videoPlane);
-            });
+          // For GIFs rendered via shader, preload an image to get intrinsic dimensions
+          const isGif = ${isGifVideo};
+          if (isGif && videoPlane) {
+            const preload = new Image();
+            preload.crossOrigin = 'anonymous';
+            preload.onload = () => {
+              console.log('GIF preloaded for sizing', preload.naturalWidth, 'x', preload.naturalHeight);
+              updateMediaAspectRatio(preload, videoPlane);
+            };
+            preload.src = '${experience.video_url}';
           }
 
           // Video is now stable - no need for constant updates
@@ -950,8 +945,8 @@ export async function GET(
               video.play().then(() => {
                 updateMediaAspectRatio(video, videoPlane);
               }).catch(e => console.error('Video play error:', e));
-            } else if (gifImg) {
-              updateMediaAspectRatio(gifImg, videoPlane);
+            } else if (${isGifVideo}) {
+              // GIF shader animates automatically; sizing handled by preload above
             }
             
             // For 3D models, ensure animations are ready
