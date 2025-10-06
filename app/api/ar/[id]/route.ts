@@ -787,23 +787,24 @@ export async function GET(
         
         const updateDimensions = () => {
           if (videoElement.videoWidth && videoElement.videoHeight) {
+            const videoScale = ${Number(experience.video_scale || 1.0).toFixed(3)}; // server-provided scale (default 1.0)
             const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
             // Marker dimensions (1.0 x 1.0 by default in MindAR)
             const markerWidth = 1.0;
             const markerHeight = 1.0;
             
-            // Calculate video dimensions to be 20% larger than marker
-            const videoScale = 1.2; // 20% larger than marker
+            // Base scale factor (visual preference), multiplied by provided videoScale
+            const baseScale = 1.2; // 20% larger than marker base
             let videoWidth, videoHeight;
             
             // For both portrait and landscape, we'll scale based on the video's natural orientation
             if (videoAspect > 1) {
               // Landscape video - scale to width
-              videoWidth = markerWidth * videoScale;
+              videoWidth = markerWidth * baseScale * videoScale;
               videoHeight = videoWidth / videoAspect;
             } else {
               // Portrait or square video - use larger scale for better visibility
-              const portraitScale = videoScale * 1.5; // 50% larger scale for portrait
+              const portraitScale = baseScale * 1.5 * videoScale; // 50% larger base, times videoScale
               videoHeight = markerHeight * portraitScale;
               videoWidth = videoHeight * videoAspect;
             }

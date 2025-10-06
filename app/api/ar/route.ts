@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       mind_file_url, 
       marker_image_url, 
       user_id, 
-      link_url 
+      link_url,
+      video_scale,
     } = body
     
     console.log('📝 Creating AR experience with data:', {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
       mind_file_url,
       marker_image_url,
       user_id,
+      video_scale,
       hasTitle: !!title,
       hasVideo: !!video_file_url,
       hasModel: !!model_url,
@@ -182,6 +184,7 @@ export async function POST(request: NextRequest) {
         model_position_y: model_position_y || 0.3,
         model_position_z: model_position_z || 0.15,
         link_url: link_url ? String(link_url).trim() : null,
+        video_scale: typeof video_scale === 'number' && video_scale > 0 ? video_scale : 1.0,
         user_id: user_id,
         
         // Default values for other fields as needed

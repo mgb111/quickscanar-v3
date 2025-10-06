@@ -7,6 +7,7 @@ export default function VideoScalePreviewPage() {
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null)
   const [scale, setScale] = useState(1)
   const [status, setStatus] = useState<string>("Waiting for video...")
+  const [lastSent, setLastSent] = useState<string>("")
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   // Listen for the opener to pass the video URL
@@ -79,6 +80,25 @@ export default function VideoScalePreviewPage() {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
+  // Post selected scale back to opener in real time (throttled)
+  useEffect(() => {
+    const send = () => {
+      try {
+        window.opener?.postMessage({ type: 'VIDEO_SCALE_SELECTED', scale }, window.location.origin)
+        setLastSent(new Date().toLocaleTimeString())
+      } catch {}
+    }
+    const t = setTimeout(send, 150)
+    return () => clearTimeout(t)
+  }, [scale])
+
+  const confirmSend = () => {
+    try {
+      window.opener?.postMessage({ type: 'VIDEO_SCALE_SELECTED', scale }, window.location.origin)
+      setLastSent(new Date().toLocaleTimeString())
+    } catch {}
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "#f5f5dc", color: "#111", padding: 16 }}>
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -114,6 +134,7 @@ export default function VideoScalePreviewPage() {
               <button onClick={handleReset} style={btnStyle}>Reset 1×</button>
               <button onClick={handleFitWidth} style={btnStyle}>Fit Width</button>
               <button onClick={handleFitHeight} style={btnStyle}>Fit Height</button>
+              <button onClick={confirmSend} style={btnStyle}>Use This Scale</button>
             </div>
           </div>
 
@@ -126,6 +147,10 @@ export default function VideoScalePreviewPage() {
 
           {status && (
             <div style={{ marginTop: 12, color: "#b91c1c", fontWeight: 600 }}>{status}</div>
+          )}
+
+          {lastSent && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#333' }}>Last sent: {lastSent}</div>
           )}
 
           <div style={{ marginTop: 12, fontSize: 12, color: "#444" }}>
