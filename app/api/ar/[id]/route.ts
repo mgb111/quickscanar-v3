@@ -140,6 +140,142 @@ export async function GET(
       };
     </script>
     <script>
+      // Touch gesture controls for 3D model: drag (move X/Z), pinch (scale), two-finger rotate (Y)
+      AFRAME.registerComponent('gesture-controls', {
+        schema: {
+          enabled: { type: 'boolean', default: true },
+          dragSpeed: { type: 'number', default: 0.003 }, // meters per pixel
+          rotateSpeed: { type: 'number', default: 1.0 },  // degrees per radian
+          minScale: { type: 'number', default: 0.05 },
+          maxScale: { type: 'number', default: 5.0 }
+        },
+        init: function () {
+          this._mode = 'none';
+          this._startTouches = [];
+          this._startPosition = new THREE.Vector3();
+          this._startScale = new THREE.Vector3();
+          this._startRotY = 0;
+          this._startDistance = 0;
+          this._startAngle = 0;
+          this._onStart = this.onTouchStart.bind(this);
+          this._onMove = this.onTouchMove.bind(this);
+          this._onEnd = this.onTouchEnd.bind(this);
+          // Listen on scene canvas for best compatibility
+          this.sceneEl = this.el.sceneEl;
+          this.canvas = this.sceneEl && this.sceneEl.canvas;
+          // Canvas may not exist at init; wait for it
+          if (!this.canvas) {
+            this.sceneEl.addEventListener('render-target-loaded', () => {
+              this.canvas = this.sceneEl.canvas;
+              this.addListeners();
+            });
+          } else {
+            this.addListeners();
+          }
+        },
+        remove: function () {
+          this.removeListeners();
+        },
+        addListeners: function () {
+          if (!this.canvas) return;
+          this.canvas.addEventListener('touchstart', this._onStart, { passive: false });
+          this.canvas.addEventListener('touchmove', this._onMove, { passive: false });
+          this.canvas.addEventListener('touchend', this._onEnd, { passive: false });
+          this.canvas.addEventListener('touchcancel', this._onEnd, { passive: false });
+        },
+        removeListeners: function () {
+          if (!this.canvas) return;
+          this.canvas.removeEventListener('touchstart', this._onStart);
+          this.canvas.removeEventListener('touchmove', this._onMove);
+          this.canvas.removeEventListener('touchend', this._onEnd);
+          this.canvas.removeEventListener('touchcancel', this._onEnd);
+        },
+        onTouchStart: function (e) {
+          if (!this.data.enabled || !this.el.getAttribute('visible')) return;
+          if (e.touches.length === 0) return;
+          e.preventDefault();
+          this._startTouches = this.cloneTouches(e.touches);
+          this._startPosition.copy(this.el.object3D.position);
+          this._startScale.copy(this.el.object3D.scale);
+          const rot = this.el.getAttribute('rotation');
+          this._startRotY = rot ? rot.y : 0;
+          if (e.touches.length === 1) {
+            this._mode = 'drag';
+          } else if (e.touches.length >= 2) {
+            this._mode = 'pinchrotate';
+            const { dist, angle } = this.touchMetrics(this._startTouches[0], this._startTouches[1]);
+            this._startDistance = dist || 1;
+            this._startAngle = angle || 0;
+          }
+        },
+        onTouchMove: function (e) {
+          if (!this.data.enabled || this._mode === 'none') return;
+          e.preventDefault();
+          const touches = this.cloneTouches(e.touches);
+          if (this._mode === 'drag' && touches.length === 1 && this._startTouches.length === 1) {
+            const dx = touches[0].clientX - this._startTouches[0].clientX;
+            const dy = touches[0].clientY - this._startTouches[0].clientY;
+            // Map screen delta to local X/Z plane movement
+            const speed = this.data.dragSpeed;
+            const newX = this._startPosition.x + dx * speed;
+            const newZ = this._startPosition.z + dy * speed; // dragging up moves object away (positive Z)
+            this.el.object3D.position.set(newX, this._startPosition.y, newZ);
+          } else if (this._mode === 'pinchrotate' && touches.length >= 2 && this._startTouches.length >= 2) {
+            const mNow = this.touchMetrics(touches[0], touches[1]);
+            const mStart = this.touchMetrics(this._startTouches[0], this._startTouches[1]);
+            // Scale
+            const scaleFactor = (mNow.dist || 1) / (mStart.dist || 1);
+            const base = this._startScale.x; // uniform
+            let targetScale = base * scaleFactor;
+            targetScale = Math.min(this.data.maxScale, Math.max(this.data.minScale, targetScale));
+            this.el.object3D.scale.set(targetScale, targetScale, targetScale);
+            // Rotate around Y by change in angle (radians to degrees)
+            const dAngleRad = (mNow.angle - this._startAngle);
+            const dAngleDeg = THREE.MathUtils.radToDeg(dAngleRad) * this.data.rotateSpeed;
+            const newY = this._startRotY + dAngleDeg;
+            const currentRot = this.el.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+            this.el.setAttribute('rotation', { x: currentRot.x, y: newY, z: currentRot.z });
+          }
+        },
+        onTouchEnd: function (e) {
+          if (!this.data.enabled) return;
+          e.preventDefault();
+          if (e.touches.length === 0) {
+            this._mode = 'none';
+          } else if (e.touches.length === 1) {
+            // Fallback to drag if one finger remains
+            this._mode = 'drag';
+            this._startTouches = this.cloneTouches(e.touches);
+            this._startPosition.copy(this.el.object3D.position);
+          } else if (e.touches.length >= 2) {
+            this._mode = 'pinchrotate';
+            this._startTouches = this.cloneTouches(e.touches);
+            this._startScale.copy(this.el.object3D.scale);
+            const rot = this.el.getAttribute('rotation');
+            this._startRotY = rot ? rot.y : 0;
+            const { dist, angle } = this.touchMetrics(this._startTouches[0], this._startTouches[1]);
+            this._startDistance = dist || 1;
+            this._startAngle = angle || 0;
+          }
+        },
+        cloneTouches: function (touchList) {
+          const arr = [];
+          for (let i = 0; i < touchList.length; i++) {
+            const t = touchList.item(i);
+            arr.push({ clientX: t.clientX, clientY: t.clientY, identifier: t.identifier });
+          }
+          return arr;
+        },
+        touchMetrics: function (t1, t2) {
+          const dx = (t2.clientX - t1.clientX);
+          const dy = (t2.clientY - t1.clientY);
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          return { dist, angle };
+        }
+      });
+    </script>
+    <script>
       !function(t,e){if("object"==typeof exports&&"object"==typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var i=e();for(var s in i)("object"==typeof exports?exports:t)[s]=i[s]}}("undefined"!=typeof self?self:this,(()=>(()=>{"use strict";var t={d:(e,i)=>{for(var s in i)t.o(i,s)&&!t.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:i[s]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{LowPassFilter:()=>i,OneEuroFilter:()=>s});class i{setAlpha(t){(t<=0||t>1)&&console.log("alpha should be in (0.0., 1.0]"),this.a=t}constructor(t,e=0){this.y=this.s=e,this.setAlpha(t),this.initialized=!1}filter(t){var e;return this.initialized?e=this.a*t+(1-this.a)*this.s:(e=t,this.initialized=!0),this.y=t,this.s=e,e}filterWithAlpha(t,e){return this.setAlpha(e),this.filter(t)}hasLastRawValue(){return this.initialized}lastRawValue(){return this.y}reset(){this.initialized=!1}}class s{alpha(t){var e=1/this.freq;return 1/(1+1/(2*Math.PI*t)/e)}setFrequency(t){t<=0&&console.log("freq should be >0"),this.freq=t}setMinCutoff(t){t<=0&&console.log("mincutoff should be >0"),this.mincutoff=t}setBeta(t){this.beta_=t}setDerivateCutoff(t){t<=0&&console.log("dcutoff should be >0"),this.dcutoff=t}constructor(t,e=1,s=0,h=1){this.setFrequency(t),this.setMinCutoff(e),this.setBeta(s),this.setDerivateCutoff(h),this.x=new i(this.alpha(e)),this.dx=new i(this.alpha(h)),this.lasttime=void 0}reset(){this.x.reset(),this.dx.reset(),this.lasttime=void 0}filter(t,e=undefined){null!=this.lasttime&&null!=e&&(this.freq=1/(e-this.lasttime)),this.lasttime=e;var i=this.x.hasLastRawValue()?(t-this.x.lastRawValue())*this.freq:0,s=this.dx.filterWithAlpha(i,this.alpha(this.dcutoff)),h=this.mincutoff+this.beta_*Math.abs(s);return this.x.filterWithAlpha(t,this.alpha(h))}}return e})()));
     </script>
     <script>
@@ -408,7 +544,7 @@ export async function GET(
       /* Mobile AR scene optimization */
       @media (max-width: 768px) {
         a-scene {
-          touch-action: manipulation;
+          touch-action: none;
           -webkit-touch-callout: none;
           -webkit-user-select: none;
           -khtml-user-select: none;
@@ -699,6 +835,7 @@ export async function GET(
           position="${experience.model_position_x || 0} ${experience.model_position_y || (contentType === 'both' ? 0.3 : 0)} ${experience.model_position_z || (contentType === 'both' ? 0.15 : 0)}"
           rotation="0 ${experience.model_rotation || 0} 0"
           scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
+          gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.05; maxScale: 5"
           visible="false"
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
         ></a-entity>
