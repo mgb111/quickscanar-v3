@@ -488,10 +488,10 @@ export default function CreateExperience() {
 
       toast.success('AR experience created successfully!')
       
-      // Redirect to the new experience
+      // Redirect to dashboard
       setTimeout(() => {
-        router.push(`/experience/${experience.id}`)
-      }, 1000)
+        router.replace('/dashboard')
+      }, 800)
 
     } catch (error) {
       console.error('Error creating AR experience:', error)
