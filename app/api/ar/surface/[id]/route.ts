@@ -34,6 +34,8 @@ export async function GET(
     #ui { position: fixed; top: 12px; left: 12px; z-index: 10; display:flex; gap:8px; }
     .btn { background:#111827; color:#fff; border:1px solid #000; border-radius:12px; padding:10px 14px; font-weight:600; }
     .hint { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); color:#fff; background: rgba(0,0,0,0.5); padding:10px 14px; border-radius:12px; font-family: system-ui, sans-serif; }
+    #status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color:#000; background:#fff; border:2px solid #000; border-radius:16px; padding:16px 18px; font-family: system-ui, sans-serif; z-index: 20; display:none; max-width: 90vw; }
+    #startAR { position: fixed; top: 12px; right: 12px; z-index: 10; }
   </style>
 </head>
 <body>
@@ -42,11 +44,13 @@ export async function GET(
     <button id="resetBtn" class="btn">Reset</button>
   </div>
   <div class="hint">Move your phone to detect a surface, then tap to place.</div>
+  <div id="status"></div>
+  <button id="startAR" class="btn">Start AR</button>
 
   <a-scene
     renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
     xr-mode-ui="enabled: true"
-    webxr="optionalFeatures: hit-test; requiredFeatures: hit-test"
+    webxr="optionalFeatures: hit-test, dom-overlay; requiredFeatures: hit-test; overlayElement: #ui"
     embedded
     vr-mode-ui="enabled: false"
   >
@@ -173,6 +177,7 @@ export async function GET(
     // Basic WebXR Hit Test reticle + tap-to-place for A-Frame
     AFRAME.registerComponent('hit-test-placer', {
       init: function () {
+        this.status = document.getElementById('status');
         this.session = null;
         this.viewerSpace = null;
         this.refSpace = null;
@@ -184,11 +189,31 @@ export async function GET(
         this.el.sceneEl.addEventListener('enter-vr', () => this.setupXR());
         this.el.sceneEl.addEventListener('exit-vr', () => this.cleanupXR());
         this.el.sceneEl.canvas && this.el.sceneEl.canvas.addEventListener('click', this._tapHandler);
+        // Detect support
+        this.detectSupport();
       },
       remove: function () {
         this.cleanupXR();
         this.el.sceneEl.canvas && this.el.sceneEl.canvas.removeEventListener('click', this._tapHandler);
       },
+      async detectSupport() {
+        try {
+          if (!('xr' in navigator)) {
+            this.showStatus('WebXR not supported on this device/browser. Use the Marker mode or try a newer device/browser over HTTPS.');
+            return;
+          }
+          const supported = await navigator.xr.isSessionSupported('immersive-ar');
+          if (!supported) {
+            this.showStatus('AR session not supported (immersive-ar). Use the Marker mode or try Chrome/Android with WebXR.');
+            return;
+          }
+          this.showStatus('Tap Start AR to begin surface placement.');
+        } catch (e) {
+          this.showStatus('Unable to check AR support. Ensure HTTPS and camera permissions.');
+        }
+      },
+      showStatus(msg) { if (this.status) { this.status.textContent = msg; this.status.style.display = 'block'; } },
+      hideStatus() { if (this.status) this.status.style.display = 'none'; },
       tick: function (time, dt) {
         const xrSession = this.el.sceneEl.renderer.xr.getSession();
         if (!xrSession || !this.hitTestSource) return;
@@ -217,12 +242,16 @@ export async function GET(
       async setupXR() {
         const renderer = this.el.sceneEl.renderer;
         const session = renderer.xr.getSession();
-        if (!session) return;
+        if (!session) {
+          this.showStatus('Failed to start AR session. Ensure camera permission is granted and you are on HTTPS.');
+          return;
+        }
         this.session = session;
         this.refSpace = await session.requestReferenceSpace('local');
         this.viewerSpace = await session.requestReferenceSpace('viewer');
         const hitTestSource = await session.requestHitTestSource({ space: this.viewerSpace });
         this.hitTestSource = hitTestSource;
+        this.hideStatus();
       },
       cleanupXR() {
         if (this.hitTestSource) { this.hitTestSource.cancel && this.hitTestSource.cancel(); }
@@ -239,7 +268,16 @@ export async function GET(
       }
     });
 
-    document.querySelector('a-scene').setAttribute('hit-test-placer', '');
+    const sceneEl = document.querySelector('a-scene');
+    sceneEl.setAttribute('hit-test-placer', '');
+    // Manual Start AR fallback
+    const startBtn = document.getElementById('startAR');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => {
+        // Enter AR via A-Frame API
+        if (sceneEl && sceneEl.enterVR) sceneEl.enterVR();
+      });
+    }
 
     // UI actions
     document.getElementById('backToMarker').addEventListener('click', () => {
@@ -260,6 +298,7 @@ export async function GET(
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
         'Pragma': 'no-cache',
         'Expires': '0',
+        'Permissions-Policy': "camera=(self), xr-spatial-tracking=(self)"
       },
     })
   } catch (error) {
