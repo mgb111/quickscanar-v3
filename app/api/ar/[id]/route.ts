@@ -774,6 +774,33 @@ export async function GET(
         #externalLinkBtn { bottom: 120px; }
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
+      
+      /* Surface placement button */
+      #surfaceBtn {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1004;
+      }
+      #surfaceBtn a {
+        text-decoration: none;
+        background: #111827; /* slate-900 */
+        color: #ffffff;
+        border: 2px solid #000000;
+        border-radius: 9999px;
+        padding: 14px 22px;
+        font-size: 16px;
+        font-weight: 700;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        opacity: 0.98;
+        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
+      }
+      #surfaceBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+      @media (max-width: 768px) {
+        #surfaceBtn { bottom: 80px; }
+        #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
+      }
     </style>
   </head>
   <body>
@@ -848,6 +875,12 @@ export async function GET(
       <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
         Open Link
       </a>
+    </div>
+    ` : ''}
+
+    ${is3D ? `
+    <div id="surfaceBtn">
+      <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
     </div>
     ` : ''}
 
