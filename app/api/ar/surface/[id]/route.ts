@@ -28,6 +28,7 @@ export async function GET(
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>${experience.title} - Surface AR</title>
   <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     html, body { margin:0; height:100%; overflow:hidden; background:#000; }
     a-scene { width:100vw; height:100vh; }
@@ -46,6 +47,8 @@ export async function GET(
   <div class="hint">Move your phone to detect a surface, then tap to place.</div>
   <div id="status"></div>
   <button id="startAR" class="btn">Start AR</button>
+  ${is3D ? `<model-viewer id="mv" src="${experience.model_url}" ar ar-modes="scene-viewer webxr" style="width:0;height:0;position:absolute;left:-9999px;top:-9999px;"></model-viewer>` : ''}
+  ${is3D ? `<button id="nativeARBtn" class="btn" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 10; display:none;">Open in Native AR</button>` : ''}
 
   <a-scene
     renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
@@ -200,16 +203,19 @@ export async function GET(
         try {
           if (!('xr' in navigator)) {
             this.showStatus('WebXR not supported on this device/browser. Use the Marker mode or try a newer device/browser over HTTPS.');
+            const nativeBtn = document.getElementById('nativeARBtn'); if (nativeBtn) nativeBtn.style.display = 'inline-block';
             return;
           }
           const supported = await navigator.xr.isSessionSupported('immersive-ar');
           if (!supported) {
             this.showStatus('AR session not supported (immersive-ar). Use the Marker mode or try Chrome/Android with WebXR.');
+            const nativeBtn = document.getElementById('nativeARBtn'); if (nativeBtn) nativeBtn.style.display = 'inline-block';
             return;
           }
           this.showStatus('Tap Start AR to begin surface placement.');
         } catch (e) {
           this.showStatus('Unable to check AR support. Ensure HTTPS and camera permissions.');
+          const nativeBtn = document.getElementById('nativeARBtn'); if (nativeBtn) nativeBtn.style.display = 'inline-block';
         }
       },
       showStatus(msg) { if (this.status) { this.status.textContent = msg; this.status.style.display = 'block'; } },
@@ -273,9 +279,32 @@ export async function GET(
     // Manual Start AR fallback
     const startBtn = document.getElementById('startAR');
     if (startBtn) {
-      startBtn.addEventListener('click', () => {
-        // Enter AR via A-Frame API
-        if (sceneEl && sceneEl.enterVR) sceneEl.enterVR();
+      startBtn.addEventListener('click', async () => {
+        try {
+          // Preflight camera permission to trigger prompt
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            stream.getTracks().forEach(t => t.stop());
+          }
+        } catch (e) {
+          // Ignore, AR may still proceed
+        }
+        try {
+          if (sceneEl && sceneEl.enterVR) await sceneEl.enterVR();
+        } catch (e) {
+          console.error('enterVR failed', e);
+        }
+      });
+    }
+
+    // Native AR fallback via model-viewer (primarily Android Scene Viewer)
+    const nativeBtn = document.getElementById('nativeARBtn');
+    if (nativeBtn) {
+      nativeBtn.addEventListener('click', async () => {
+        const mv = document.getElementById('mv');
+        if (mv && mv.activateAR) {
+          try { await mv.activateAR(); } catch (e) { console.error('activateAR failed', e); }
+        }
       });
     }
 
