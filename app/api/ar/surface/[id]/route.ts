@@ -64,7 +64,7 @@ export async function GET(
 
     ${is3D ? `
     <a-entity id="placed" visible="false">
-      <a-entity id="model3D" gltf-model="#arModel"
+      <a-entity id="model3D" gltf-model="#arModel" gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.05; maxScale: 5"
         position="0 0 0"
         rotation="0 ${experience.model_rotation || 0} 0"
         scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
@@ -76,6 +76,100 @@ export async function GET(
   </a-scene>
 
   <script>
+    // Touch gesture controls for 3D model: drag (move X/Z), pinch (scale), two-finger rotate (Y)
+    AFRAME.registerComponent('gesture-controls', {
+      schema: {
+        enabled: { type: 'boolean', default: true },
+        dragSpeed: { type: 'number', default: 0.003 },
+        rotateSpeed: { type: 'number', default: 1.0 },
+        minScale: { type: 'number', default: 0.05 },
+        maxScale: { type: 'number', default: 5.0 }
+      },
+      init: function () {
+        this._mode = 'none';
+        this._startTouches = [];
+        this._startPosition = new THREE.Vector3();
+        this._startScale = new THREE.Vector3();
+        this._startRotY = 0;
+        this._startDistance = 0;
+        this._startAngle = 0;
+        this._onStart = this.onTouchStart.bind(this);
+        this._onMove = this.onTouchMove.bind(this);
+        this._onEnd = this.onTouchEnd.bind(this);
+        this.sceneEl = this.el.sceneEl;
+        this.canvas = this.sceneEl && this.sceneEl.canvas;
+        if (!this.canvas) {
+          this.sceneEl.addEventListener('render-target-loaded', () => {
+            this.canvas = this.sceneEl.canvas;
+            this.addListeners();
+          });
+        } else {
+          this.addListeners();
+        }
+      },
+      remove: function () { this.removeListeners(); },
+      addListeners: function () {
+        if (!this.canvas) return;
+        this.canvas.addEventListener('touchstart', this._onStart, { passive: false });
+        this.canvas.addEventListener('touchmove', this._onMove, { passive: false });
+        this.canvas.addEventListener('touchend', this._onEnd, { passive: false });
+        this.canvas.addEventListener('touchcancel', this._onEnd, { passive: false });
+      },
+      removeListeners: function () {
+        if (!this.canvas) return;
+        this.canvas.removeEventListener('touchstart', this._onStart);
+        this.canvas.removeEventListener('touchmove', this._onMove);
+        this.canvas.removeEventListener('touchend', this._onEnd);
+        this.canvas.removeEventListener('touchcancel', this._onEnd);
+      },
+      onTouchStart: function (e) {
+        if (!this.data.enabled || !this.el.getAttribute('visible')) return;
+        if (e.touches.length === 0) return;
+        e.preventDefault();
+        this._startTouches = this.cloneTouches(e.touches);
+        this._startPosition.copy(this.el.object3D.position);
+        this._startScale.copy(this.el.object3D.scale);
+        const rot = this.el.getAttribute('rotation');
+        this._startRotY = rot ? rot.y : 0;
+        if (e.touches.length === 1) this._mode = 'drag';
+        else { this._mode = 'pinchrotate'; const { dist, angle } = this.touchMetrics(this._startTouches[0], this._startTouches[1]); this._startDistance = dist || 1; this._startAngle = angle || 0; }
+      },
+      onTouchMove: function (e) {
+        if (!this.data.enabled || this._mode === 'none') return;
+        e.preventDefault();
+        const touches = this.cloneTouches(e.touches);
+        if (this._mode === 'drag' && touches.length === 1 && this._startTouches.length === 1) {
+          const dx = touches[0].clientX - this._startTouches[0].clientX;
+          const dy = touches[0].clientY - this._startTouches[0].clientY;
+          const speed = this.data.dragSpeed;
+          const newX = this._startPosition.x + dx * speed;
+          const newZ = this._startPosition.z + dy * speed;
+          this.el.object3D.position.set(newX, this._startPosition.y, newZ);
+        } else if (this._mode === 'pinchrotate' && touches.length >= 2 && this._startTouches.length >= 2) {
+          const mNow = this.touchMetrics(touches[0], touches[1]);
+          const mStart = this.touchMetrics(this._startTouches[0], this._startTouches[1]);
+          const scaleFactor = (mNow.dist || 1) / (mStart.dist || 1);
+          const base = this._startScale.x;
+          let targetScale = base * scaleFactor;
+          targetScale = Math.min(this.data.maxScale, Math.max(this.data.minScale, targetScale));
+          this.el.object3D.scale.set(targetScale, targetScale, targetScale);
+          const dAngleRad = (mNow.angle - this._startAngle);
+          const dAngleDeg = THREE.MathUtils.radToDeg(dAngleRad) * this.data.rotateSpeed;
+          const newY = this._startRotY + dAngleDeg;
+          const currentRot = this.el.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+          this.el.setAttribute('rotation', { x: currentRot.x, y: newY, z: currentRot.z });
+        }
+      },
+      onTouchEnd: function (e) {
+        if (!this.data.enabled) return;
+        e.preventDefault();
+        if (e.touches.length === 0) this._mode = 'none';
+        else if (e.touches.length === 1) { this._mode = 'drag'; this._startTouches = this.cloneTouches(e.touches); this._startPosition.copy(this.el.object3D.position); }
+        else { this._mode = 'pinchrotate'; this._startTouches = this.cloneTouches(e.touches); this._startScale.copy(this.el.object3D.scale); const rot = this.el.getAttribute('rotation'); this._startRotY = rot ? rot.y : 0; const { dist, angle } = this.touchMetrics(this._startTouches[0], this._startTouches[1]); this._startDistance = dist || 1; this._startAngle = angle || 0; }
+      },
+      cloneTouches: function (touchList) { const arr = []; for (let i = 0; i < touchList.length; i++) { const t = touchList.item(i); arr.push({ clientX: t.clientX, clientY: t.clientY, identifier: t.identifier }); } return arr; },
+      touchMetrics: function (t1, t2) { const dx = (t2.clientX - t1.clientX); const dy = (t2.clientY - t1.clientY); const dist = Math.hypot(dx, dy); const angle = Math.atan2(dy, dx); return { dist, angle }; }
+    });
     // Basic WebXR Hit Test reticle + tap-to-place for A-Frame
     AFRAME.registerComponent('hit-test-placer', {
       init: function () {
