@@ -775,6 +775,46 @@ export async function GET(
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
       
+      /* Unmute overlay for Safari */
+      #unmuteOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+      }
+      #unmuteOverlay.show {
+        display: flex;
+      }
+      #unmuteBtn {
+        background: #dc2626;
+        color: #fff;
+        border: 2px solid #000;
+        border-radius: 9999px;
+        padding: 16px 32px;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      }
+      #unmuteBtn:active {
+        transform: scale(0.95);
+      }
+      .unmute-text {
+        color: #fff;
+        font-size: 14px;
+        text-align: center;
+        max-width: 80%;
+      }
+      
       /* Surface placement button */
       #surfaceBtn {
         position: fixed;
@@ -830,8 +870,10 @@ export async function GET(
           loop
           muted
           playsinline
+          webkit-playsinline
           crossorigin="anonymous"
           preload="auto"
+          autoplay
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
         ` : ''}
@@ -881,6 +923,13 @@ export async function GET(
     ${is3D ? `
     <div id="surfaceBtn">
       <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
+    </div>
+    ` : ''}
+
+    ${isVideo ? `
+    <div id="unmuteOverlay">
+      <button id="unmuteBtn">🔊 Tap to Enable Sound</button>
+      <p class="unmute-text">Tap anywhere to unmute the AR video</p>
     </div>
     ` : ''}
 
@@ -1051,10 +1100,12 @@ export async function GET(
         if (video && videoPlane) {
           // Optimize video for performance
           video.playsInline = true;
-          video.autoplay = false;
+          video.muted = true; // Start muted for Safari autoplay
+          video.autoplay = true;
           video.controls = false;
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
+          video.setAttribute('x-webkit-airplay', 'allow');
 
           // We'll handle the dimensions in updateVideoAspectRatio
           video.addEventListener('loadedmetadata', () => {
@@ -1071,7 +1122,42 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Video is now stable - no need for constant updates
+          // Safari unmute handler
+          const unmuteOverlay = document.getElementById('unmuteOverlay');
+          const unmuteBtn = document.getElementById('unmuteBtn');
+          let hasUnmuted = false;
+          
+          const handleUnmute = () => {
+            if (!hasUnmuted && video) {
+              video.muted = false;
+              video.play().catch(e => console.log('Play after unmute:', e));
+              hasUnmuted = true;
+              if (unmuteOverlay) unmuteOverlay.classList.remove('show');
+              console.log('Video unmuted');
+            }
+          };
+          
+          // Show unmute overlay after target found
+          let unmuteShown = false;
+          const showUnmuteIfNeeded = () => {
+            if (!unmuteShown && !hasUnmuted && unmuteOverlay) {
+              setTimeout(() => {
+                if (!hasUnmuted) {
+                  unmuteOverlay.classList.add('show');
+                  unmuteShown = true;
+                }
+              }, 2000);
+            }
+          };
+          
+          if (unmuteBtn) unmuteBtn.addEventListener('click', handleUnmute);
+          if (unmuteOverlay) unmuteOverlay.addEventListener('click', handleUnmute);
+          document.body.addEventListener('touchstart', () => {
+            if (isTargetVisible && !hasUnmuted) handleUnmute();
+          }, { once: false });
+          
+          // Expose for target found handler
+          window.showUnmuteOverlay = showUnmuteIfNeeded;
         }
 
         // Setup 3D model animation
@@ -1107,7 +1193,10 @@ export async function GET(
             scene.style.opacity = '1';
             
             if (video) {
+              // Start muted for Safari compatibility
+              video.muted = true;
               video.play().then(() => {
+                console.log('Video playing (muted)');
                 // After video starts playing, update the aspect ratio
                 updateVideoAspectRatio(video, videoPlane);
               }).catch(e => console.error('Video play error:', e));
@@ -1171,9 +1260,13 @@ export async function GET(
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
                   if (video) {
-                    // Don't restart; just ensure it's playing
-                    video.muted = false;
-                    if (video.paused) video.play().catch(() => {});
+                    // Ensure video is playing (muted initially for Safari)
+                    if (video.paused) {
+                      video.muted = true;
+                      video.play().catch(() => {});
+                    }
+                    // Show unmute prompt after a delay
+                    if (window.showUnmuteOverlay) window.showUnmuteOverlay();
                   }
                 }
                 
