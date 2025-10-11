@@ -783,16 +783,17 @@ export async function GET(
         align-items: center;
         justify-content: center;
         z-index: 2000;
-        background: rgba(0,0,0,0.6);
-        backdrop-filter: blur(4px);
+        background: transparent; /* transparent backdrop */
+        backdrop-filter: none;
         padding: 20px;
+        pointer-events: none; /* let AR taps pass through if needed */
       }
       #markerGuide.show { display: flex; }
       #markerGuideInner {
-        background: #0b0f19;
-        border: 2px solid #000;
+        background: transparent; /* transparent panel */
+        border: 0;
         border-radius: 16px;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+        box-shadow: none;
         max-width: 90vw;
         width: 520px;
         color: #fff;
@@ -802,17 +803,18 @@ export async function GET(
         padding: 12px 16px;
         font-weight: 800;
         font-size: 16px;
-        background: #111827;
-        border-bottom: 2px solid #000;
+        background: transparent;
+        border-bottom: 0;
         display: flex;
         align-items: center;
         gap: 10px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       }
       #markerGuideBody { padding: 16px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
-      #markerImgWrap { width: 110px; height: 110px; background:#0b0f19; border: 1px solid #000; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+      #markerImgWrap { width: 110px; height: 110px; background: transparent; border: 0; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
       #markerImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
-      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; }
-      #markerHint { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+      #markerHint { font-size: 12px; opacity: 0.9; margin-top: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
       @media (max-width: 480px) {
         #markerGuideBody { grid-template-columns: 1fr; }
         #markerImgWrap { width: 100%; height: 160px; }
