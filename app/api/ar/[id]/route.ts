@@ -973,7 +973,7 @@ export async function GET(
 
     ${isVideo ? `
     <div id="unmuteOverlay">
-      <button id="unmuteBtn">🔊 Tap to Enable Sound</button>
+      <button id="unmuteBtn">Tap to Enable Sound</button>
       <p class="unmute-text">Tap anywhere to unmute the AR video</p>
     </div>
     ` : ''}

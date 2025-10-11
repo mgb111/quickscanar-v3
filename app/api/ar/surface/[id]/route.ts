@@ -122,7 +122,7 @@ export async function GET(
 <body>
   <div id="container">
     <div class="controls">
-      <button class="btn" onclick="window.location.href='/api/ar/${experience.id}'">← Use Marker</button>
+      <button class="btn" onclick="window.location.href='/api/ar/${experience.id}'">Use Marker</button>
       <button class="btn btn-primary" id="arBtn">View in AR</button>
     </div>
     
