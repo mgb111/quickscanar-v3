@@ -920,7 +920,7 @@ export async function GET(
     </div>
     ` : ''}
 
-    ${is3D ? `
+    ${is3D && experience.model_url ? `
     <div id="surfaceBtn">
       <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
     </div>
@@ -1068,6 +1068,61 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
+
+        // Pinch-to-scale for video plane (does not affect marker tracking)
+        if (isVideo && videoPlane && scene) {
+          const minScale = 0.3; // 30% of base
+          const maxScale = 3.0; // 300% of base
+          let pinchActive = false;
+          let startDistance = 0;
+          let startScale = 1;
+
+          const getDistance = (t1, t2) => {
+            const dx = t2.clientX - t1.clientX;
+            const dy = t2.clientY - t1.clientY;
+            return Math.hypot(dx, dy);
+          };
+
+          const onTouchStart = (e) => {
+            if (e.touches && e.touches.length >= 2) {
+              e.preventDefault();
+              pinchActive = true;
+              startDistance = getDistance(e.touches[0], e.touches[1]) || 1;
+              // uniform base scale from object3D
+              startScale = videoPlane.object3D.scale.x || 1;
+            }
+          };
+
+          const onTouchMove = (e) => {
+            if (!pinchActive || !(e.touches && e.touches.length >= 2)) return;
+            e.preventDefault();
+            const dist = getDistance(e.touches[0], e.touches[1]) || 1;
+            let next = startScale * (dist / startDistance);
+            next = Math.min(maxScale, Math.max(minScale, next));
+            videoPlane.object3D.scale.set(next, next, next);
+          };
+
+          const onTouchEnd = (e) => {
+            if (!(e.touches && e.touches.length >= 2)) {
+              pinchActive = false;
+            }
+          };
+
+          const setupCanvasListeners = () => {
+            const canvas = scene.canvas;
+            if (!canvas) return;
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+            canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+          };
+
+          if (!scene.canvas) {
+            scene.addEventListener('render-target-loaded', setupCanvasListeners);
+          } else {
+            setupCanvasListeners();
+          }
+        }
 
         // Defer showing external link until marker is scanned (handled in targetFound)
 
