@@ -775,6 +775,49 @@ export async function GET(
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
       
+      /* Marker guidance overlay */
+      #markerGuide {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        padding: 20px;
+      }
+      #markerGuide.show { display: flex; }
+      #markerGuideInner {
+        background: #0b0f19;
+        border: 2px solid #000;
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+        max-width: 90vw;
+        width: 520px;
+        color: #fff;
+        overflow: hidden;
+      }
+      #markerGuideHeader {
+        padding: 12px 16px;
+        font-weight: 800;
+        font-size: 16px;
+        background: #111827;
+        border-bottom: 2px solid #000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #markerGuideBody { padding: 16px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
+      #markerImgWrap { width: 110px; height: 110px; background:#0b0f19; border: 1px solid #000; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+      #markerImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; }
+      #markerHint { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+      @media (max-width: 480px) {
+        #markerGuideBody { grid-template-columns: 1fr; }
+        #markerImgWrap { width: 100%; height: 160px; }
+      }
+
       /* Unmute overlay for Safari */
       #unmuteOverlay {
         position: fixed;
@@ -933,6 +976,23 @@ export async function GET(
     </div>
     ` : ''}
 
+    ${experience.marker_image_url ? `
+    <div id="markerGuide" role="dialog" aria-live="polite">
+      <div id="markerGuideInner">
+        <div id="markerGuideHeader">Scan the Marker</div>
+        <div id="markerGuideBody">
+          <div id="markerImgWrap">
+            <img src="${experience.marker_image_url}" alt="Marker image to scan" />
+          </div>
+          <div id="markerText">
+            Point your camera at this marker image to start the AR experience.
+            <div id="markerHint">Make sure the whole marker is visible and well lit.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <script>
       async function preflightMind(url) {
         try {
@@ -1068,6 +1128,7 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
+        const markerGuide = document.getElementById('markerGuide');
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
@@ -1128,7 +1189,11 @@ export async function GET(
 
         // Brief initializing message (no user interaction needed)
         showStatus('Initializing...', 'Starting camera and tracker');
-        setTimeout(hideStatus, 1000);
+        setTimeout(() => {
+          hideStatus();
+          // Show marker guide while scanning
+          if (markerGuide) markerGuide.classList.add('show');
+        }, 800);
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -1286,6 +1351,8 @@ export async function GET(
           
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
+            // Hide marker guide once target is found
+            if (markerGuide) markerGuide.classList.remove('show');
             
             // Track target recognition analytics
             if (window.trackAREvent) {
@@ -1383,6 +1450,8 @@ export async function GET(
                 // Keep content playing and visible; rely on missTolerance and last pose.
                 // Optional: show a brief status without hiding content.
                 showStatus('Target Lost', 'Content will re-align when marker is visible');
+                // Re-show marker guide to help user re-acquire target
+                if (markerGuide) markerGuide.classList.add('show');
               }
             }, 1000);
           });
