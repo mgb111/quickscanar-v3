@@ -820,6 +820,28 @@ export async function GET(
         #markerImgWrap { width: 100%; height: 160px; }
       }
 
+      /* 3D Annotations */
+      .hotspot {
+        cursor: pointer;
+      }
+      #annotationPanel {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        z-index: 1200;
+        display: none;
+        background: rgba(0,0,0,0.75);
+        color: #fff;
+        border: 1px solid #000;
+        border-radius: 12px;
+        padding: 14px 16px;
+        backdrop-filter: blur(8px);
+      }
+      #annotationPanel.show { display: block; }
+      #annotationPanel .title { font-weight: 800; margin-bottom: 6px; }
+      #annotationPanel .desc { opacity: 0.95; font-size: 14px; }
+
       /* Unmute overlay for Safari */
       #unmuteOverlay {
         position: fixed;
@@ -995,6 +1017,12 @@ export async function GET(
     </div>
     ` : ''}
 
+    <!-- Annotation panel (3D model info) -->
+    <div id="annotationPanel" role="dialog" aria-live="polite">
+      <div class="title"></div>
+      <div class="desc"></div>
+    </div>
+
     <script>
       async function preflightMind(url) {
         try {
@@ -1131,6 +1159,17 @@ export async function GET(
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
         const markerGuide = document.getElementById('markerGuide');
+        const annotationPanel = document.getElementById('annotationPanel');
+        const setAnnotation = (title, desc) => {
+          if (!annotationPanel) return;
+          const t = annotationPanel.querySelector('.title');
+          const d = annotationPanel.querySelector('.desc');
+          if (t) t.textContent = title || 'Info';
+          if (d) d.textContent = desc || '';
+          annotationPanel.classList.add('show');
+        };
+        const hideAnnotation = () => { if (annotationPanel) annotationPanel.classList.remove('show'); };
+        if (annotationPanel) annotationPanel.addEventListener('click', hideAnnotation);
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
@@ -1296,6 +1335,74 @@ export async function GET(
             if (mixer) {
               console.log('Animation mixer found');
               console.log('Available animations:', mixer.mixer ? mixer.mixer._actions : 'none');
+            }
+
+            // Enable mouse/touch raycasting against hotspots
+            try {
+              const scene = document.getElementById('arScene');
+              if (scene) {
+                scene.setAttribute('cursor', 'rayOrigin: mouse');
+                scene.setAttribute('raycaster', 'objects: .hotspot; far: 20');
+              }
+            } catch (e) { console.warn('Raycaster setup failed', e); }
+
+            // Traverse model for annotations and create hotspots
+            try {
+              const threeObj = model3D.getObject3D('mesh') || model3D.object3D;
+              if (!threeObj) return;
+              const worldToLocal = (v) => model3D.object3D.worldToLocal(v.clone());
+              const annNodes = [];
+              threeObj.traverse((node) => {
+                if (!node) return;
+                let title = null, desc = '';
+                // From userData.annotation
+                if (node.userData && node.userData.annotation) {
+                  const a = node.userData.annotation;
+                  title = a.title || null;
+                  desc = a.description || a.desc || '';
+                }
+                // From name: ann__Title__Description
+                if (!title && node.name && node.name.startsWith('ann__')) {
+                  const parts = node.name.split('__');
+                  if (parts.length >= 2) {
+                    title = decodeURIComponent((parts[1] || '').replace(/_/g, ' '));
+                    desc = decodeURIComponent((parts[2] || '').replace(/_/g, ' '));
+                  }
+                }
+                if (title) {
+                  const wp = new THREE.Vector3();
+                  node.getWorldPosition(wp);
+                  const lp = worldToLocal(wp);
+                  annNodes.push({ pos: lp, title, desc });
+                }
+              });
+
+              if (annNodes.length) {
+                const container = document.createElement('a-entity');
+                container.setAttribute('id', 'annotationHotspots');
+                model3D.appendChild(container);
+                annNodes.forEach((a, i) => {
+                  const hs = document.createElement('a-entity');
+                  hs.setAttribute('class', 'hotspot');
+                  hs.setAttribute('position', '' + a.pos.x + ' ' + a.pos.y + ' ' + a.pos.z);
+                  hs.setAttribute('geometry', 'primitive: sphere; radius: 0.02');
+                  hs.setAttribute('material', 'color: #f59e0b; emissive: #f59e0b; emissiveIntensity: 0.8; metalness: 0.2; roughness: 0.4');
+                  hs.setAttribute('look-at', '[camera]');
+                  hs.setAttribute('scale', '1 1 1');
+                  // Store data
+                  hs.dataset.title = a.title;
+                  hs.dataset.desc = a.desc;
+                  hs.addEventListener('click', (ev) => {
+                    setAnnotation(hs.dataset.title, hs.dataset.desc);
+                  });
+                  container.appendChild(hs);
+                });
+                console.log('Created ' + annNodes.length + ' annotation hotspots');
+              } else {
+                console.log('No annotation nodes found in model');
+              }
+            } catch (e) {
+              console.warn('Failed to create annotation hotspots', e);
             }
           });
           
