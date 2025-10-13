@@ -154,6 +154,7 @@ export async function GET(
     src="${experience.model_url}"
     ar
     ar-modes="scene-viewer webxr quick-look"
+    ar-scale="auto"
     camera-controls
     touch-action="pan-y"
     shadow-intensity="1"
@@ -268,6 +269,49 @@ export async function GET(
         }
       });
     }
+
+    // Pinch-to-scale in web view (pre-AR) to allow very small sizes
+    (function(){
+      if (!modelViewer) return;
+      let minScale = 0.005;
+      let maxScale = 5.0;
+      // Parse current uniform scale from attribute
+      const getCurrentScale = () => {
+        const s = (modelViewer.getAttribute('scale') || '').toString().trim().split(/\s+/);
+        const v = parseFloat(s[0] || '1');
+        return isNaN(v) ? 1 : v;
+      };
+      let baseScale = getCurrentScale();
+      let pinchActive = false;
+      let startDistance = 0;
+      const dist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
+
+      const onStart = (e) => {
+        if (e.touches && e.touches.length >= 2) {
+          e.preventDefault();
+          pinchActive = true;
+          startDistance = dist(e.touches[0], e.touches[1]);
+          baseScale = getCurrentScale();
+        }
+      };
+      const onMove = (e) => {
+        if (!pinchActive || !(e.touches && e.touches.length >= 2)) return;
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        let next = baseScale * (d / startDistance);
+        next = Math.min(maxScale, Math.max(minScale, next));
+        modelViewer.setAttribute('scale', next + ' ' + next + ' ' + next);
+      };
+      const onEnd = (e) => {
+        if (!(e.touches && e.touches.length >= 2)) pinchActive = false;
+      };
+      // Attach to the container so touches over controls also work
+      const container = document.getElementById('container') || document.body;
+      container.addEventListener('touchstart', onStart, { passive: false });
+      container.addEventListener('touchmove', onMove, { passive: false });
+      container.addEventListener('touchend', onEnd, { passive: false });
+      container.addEventListener('touchcancel', onEnd, { passive: false });
+    })();
   </script>
 </body>
 </html>`

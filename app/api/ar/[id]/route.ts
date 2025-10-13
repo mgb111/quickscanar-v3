@@ -146,7 +146,7 @@ export async function GET(
           enabled: { type: 'boolean', default: true },
           dragSpeed: { type: 'number', default: 0.003 }, // meters per pixel
           rotateSpeed: { type: 'number', default: 1.0 },  // degrees per radian
-          minScale: { type: 'number', default: 0.05 },
+          minScale: { type: 'number', default: 0.005 },
           maxScale: { type: 'number', default: 5.0 }
         },
         init: function () {
@@ -971,7 +971,7 @@ export async function GET(
           position="${experience.model_position_x || 0} ${experience.model_position_y || (contentType === 'both' ? 0.3 : 0)} ${experience.model_position_z || (contentType === 'both' ? 0.15 : 0)}"
           rotation="0 ${experience.model_rotation || 0} 0"
           scale="${experience.model_scale || 1} ${experience.model_scale || 1} ${experience.model_scale || 1}"
-          gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.05; maxScale: 5"
+          gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.005; maxScale: 5"
           visible="false"
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
         ></a-entity>
