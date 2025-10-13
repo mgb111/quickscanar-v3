@@ -71,13 +71,16 @@ export async function GET(
       background: #111827;
       color: #fff;
       border: 2px solid #000;
-      border-radius: 12px;
-      padding: 12px 18px;
+      border-radius: 10px;
+      padding: 10px 14px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     
     .btn:active {
@@ -86,8 +89,8 @@ export async function GET(
     
     .btn-primary {
       background: #dc2626;
-      flex: 1;
-      min-width: 150px;
+      flex: 0 0 auto;
+      min-width: auto;
     }
     
     .info {
