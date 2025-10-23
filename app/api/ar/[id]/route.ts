@@ -776,16 +776,16 @@ export async function GET(
       }
       
       /* Minimal marker badge (top-right) */
-      #markerBadge { position: fixed; top: 12px; right: 12px; z-index: 1004; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 12px; padding: 6px 10px; backdrop-filter: blur(6px); pointer-events: none; }
+      #markerBadge { position: fixed; top: 12px; right: 12px; z-index: 1004; display: none; align-items: center; gap: 12px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 14px; padding: 12px 20px; backdrop-filter: blur(6px); pointer-events: none; }
       #markerBadge.show { display: inline-flex; }
-      #markerBadge img { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); }
-      #markerBadge .txt { font-size: 12px; font-weight: 600; opacity: 0.95; }
+      #markerBadge img { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
+      #markerBadge .txt { font-size: 24px; font-weight: 700; opacity: 0.98; letter-spacing: 0.2px; }
 
       /* Audio toggle (bottom-right) */
-      #audioToggle { position: fixed; right: 12px; bottom: 12px; z-index: 1004; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+      #audioToggle { position: fixed; right: 12px; bottom: 12px; z-index: 1200; background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 56px; height: 56px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
       #audioToggle.show { display: flex; }
       #audioToggle:active { transform: scale(0.96); }
-      #audioToggleIcon { font-size: 18px; line-height: 1; }
+      #audioToggleIcon { font-size: 24px; line-height: 1; }
 
       /* 3D Annotations */
       .hotspot {
@@ -1200,18 +1200,34 @@ export async function GET(
           const audioToggle = document.getElementById('audioToggle');
           const audioIcon = document.getElementById('audioToggleIcon');
           const updateAudioIcon = () => {
-            if (!audioIcon) return;
-            audioIcon.textContent = video.muted ? '🔇' : '🔊';
+            if (!audioIcon || !audioToggle) return;
+            const isMuted = video.muted || video.volume === 0;
+            audioIcon.textContent = isMuted ? '🔇' : '🔊';
+            audioToggle.setAttribute('aria-pressed', String(!isMuted));
+            audioToggle.setAttribute('title', isMuted ? 'Unmute' : 'Mute');
           };
           if (audioToggle) {
-            audioToggle.addEventListener('click', () => {
-              // Toggle mute state; this click counts as a user gesture for autoplay policies
-              video.muted = !video.muted;
-              if (!video.paused) {
+            const toggleHandler = (e) => {
+              e.preventDefault();
+              // Toggle mute state; this counts as a user gesture for autoplay policies
+              const isMuted = video.muted || video.volume === 0;
+              if (isMuted) {
+                video.muted = false;
+                if (video.volume === 0) video.volume = 1.0;
+              } else {
+                video.muted = true;
+              }
+              if (video.paused) {
                 video.play().catch(() => {});
               }
               updateAudioIcon();
-            });
+            };
+            audioToggle.addEventListener('click', toggleHandler, { passive: false });
+            audioToggle.addEventListener('touchend', toggleHandler, { passive: false });
+            // Keep icon in sync with media state
+            video.addEventListener('volumechange', updateAudioIcon);
+            video.addEventListener('play', updateAudioIcon);
+            video.addEventListener('loadedmetadata', updateAudioIcon);
             // Ensure correct initial icon
             updateAudioIcon();
           }
