@@ -775,50 +775,17 @@ export async function GET(
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
       
-      /* Marker guidance overlay */
-      #markerGuide {
-        position: fixed;
-        inset: 0;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        background: transparent; /* transparent backdrop */
-        backdrop-filter: none;
-        padding: 20px;
-        pointer-events: none; /* let AR taps pass through if needed */
-      }
-      #markerGuide.show { display: flex; }
-      #markerGuideInner {
-        background: transparent; /* transparent panel */
-        border: 0;
-        border-radius: 16px;
-        box-shadow: none;
-        max-width: 90vw;
-        width: 520px;
-        color: #fff;
-        overflow: hidden;
-      }
-      #markerGuideHeader {
-        padding: 12px 16px;
-        font-weight: 800;
-        font-size: 16px;
-        background: transparent;
-        border-bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-      }
-      #markerGuideBody { padding: 16px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
-      #markerImgWrap { width: 110px; height: 110px; background: transparent; border: 0; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-      #markerImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
-      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-      #markerHint { font-size: 12px; opacity: 0.9; margin-top: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-      @media (max-width: 480px) {
-        #markerGuideBody { grid-template-columns: 1fr; }
-        #markerImgWrap { width: 100%; height: 160px; }
-      }
+      /* Minimal marker badge (top-right) */
+      #markerBadge { position: fixed; top: 12px; right: 12px; z-index: 1004; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 12px; padding: 6px 10px; backdrop-filter: blur(6px); pointer-events: none; }
+      #markerBadge.show { display: inline-flex; }
+      #markerBadge img { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); }
+      #markerBadge .txt { font-size: 12px; font-weight: 600; opacity: 0.95; }
+
+      /* Audio toggle (bottom-right) */
+      #audioToggle { position: fixed; right: 12px; bottom: 12px; z-index: 1004; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+      #audioToggle.show { display: flex; }
+      #audioToggle:active { transform: scale(0.96); }
+      #audioToggleIcon { font-size: 18px; line-height: 1; }
 
       /* 3D Annotations */
       .hotspot {
@@ -911,13 +878,6 @@ export async function GET(
     </style>
   </head>
   <body>
-    <div class="status-indicator" id="status-indicator">
-      <h3 id="status-title">Point camera at your marker</h3>
-      <p id="status-message">Look for your uploaded image</p>
-    </div>
-
-
-
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
@@ -979,49 +939,18 @@ export async function GET(
       </a-entity>
     </a-scene>
 
-    ${experience.link_url ? `
-    <div id="externalLinkBtn">
-      <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
-        Open Link
-      </a>
-    </div>
-    ` : ''}
-
-    ${is3D && experience.model_url ? `
-    <div id="surfaceBtn">
-      <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
+    ${experience.marker_image_url ? `
+    <div id="markerBadge" class="show" aria-label="Scan the marker">
+      <img src="${experience.marker_image_url}" alt="Marker" />
+      <span class="txt">Scan this marker</span>
     </div>
     ` : ''}
 
     ${isVideo ? `
-    <div id="unmuteOverlay">
-      <button id="unmuteBtn">Tap to Enable Sound</button>
-      <p class="unmute-text">Tap anywhere to unmute the AR video</p>
-    </div>
+    <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
+      <span id="audioToggleIcon">🔇</span>
+    </button>
     ` : ''}
-
-    ${experience.marker_image_url ? `
-    <div id="markerGuide" role="dialog" aria-live="polite">
-      <div id="markerGuideInner">
-        <div id="markerGuideHeader">Scan the Marker</div>
-        <div id="markerGuideBody">
-          <div id="markerImgWrap">
-            <img src="${experience.marker_image_url}" alt="Marker image to scan" />
-          </div>
-          <div id="markerText">
-            Point your camera at this marker image to start the AR experience.
-            <div id="markerHint">Make sure the whole marker is visible and well lit.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- Annotation panel (3D model info) -->
-    <div id="annotationPanel" role="dialog" aria-live="polite">
-      <div class="title"></div>
-      <div class="desc"></div>
-    </div>
 
     <script>
       async function preflightMind(url) {
@@ -1159,17 +1088,7 @@ export async function GET(
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
         const markerGuide = document.getElementById('markerGuide');
-        const annotationPanel = document.getElementById('annotationPanel');
-        const setAnnotation = (title, desc) => {
-          if (!annotationPanel) return;
-          const t = annotationPanel.querySelector('.title');
-          const d = annotationPanel.querySelector('.desc');
-          if (t) t.textContent = title || 'Info';
-          if (d) d.textContent = desc || '';
-          annotationPanel.classList.add('show');
-        };
-        const hideAnnotation = () => { if (annotationPanel) annotationPanel.classList.remove('show'); };
-        if (annotationPanel) annotationPanel.addEventListener('click', hideAnnotation);
+        const markerBadge = document.getElementById('markerBadge');
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
@@ -1228,13 +1147,7 @@ export async function GET(
 
         // Defer showing external link until marker is scanned (handled in targetFound)
 
-        // Brief initializing message (no user interaction needed)
-        showStatus('Initializing...', 'Starting camera and tracker');
-        setTimeout(() => {
-          hideStatus();
-          // Show marker guide while scanning
-          if (markerGuide) markerGuide.classList.add('show');
-        }, 800);
+        // No overlays: keep UI minimal
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -1283,42 +1196,25 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Safari unmute handler
-          const unmuteOverlay = document.getElementById('unmuteOverlay');
-          const unmuteBtn = document.getElementById('unmuteBtn');
-          let hasUnmuted = false;
-          
-          const handleUnmute = () => {
-            if (!hasUnmuted && video) {
-              video.muted = false;
-              video.play().catch(e => console.log('Play after unmute:', e));
-              hasUnmuted = true;
-              if (unmuteOverlay) unmuteOverlay.classList.remove('show');
-              console.log('Video unmuted');
-            }
+          // Audio toggle handler (bottom-right)
+          const audioToggle = document.getElementById('audioToggle');
+          const audioIcon = document.getElementById('audioToggleIcon');
+          const updateAudioIcon = () => {
+            if (!audioIcon) return;
+            audioIcon.textContent = video.muted ? '🔇' : '🔊';
           };
-          
-          // Show unmute overlay after target found
-          let unmuteShown = false;
-          const showUnmuteIfNeeded = () => {
-            if (!unmuteShown && !hasUnmuted && unmuteOverlay) {
-              setTimeout(() => {
-                if (!hasUnmuted) {
-                  unmuteOverlay.classList.add('show');
-                  unmuteShown = true;
-                }
-              }, 2000);
-            }
-          };
-          
-          if (unmuteBtn) unmuteBtn.addEventListener('click', handleUnmute);
-          if (unmuteOverlay) unmuteOverlay.addEventListener('click', handleUnmute);
-          document.body.addEventListener('touchstart', () => {
-            if (isTargetVisible && !hasUnmuted) handleUnmute();
-          }, { once: false });
-          
-          // Expose for target found handler
-          window.showUnmuteOverlay = showUnmuteIfNeeded;
+          if (audioToggle) {
+            audioToggle.addEventListener('click', () => {
+              // Toggle mute state; this click counts as a user gesture for autoplay policies
+              video.muted = !video.muted;
+              if (!video.paused) {
+                video.play().catch(() => {});
+              }
+              updateAudioIcon();
+            });
+            // Ensure correct initial icon
+            updateAudioIcon();
+          }
         }
 
         // Setup 3D model animation
@@ -1337,73 +1233,7 @@ export async function GET(
               console.log('Available animations:', mixer.mixer ? mixer.mixer._actions : 'none');
             }
 
-            // Enable mouse/touch raycasting against hotspots
-            try {
-              const scene = document.getElementById('arScene');
-              if (scene) {
-                scene.setAttribute('cursor', 'rayOrigin: mouse');
-                scene.setAttribute('raycaster', 'objects: .hotspot; far: 20');
-              }
-            } catch (e) { console.warn('Raycaster setup failed', e); }
-
-            // Traverse model for annotations and create hotspots
-            try {
-              const threeObj = model3D.getObject3D('mesh') || model3D.object3D;
-              if (!threeObj) return;
-              const worldToLocal = (v) => model3D.object3D.worldToLocal(v.clone());
-              const annNodes = [];
-              threeObj.traverse((node) => {
-                if (!node) return;
-                let title = null, desc = '';
-                // From userData.annotation
-                if (node.userData && node.userData.annotation) {
-                  const a = node.userData.annotation;
-                  title = a.title || null;
-                  desc = a.description || a.desc || '';
-                }
-                // From name: ann__Title__Description
-                if (!title && node.name && node.name.startsWith('ann__')) {
-                  const parts = node.name.split('__');
-                  if (parts.length >= 2) {
-                    title = decodeURIComponent((parts[1] || '').replace(/_/g, ' '));
-                    desc = decodeURIComponent((parts[2] || '').replace(/_/g, ' '));
-                  }
-                }
-                if (title) {
-                  const wp = new THREE.Vector3();
-                  node.getWorldPosition(wp);
-                  const lp = worldToLocal(wp);
-                  annNodes.push({ pos: lp, title, desc });
-                }
-              });
-
-              if (annNodes.length) {
-                const container = document.createElement('a-entity');
-                container.setAttribute('id', 'annotationHotspots');
-                model3D.appendChild(container);
-                annNodes.forEach((a, i) => {
-                  const hs = document.createElement('a-entity');
-                  hs.setAttribute('class', 'hotspot');
-                  hs.setAttribute('position', '' + a.pos.x + ' ' + a.pos.y + ' ' + a.pos.z);
-                  hs.setAttribute('geometry', 'primitive: sphere; radius: 0.02');
-                  hs.setAttribute('material', 'color: #f59e0b; emissive: #f59e0b; emissiveIntensity: 0.8; metalness: 0.2; roughness: 0.4');
-                  hs.setAttribute('look-at', '[camera]');
-                  hs.setAttribute('scale', '1 1 1');
-                  // Store data
-                  hs.dataset.title = a.title;
-                  hs.dataset.desc = a.desc;
-                  hs.addEventListener('click', (ev) => {
-                    setAnnotation(hs.dataset.title, hs.dataset.desc);
-                  });
-                  container.appendChild(hs);
-                });
-                console.log('Created ' + annNodes.length + ' annotation hotspots');
-              } else {
-                console.log('No annotation nodes found in model');
-              }
-            } catch (e) {
-              console.warn('Failed to create annotation hotspots', e);
-            }
+            // No UI annotations/hotspots per minimal overlay requirement
           });
           
           model3D.addEventListener('model-error', (e) => {
@@ -1444,7 +1274,6 @@ export async function GET(
           });
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
-            showStatus('AR Initialization Error', 'Please allow camera access and try again.');
           });
         }
 
@@ -1460,8 +1289,8 @@ export async function GET(
           
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
-            // Hide marker guide once target is found
-            if (markerGuide) markerGuide.classList.remove('show');
+            // Hide marker badge once target is found
+            if (markerBadge) markerBadge.classList.remove('show');
             
             // Track target recognition analytics
             if (window.trackAREvent) {
@@ -1496,8 +1325,7 @@ export async function GET(
                       video.muted = true;
                       video.play().catch(() => {});
                     }
-                    // Show unmute prompt after a delay
-                    if (window.showUnmuteOverlay) window.showUnmuteOverlay();
+                    // No unmute overlay; rely on audio toggle button
                   }
                 }
                 
@@ -1523,13 +1351,7 @@ export async function GET(
                   }
                 }
                 
-                // Reveal external link button now that marker is scanned
-                if (externalLinkBtn) {
-                  externalLinkBtn.style.display = 'block';
-                }
-
-                showStatus('Target Found!', 'AR content should be visible');
-                setTimeout(hideStatus, 1500);
+                // No other overlays on found
               }
             }, 100); // 100ms debounce
           });
@@ -1556,11 +1378,8 @@ export async function GET(
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
                 isTargetVisible = false;
-                // Keep content playing and visible; rely on missTolerance and last pose.
-                // Optional: show a brief status without hiding content.
-                showStatus('Target Lost', 'Content will re-align when marker is visible');
-                // Re-show marker guide to help user re-acquire target
-                if (markerGuide) markerGuide.classList.add('show');
+                // Keep content playing and visible; re-show minimal marker badge to help re-acquire
+                if (markerBadge) markerBadge.classList.add('show');
               }
             }, 1000);
           });
