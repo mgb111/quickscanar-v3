@@ -948,17 +948,17 @@ export async function GET(
 
     ${isVideo ? `
     <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
+      <!-- Muted: speaker with slash -->
       <svg id="iconMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 9v6h4l5 5V4l-5 5H9z"></path>
-        <line x1="18" y1="6" x2="23" y2="11"></line>
-        <line x1="23" y1="6" x2="18" y2="11"></line>
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
       </svg>
+      <!-- Unmuted: speaker with waves -->
       <svg id="iconUnmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none" aria-hidden="true">
-        <path d="M9 9v6h4l5 5V4l-5 5H9z"></path>
-        <path d="M19 12a4 4 0 0 0-4-4"></path>
-        <path d="M19 12a4 4 0 0 1-4 4"></path>
-        <path d="M21 12a6 6 0 0 0-6-6"></path>
-        <path d="M21 12a6 6 0 0 1-6 6"></path>
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15 9a3 3 0 0 1 0 6"></path>
+        <path d="M17 5a7 7 0 0 1 0 14"></path>
       </svg>
     </button>
     ` : ''}
