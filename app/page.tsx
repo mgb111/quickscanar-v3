@@ -565,9 +565,10 @@ function HomePage() {
             <div>
               <h3 className="text-lg font-semibold mb-6">Connect</h3>
               <ul className="space-y-3 text-white opacity-80">
-                <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">LinkedIn</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">GitHub</a></li>
+                <li><a href="https://x.com/wearemajorbeam" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">X</a></li>
+                <li><a href="https://www.linkedin.com/company/majorbeam/?viewAsMember=true" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</a></li>
+                <li><a href="https://www.instagram.com/wearemajorbeam/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a></li>
+                <li><a href="https://www.facebook.com/people/majorbeam/61581545441086/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Facebook</a></li>
               </ul>
             </div>
           </div>
