@@ -776,13 +776,13 @@ export async function GET(
       }
       
       /* Minimal marker badge (top-right) */
-      #markerBadge { position: fixed; top: 12px; right: 12px; z-index: 1004; display: none; align-items: center; gap: 12px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 14px; padding: 12px 20px; backdrop-filter: blur(6px); pointer-events: none; }
+      #markerBadge { position: fixed; top: 16px; right: 16px; z-index: 1004; display: none; align-items: center; gap: 16px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 14px; padding: 12px 20px; backdrop-filter: blur(6px); pointer-events: none; }
       #markerBadge.show { display: inline-flex; }
       #markerBadge img { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
       #markerBadge .txt { font-size: 24px; font-weight: 700; opacity: 0.98; letter-spacing: 0.2px; }
 
       /* Audio toggle (bottom-right) */
-      #audioToggle { position: fixed; right: 12px; bottom: 12px; z-index: 1200; background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 56px; height: 56px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+      #audioToggle { position: fixed; right: 16px; bottom: 16px; z-index: 1200; background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 56px; height: 56px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
       #audioToggle.show { display: flex; }
       #audioToggle:active { transform: scale(0.96); }
       #audioToggle svg { width: 26px; height: 26px; display: block; }
