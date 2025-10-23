@@ -785,7 +785,7 @@ export async function GET(
       #audioToggle { position: fixed; right: 12px; bottom: 12px; z-index: 1200; background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 56px; height: 56px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
       #audioToggle.show { display: flex; }
       #audioToggle:active { transform: scale(0.96); }
-      #audioToggleIcon { font-size: 24px; line-height: 1; }
+      #audioToggle svg { width: 26px; height: 26px; display: block; }
 
       /* 3D Annotations */
       .hotspot {
@@ -948,7 +948,18 @@ export async function GET(
 
     ${isVideo ? `
     <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
-      <span id="audioToggleIcon">🔇</span>
+      <svg id="iconMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 9v6h4l5 5V4l-5 5H9z"></path>
+        <line x1="18" y1="6" x2="23" y2="11"></line>
+        <line x1="23" y1="6" x2="18" y2="11"></line>
+      </svg>
+      <svg id="iconUnmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none" aria-hidden="true">
+        <path d="M9 9v6h4l5 5V4l-5 5H9z"></path>
+        <path d="M19 12a4 4 0 0 0-4-4"></path>
+        <path d="M19 12a4 4 0 0 1-4 4"></path>
+        <path d="M21 12a6 6 0 0 0-6-6"></path>
+        <path d="M21 12a6 6 0 0 1-6 6"></path>
+      </svg>
     </button>
     ` : ''}
 
@@ -1198,11 +1209,13 @@ export async function GET(
 
           // Audio toggle handler (bottom-right)
           const audioToggle = document.getElementById('audioToggle');
-          const audioIcon = document.getElementById('audioToggleIcon');
+          const iconMuted = document.getElementById('iconMuted');
+          const iconUnmuted = document.getElementById('iconUnmuted');
           const updateAudioIcon = () => {
-            if (!audioIcon || !audioToggle) return;
+            if (!audioToggle || !iconMuted || !iconUnmuted) return;
             const isMuted = video.muted || video.volume === 0;
-            audioIcon.textContent = isMuted ? '🔇' : '🔊';
+            iconMuted.style.display = isMuted ? 'block' : 'none';
+            iconUnmuted.style.display = isMuted ? 'none' : 'block';
             audioToggle.setAttribute('aria-pressed', String(!isMuted));
             audioToggle.setAttribute('title', isMuted ? 'Unmute' : 'Mute');
           };
