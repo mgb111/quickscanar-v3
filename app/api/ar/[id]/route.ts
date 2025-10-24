@@ -37,6 +37,116 @@ export async function GET(
     const is3D = contentType === '3d' || contentType === 'both'
     const isPortal = contentType === 'portal'
 
+    // Markerless surface placement mode (WebXR hit-test)
+    // Activate when URL has ?mode=surface and content supports 3D/portal
+    const urlObj = new URL(request.url)
+    const modeParam = (urlObj.searchParams.get('mode') || '').toLowerCase()
+    const useMarkerless = (is3D || isPortal) && modeParam === 'surface' && !!experience.model_url
+
+    if (useMarkerless) {
+      const modelUrl = experience.model_url
+      const modelScale = Number(experience.model_scale || 1.0)
+      const modelRotation = Number(experience.model_rotation || 0)
+      const linkUrl = experience.link_url || ''
+
+      const markerlessHTML = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>${experience.title} - AR (Markerless)</title>
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <style>
+      body { margin:0; overflow:hidden; background:#000; }
+      #ui { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px; }
+      .btn { background:#dc2626; color:#fff; border:2px solid #000; border-radius:9999px; padding:10px 14px; font-weight:700; box-shadow:0 6px 16px rgba(0,0,0,.35); }
+      #hint { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); color:#fff; background:rgba(0,0,0,.45); padding:10px 14px; border-radius:10px; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      #link { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); display:${linkUrl ? 'block' : 'none'}; }
+      #link a { text-decoration:none; background:#dc2626; color:#fff; border:2px solid #000; border-radius:9999px; padding:12px 18px; font-weight:800; }
+    </style>
+  </head>
+  <body>
+    <div id="ui">
+      <button id="placeBtn" class="btn">Tap to place</button>
+      <a href="?" class="btn" style="text-decoration:none;">Use Marker Mode</a>
+    </div>
+    <div id="link"><a href="${linkUrl}" target="_blank" rel="noopener">Open Link</a></div>
+    <div id="hint">Move your phone to scan surfaces. Tap to place.</div>
+    <a-scene renderer="colorManagement:true" xr-mode="ar" embedded device-orientation-permission-ui="enabled: true" webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
+      <a-entity id="cameraRig">
+        <a-camera position="0 1.6 0"></a-camera>
+      </a-entity>
+
+      <!-- Reticle -->
+      <a-entity id="reticle" visible="false" rotation="-90 0 0">
+        <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>
+        <a-circle radius="0.002" color="#39ff14"></a-circle>
+      </a-entity>
+
+      <!-- Model container placed at reticle pose -->
+      <a-entity id="placed" visible="false">
+        <a-entity id="model"
+                  gltf-model="${modelUrl}"
+                  scale="${modelScale} ${modelScale} ${modelScale}"
+                  rotation="0 ${modelRotation} 0">
+        </a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // WebXR Hit Test setup
+      const scene = document.querySelector('a-scene');
+      const reticle = document.getElementById('reticle');
+      const placed = document.getElementById('placed');
+      const placeBtn = document.getElementById('placeBtn');
+      let xrHitTestSource = null;
+      let viewerSpace = null;
+      let referenceSpace = null;
+      let latestPose = null;
+
+      function onXRFrame(time, frame) {
+        const session = frame.session;
+        if (!referenceSpace || !xrHitTestSource) return;
+        const pose = frame.getViewerPose(referenceSpace);
+        if (!pose) return;
+        const results = frame.getHitTestResults(xrHitTestSource);
+        if (results.length > 0) {
+          const hit = results[0];
+          const hitPose = hit.getPose(referenceSpace);
+          latestPose = hitPose;
+          reticle.object3D.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+          const q = hitPose.transform.orientation;
+          const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ');
+          reticle.object3D.rotation.set(-Math.PI/2, euler.y, 0);
+          reticle.setAttribute('visible', true);
+        } else {
+          reticle.setAttribute('visible', false);
+        }
+        session.requestAnimationFrame(onXRFrame);
+      }
+
+      scene.addEventListener('enter-vr', async () => {
+        const xrSession = scene.renderer.xr.getSession();
+        if (!xrSession) return;
+        referenceSpace = await xrSession.requestReferenceSpace('local');
+        viewerSpace = await xrSession.requestReferenceSpace('viewer');
+        const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+        xrHitTestSource = hitTestSource;
+        xrSession.requestAnimationFrame(onXRFrame);
+      });
+
+      placeBtn.addEventListener('click', () => {
+        if (!latestPose) return;
+        placed.object3D.position.set(latestPose.transform.position.x, latestPose.transform.position.y, latestPose.transform.position.z);
+        placed.setAttribute('visible', true);
+        document.getElementById('hint').textContent = 'Drag on screen to move/rotate. Pinch to scale.';
+      });
+    </script>
+  </body>
+</html>`
+
+      return new NextResponse(markerlessHTML, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    }
+
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
