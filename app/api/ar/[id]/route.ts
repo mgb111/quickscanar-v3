@@ -1316,6 +1316,8 @@ export async function GET(
             surfaceOverlay.setAttribute('aria-hidden', 'true');
             surfaceOverlay.innerHTML = '';
           }
+          // Re-show base AR scene
+          if (sceneEl) try { sceneEl.style.display = ''; } catch {}
           // Re-show marker badge if there was one
           if (markerBadge) markerBadge.classList.add('show');
         }
@@ -1324,6 +1326,9 @@ export async function GET(
           if (!surfaceOverlay || !modelUrl) return;
           // Hide marker badge while in surface mode
           if (markerBadge) markerBadge.classList.remove('show');
+          // Hide base AR scene while WebXR overlay is active
+          const sceneEl = document.getElementById('arScene');
+          if (sceneEl) try { sceneEl.style.display = 'none'; } catch {}
           surfaceOverlay.classList.add('show');
           surfaceOverlay.setAttribute('aria-hidden', 'false');
           surfaceOverlay.innerHTML = ''
