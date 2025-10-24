@@ -54,92 +54,397 @@ export async function GET(
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <title>${experience.title} - AR (Markerless)</title>
+    <title>${experience.title} - AR (Surface Placement)</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <style>
-      body { margin:0; overflow:hidden; background:#000; }
-      #ui { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px; }
-      .btn { background:#dc2626; color:#fff; border:2px solid #000; border-radius:9999px; padding:10px 14px; font-weight:700; box-shadow:0 6px 16px rgba(0,0,0,.35); }
-      #hint { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); color:#fff; background:rgba(0,0,0,.45); padding:10px 14px; border-radius:10px; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-      #link { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); display:${linkUrl ? 'block' : 'none'}; }
-      #link a { text-decoration:none; background:#dc2626; color:#fff; border:2px solid #000; border-radius:9999px; padding:12px 18px; font-weight:800; }
+      body { margin:0; overflow:hidden; background:#000; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      
+      /* Loading overlay */
+      #loadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        text-align: center;
+      }
+      
+      #loadingOverlay.hidden { display: none; }
+      
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top: 3px solid #fff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* UI Controls */
+      #controls {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        display: flex;
+        gap: 12px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      #controls.show { opacity: 1; }
+      
+      .control-btn {
+        background: rgba(0,0,0,0.8);
+        color: #fff;
+        border: 2px solid #fff;
+        border-radius: 25px;
+        padding: 12px 20px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+      }
+      
+      .control-btn:hover { background: rgba(255,255,255,0.2); }
+      .control-btn:active { transform: scale(0.95); }
+      
+      #placeBtn {
+        background: #dc2626;
+        border-color: #dc2626;
+      }
+      
+      #placeBtn:hover { background: #b91c1c; }
+      
+      /* Instructions */
+      #instructions {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        background: rgba(0,0,0,0.8);
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      #instructions.show { opacity: 1; }
+      
+      /* Link button */
+      #linkBtn {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: ${linkUrl ? 'block' : 'none'};
+        z-index: 100;
+      }
+      
+      #linkBtn a {
+        text-decoration: none;
+        background: #dc2626;
+        color: #fff;
+        border: 2px solid #fff;
+        border-radius: 25px;
+        padding: 12px 20px;
+        font-weight: 700;
+        font-size: 14px;
+        backdrop-filter: blur(10px);
+      }
+      
+      /* A-Frame scene */
+      a-scene {
+        width: 100vw;
+        height: 100vh;
+      }
     </style>
   </head>
   <body>
-    <div id="ui">
-      <button id="placeBtn" class="btn">Tap to place</button>
-      <a href="?" class="btn" style="text-decoration:none;">Use Marker Mode</a>
+    <!-- Loading overlay -->
+    <div id="loadingOverlay">
+      <div class="spinner"></div>
+      <h2>Starting AR Camera...</h2>
+      <p>Please allow camera access when prompted</p>
     </div>
-    <div id="link"><a href="${linkUrl}" target="_blank" rel="noopener">Open Link</a></div>
-    <div id="hint">Move your phone to scan surfaces. Tap to place.</div>
-    <a-scene renderer="colorManagement:true" xr-mode="ar" embedded device-orientation-permission-ui="enabled: true" webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
+    
+    <!-- Controls -->
+    <div id="controls">
+      <button id="backBtn" class="control-btn">← Back to Marker</button>
+      <button id="placeBtn" class="control-btn">Tap to Place</button>
+    </div>
+    
+    <!-- Instructions -->
+    <div id="instructions">
+      Move your device to scan surfaces. Tap "Place" when you see the green target.
+    </div>
+    
+    <!-- Link button -->
+    <div id="linkBtn">
+      <a href="${linkUrl}" target="_blank" rel="noopener">Open Link</a>
+    </div>
+    
+    <!-- A-Frame AR Scene -->
+    <a-scene 
+      renderer="colorManagement:true; antialias: true; alpha: true" 
+      xr-mode="ar" 
+      embedded 
+      device-orientation-permission-ui="enabled: false"
+      vr-mode-ui="enabled: false"
+      loading-screen="enabled: false"
+      webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
+      
       <a-entity id="cameraRig">
-        <a-camera position="0 1.6 0"></a-camera>
+        <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
       </a-entity>
 
-      <!-- Reticle -->
+      <!-- Surface detection reticle -->
       <a-entity id="reticle" visible="false" rotation="-90 0 0">
-        <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>
-        <a-circle radius="0.002" color="#39ff14"></a-circle>
+        <a-ring radius-inner="0.04" radius-outer="0.06" color="#39ff14" opacity="0.8"></a-ring>
+        <a-circle radius="0.003" color="#39ff14"></a-circle>
+        <a-ring radius-inner="0.08" radius-outer="0.09" color="#39ff14" opacity="0.4"></a-ring>
       </a-entity>
 
-      <!-- Model container placed at reticle pose -->
+      <!-- Placed model container -->
       <a-entity id="placed" visible="false">
         <a-entity id="model"
                   gltf-model="${modelUrl}"
                   scale="${modelScale} ${modelScale} ${modelScale}"
-                  rotation="0 ${modelRotation} 0">
+                  rotation="0 ${modelRotation} 0"
+                  gesture-controls="enabled: true; dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.1; maxScale: 3">
         </a-entity>
       </a-entity>
     </a-scene>
 
     <script>
-      // WebXR Hit Test setup
+      // Register gesture controls component for placed objects
+      AFRAME.registerComponent('gesture-controls', {
+        schema: {
+          enabled: { type: 'boolean', default: true },
+          dragSpeed: { type: 'number', default: 0.003 },
+          rotateSpeed: { type: 'number', default: 1.0 },
+          minScale: { type: 'number', default: 0.1 },
+          maxScale: { type: 'number', default: 3.0 }
+        },
+        init: function () {
+          this.onTouchStart = this.onTouchStart.bind(this);
+          this.onTouchMove = this.onTouchMove.bind(this);
+          this.onTouchEnd = this.onTouchEnd.bind(this);
+          
+          this.el.addEventListener('touchstart', this.onTouchStart);
+          this.el.addEventListener('touchmove', this.onTouchMove);
+          this.el.addEventListener('touchend', this.onTouchEnd);
+          
+          this.startTouches = [];
+          this.startPosition = new THREE.Vector3();
+          this.startScale = new THREE.Vector3();
+          this.startRotation = 0;
+        },
+        onTouchStart: function(e) {
+          if (!this.data.enabled || !this.el.getAttribute('visible')) return;
+          e.preventDefault();
+          this.startTouches = Array.from(e.touches);
+          this.startPosition.copy(this.el.object3D.position);
+          this.startScale.copy(this.el.object3D.scale);
+          const rot = this.el.getAttribute('rotation');
+          this.startRotation = rot ? rot.y : 0;
+        },
+        onTouchMove: function(e) {
+          if (!this.data.enabled || this.startTouches.length === 0) return;
+          e.preventDefault();
+          
+          if (e.touches.length === 1 && this.startTouches.length === 1) {
+            // Single finger drag - move object
+            const dx = (e.touches[0].clientX - this.startTouches[0].clientX) * this.data.dragSpeed;
+            const dz = (e.touches[0].clientY - this.startTouches[0].clientY) * this.data.dragSpeed;
+            this.el.object3D.position.set(
+              this.startPosition.x + dx,
+              this.startPosition.y,
+              this.startPosition.z + dz
+            );
+          } else if (e.touches.length === 2 && this.startTouches.length === 2) {
+            // Two finger pinch/rotate
+            const currentDist = this.getDistance(e.touches[0], e.touches[1]);
+            const startDist = this.getDistance(this.startTouches[0], this.startTouches[1]);
+            const scaleFactor = currentDist / startDist;
+            
+            let newScale = this.startScale.x * scaleFactor;
+            newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale));
+            this.el.object3D.scale.set(newScale, newScale, newScale);
+            
+            // Rotation
+            const currentAngle = this.getAngle(e.touches[0], e.touches[1]);
+            const startAngle = this.getAngle(this.startTouches[0], this.startTouches[1]);
+            const deltaAngle = (currentAngle - startAngle) * this.data.rotateSpeed * (180 / Math.PI);
+            const newRotation = this.startRotation + deltaAngle;
+            this.el.setAttribute('rotation', { x: 0, y: newRotation, z: 0 });
+          }
+        },
+        onTouchEnd: function(e) {
+          if (e.touches.length === 0) {
+            this.startTouches = [];
+          }
+        },
+        getDistance: function(touch1, touch2) {
+          const dx = touch2.clientX - touch1.clientX;
+          const dy = touch2.clientY - touch1.clientY;
+          return Math.sqrt(dx * dx + dy * dy);
+        },
+        getAngle: function(touch1, touch2) {
+          return Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+        }
+      });
+
+      // Main AR functionality
       const scene = document.querySelector('a-scene');
       const reticle = document.getElementById('reticle');
       const placed = document.getElementById('placed');
       const placeBtn = document.getElementById('placeBtn');
+      const backBtn = document.getElementById('backBtn');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const controls = document.getElementById('controls');
+      const instructions = document.getElementById('instructions');
+      
       let xrHitTestSource = null;
       let viewerSpace = null;
       let referenceSpace = null;
       let latestPose = null;
+      let isPlaced = false;
 
+      // WebXR hit test frame handler
       function onXRFrame(time, frame) {
         const session = frame.session;
         if (!referenceSpace || !xrHitTestSource) return;
+        
         const pose = frame.getViewerPose(referenceSpace);
         if (!pose) return;
+        
         const results = frame.getHitTestResults(xrHitTestSource);
-        if (results.length > 0) {
+        if (results.length > 0 && !isPlaced) {
           const hit = results[0];
           const hitPose = hit.getPose(referenceSpace);
           latestPose = hitPose;
-          reticle.object3D.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+          
+          reticle.object3D.position.set(
+            hitPose.transform.position.x,
+            hitPose.transform.position.y,
+            hitPose.transform.position.z
+          );
+          
           const q = hitPose.transform.orientation;
-          const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ');
+          const euler = new THREE.Euler().setFromQuaternion(
+            new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ'
+          );
           reticle.object3D.rotation.set(-Math.PI/2, euler.y, 0);
           reticle.setAttribute('visible', true);
-        } else {
+        } else if (!isPlaced) {
           reticle.setAttribute('visible', false);
         }
+        
         session.requestAnimationFrame(onXRFrame);
       }
 
-      scene.addEventListener('enter-vr', async () => {
-        const xrSession = scene.renderer.xr.getSession();
-        if (!xrSession) return;
-        referenceSpace = await xrSession.requestReferenceSpace('local');
-        viewerSpace = await xrSession.requestReferenceSpace('viewer');
-        const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-        xrHitTestSource = hitTestSource;
-        xrSession.requestAnimationFrame(onXRFrame);
+      // Auto-start AR when scene is ready
+      scene.addEventListener('loaded', () => {
+        console.log('Scene loaded, starting AR...');
+        setTimeout(() => {
+          try {
+            scene.enterVR();
+          } catch (error) {
+            console.error('Failed to start AR:', error);
+            loadingOverlay.innerHTML = '<h2>AR Not Supported</h2><p>This device does not support WebXR AR</p>';
+          }
+        }, 500);
       });
 
+      // Handle AR session start
+      scene.addEventListener('enter-vr', async () => {
+        console.log('AR session started');
+        try {
+          const xrSession = scene.renderer.xr.getSession();
+          if (!xrSession) return;
+          
+          referenceSpace = await xrSession.requestReferenceSpace('local');
+          viewerSpace = await xrSession.requestReferenceSpace('viewer');
+          const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+          xrHitTestSource = hitTestSource;
+          
+          xrSession.requestAnimationFrame(onXRFrame);
+          
+          // Hide loading, show UI
+          loadingOverlay.classList.add('hidden');
+          controls.classList.add('show');
+          instructions.classList.add('show');
+          
+        } catch (error) {
+          console.error('AR setup failed:', error);
+          loadingOverlay.innerHTML = '<h2>AR Setup Failed</h2><p>Please try again or use marker mode</p>';
+        }
+      });
+
+      // Handle AR session end
+      scene.addEventListener('exit-vr', () => {
+        console.log('AR session ended');
+        window.location.href = '?';
+      });
+
+      // Place/Reset object button
       placeBtn.addEventListener('click', () => {
-        if (!latestPose) return;
-        placed.object3D.position.set(latestPose.transform.position.x, latestPose.transform.position.y, latestPose.transform.position.z);
-        placed.setAttribute('visible', true);
-        document.getElementById('hint').textContent = 'Drag on screen to move/rotate. Pinch to scale.';
+        if (!isPlaced) {
+          // Place object
+          if (!latestPose) {
+            alert('No surface detected. Move your device to scan for surfaces.');
+            return;
+          }
+          
+          placed.object3D.position.set(
+            latestPose.transform.position.x,
+            latestPose.transform.position.y,
+            latestPose.transform.position.z
+          );
+          placed.setAttribute('visible', true);
+          reticle.setAttribute('visible', false);
+          isPlaced = true;
+          
+          placeBtn.textContent = 'Reset Position';
+          instructions.textContent = 'Object placed! Use touch gestures to move, scale, and rotate.';
+        } else {
+          // Reset placement
+          placed.setAttribute('visible', false);
+          isPlaced = false;
+          placeBtn.textContent = 'Tap to Place';
+          instructions.textContent = 'Move your device to scan surfaces. Tap "Place" when you see the green target.';
+        }
+      });
+
+      // Back to marker mode
+      backBtn.addEventListener('click', () => {
+        window.location.href = '?';
+      });
+
+      // Handle errors
+      window.addEventListener('error', (e) => {
+        console.error('AR Error:', e.error);
       });
     </script>
   </body>
