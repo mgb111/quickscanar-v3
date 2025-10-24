@@ -364,18 +364,72 @@ export async function GET(
         session.requestAnimationFrame(onXRFrame);
       }
 
-      // Auto-start AR when scene is ready
-      scene.addEventListener('loaded', () => {
-        console.log('Scene loaded, starting AR...');
-        setTimeout(() => {
-          try {
-            scene.enterVR();
-          } catch (error) {
-            console.error('Failed to start AR:', error);
-            loadingOverlay.innerHTML = '<h2>AR Not Supported</h2><p>This device does not support WebXR AR</p>';
+      // Prime camera permission (helps some browsers) then start AR
+      async function primeCameraPermission() {
+        if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+          // Immediately stop tracks; WebXR will control the camera
+          try { stream.getTracks().forEach(t => t.stop()); } catch {}
+          if (loadingOverlay) {
+            loadingOverlay.querySelector('h2')?.replaceChildren(document.createTextNode('Starting AR...'));
+            const p = loadingOverlay.querySelector('p');
+            if (p) p.textContent = 'Initializing camera and surfaces...';
           }
-        }, 500);
+        } catch (err) {
+          console.warn('getUserMedia failed or blocked:', err);
+        }
+      }
+
+      // Helper: attempt to start AR with retries
+      let arStarted = false;
+      async function tryStartAR() {
+        if (arStarted) return;
+        try {
+          // Check support first if available
+          if (navigator.xr && navigator.xr.isSessionSupported) {
+            const supported = await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false);
+            if (!supported) {
+              console.warn('immersive-ar not supported');
+            }
+          }
+          scene.enterVR();
+          // Give some time for session to attach
+          setTimeout(() => {
+            const presenting = !!(scene.renderer && scene.renderer.xr && scene.renderer.xr.isPresenting);
+            if (!presenting) {
+              console.warn('AR not presenting yet, will retry...');
+            }
+          }, 300);
+        } catch (error) {
+          console.error('Failed to start AR:', error);
+          if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            loadingOverlay.innerHTML = '<h2>Secure Context Required</h2><p>AR requires HTTPS. Open this page over https://</p>';
+          } else {
+            loadingOverlay.innerHTML = '<h2>Tap to Start AR</h2><p>If AR did not auto-start, tap anywhere to begin.</p>';
+          }
+        }
+      }
+
+      // Auto-start AR when scene is ready; also add a fallback tap
+      scene.addEventListener('loaded', async () => {
+        console.log('Scene loaded, starting AR...');
+        // Prime camera permission first (non-blocking)
+        await primeCameraPermission();
+        // Immediate attempt
+        tryStartAR();
+        // Retry a couple times in case of race conditions
+        setTimeout(tryStartAR, 600);
+        setTimeout(tryStartAR, 1200);
       });
+
+      // Tap-to-start fallback (some browsers require a user gesture)
+      const tapStartOnce = () => { tryStartAR(); document.removeEventListener('pointerdown', tapStartOnce); };
+      document.addEventListener('pointerdown', tapStartOnce, { passive: true, once: true });
+      if (loadingOverlay) {
+        const loTapOnce = () => { tryStartAR(); loadingOverlay.removeEventListener('click', loTapOnce); };
+        loadingOverlay.addEventListener('click', loTapOnce, { passive: true, once: true });
+      }
 
       // Handle AR session start
       scene.addEventListener('enter-vr', async () => {
@@ -392,7 +446,8 @@ export async function GET(
           xrSession.requestAnimationFrame(onXRFrame);
           
           // Hide loading, show UI
-          loadingOverlay.classList.add('hidden');
+          arStarted = true;
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
           controls.classList.add('show');
           instructions.classList.add('show');
           
