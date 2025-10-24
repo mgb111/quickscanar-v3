@@ -1317,7 +1317,10 @@ export async function GET(
             surfaceOverlay.innerHTML = '';
           }
           // Re-show base AR scene
-          if (sceneEl) try { sceneEl.style.display = ''; } catch {}
+          try {
+            const baseSceneEl = document.getElementById('arScene');
+            if (baseSceneEl) baseSceneEl.style.display = '';
+          } catch {}
           // Re-show marker badge if there was one
           if (markerBadge) markerBadge.classList.add('show');
         }
