@@ -1326,23 +1326,22 @@ export async function GET(
           if (markerBadge) markerBadge.classList.remove('show');
           surfaceOverlay.classList.add('show');
           surfaceOverlay.setAttribute('aria-hidden', 'false');
-          surfaceOverlay.innerHTML = `
-            <div class="ui">
-              <button id="surfaceBack" class="btn" type="button">Back</button>
-              <button id="surfacePlace" class="btn" type="button">Tap to place</button>
-            </div>
-            <div id="hint">Move your phone to scan surfaces. Tap to place.</div>
-            <a-scene renderer="colorManagement:true" xr-mode="ar" embedded webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
-              <a-entity id="cameraRig"><a-camera position="0 1.6 0"></a-camera></a-entity>
-              <a-entity id="reticle" visible="false" rotation="-90 0 0">
-                <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>
-                <a-circle radius="0.002" color="#39ff14"></a-circle>
-              </a-entity>
-              <a-entity id="placed" visible="false">
-                <a-entity id="surfaceModel" gltf-model="${'${'}modelUrl${'}'}" scale="${'${'}modelScale${'}'} ${'${'}modelScale${'}'} ${'${'}modelScale${'}'}" rotation="0 ${'${'}modelRotation${'}'} 0"></a-entity>
-              </a-entity>
-            </a-scene>
-          `;
+          surfaceOverlay.innerHTML = ''
+            + '<div class="ui">'
+            + '  <button id="surfaceBack" class="btn" type="button">Back</button>'
+            + '  <button id="surfacePlace" class="btn" type="button">Tap to place</button>'
+            + '</div>'
+            + '<div id="hint">Move your phone to scan surfaces. Tap to place.</div>'
+            + '<a-scene renderer="colorManagement:true" xr-mode="ar" embedded webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">'
+            + '  <a-entity id="cameraRig"><a-camera position="0 1.6 0"></a-camera></a-entity>'
+            + '  <a-entity id="reticle" visible="false" rotation="-90 0 0">'
+            + '    <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>'
+            + '    <a-circle radius="0.002" color="#39ff14"></a-circle>'
+            + '  </a-entity>'
+            + '  <a-entity id="placed" visible="false">'
+            + '    <a-entity id="surfaceModel" gltf-model="' + modelUrl + '" scale="' + modelScale + ' ' + modelScale + ' ' + modelScale + '" rotation="0 ' + modelRotation + ' 0"></a-entity>'
+            + '  </a-entity>'
+            + '</a-scene>';
 
           const scene2 = surfaceOverlay.querySelector('a-scene');
           const reticle = surfaceOverlay.querySelector('#reticle');
