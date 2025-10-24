@@ -992,12 +992,18 @@ export async function GET(
         #surfaceBtn { bottom: 80px; }
         #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
+
+      /* Place on marker button */
+      #markerPlaceBtn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 1200; display: none; }
+      #markerPlaceBtn.show { display: block; }
+      #markerPlaceBtn button { background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 14px 22px; font-size: 16px; font-weight: 800; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+      #markerPlaceBtn button:active { transform: scale(0.97); }
     </style>
   </head>
   <body>
     <a-scene
       id="arScene"
-      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1; autoStart: ${is3D || isPortal ? 'false' : 'true'};"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
@@ -1088,15 +1094,17 @@ export async function GET(
       ` : ''}
     </a-scene>
 
+    ${(is3D || isPortal) ? `
+    <div id="markerPlaceBtn" class="show">
+      <button type="button" aria-label="Place on marker">Place on marker</button>
+    </div>
+    ` : ''}
+
     ${experience.marker_image_url ? `
     <div id="markerBadge" class="show" aria-label="Scan the marker">
       <img src="${experience.marker_image_url}" alt="Marker" />
       <span class="txt">Scan this marker</span>
     </div>
-    ` : ''}
-
-    ${(is3D || isPortal) && experience.model_url ? `
-    <div id="surfaceBtn"><a href="?mode=surface">Place on surface</a></div>
     ` : ''}
 
     ${isVideo ? `
@@ -1254,6 +1262,7 @@ export async function GET(
         const isPortal = contentType === 'portal';
         const markerGuide = document.getElementById('markerGuide');
         const markerBadge = document.getElementById('markerBadge');
+        const markerPlaceBtn = document.getElementById('markerPlaceBtn');
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
@@ -1327,6 +1336,29 @@ export async function GET(
           videoUrl: '${experience.video_url ? "present" : "missing"}',
           modelUrl: '${experience.model_url ? "present" : "missing"}'
         });
+
+        // Hook up Place on marker button for 3D/portal
+        if ((is3D || isPortal) && markerPlaceBtn && scene) {
+          const btn = markerPlaceBtn.querySelector('button');
+          if (btn) {
+            const startMindAR = async () => {
+              try {
+                // Start MindAR tracking and camera
+                const sys = scene.systems && scene.systems['mindar-image-system'];
+                if (sys && sys.start) {
+                  await sys.start();
+                }
+                // Reveal scene once ready
+                scene.style.opacity = '1';
+                markerPlaceBtn.classList.remove('show');
+              } catch (err) {
+                console.error('Failed to start AR:', err);
+              }
+            };
+            btn.addEventListener('click', (e) => { e.preventDefault(); startMindAR(); }, { passive: false });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); startMindAR(); }, { passive: false });
+          }
+        }
 
         // Preflight check for .mind URL
         const ok = await preflightMind('${mindFileUrl}');
