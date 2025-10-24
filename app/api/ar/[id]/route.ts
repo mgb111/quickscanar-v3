@@ -35,6 +35,7 @@ export async function GET(
     const contentType = experience.content_type || 'video'
     const isVideo = contentType === 'video' || contentType === 'both'
     const is3D = contentType === '3d' || contentType === 'both'
+    const isPortal = contentType === 'portal'
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -904,7 +905,13 @@ export async function GET(
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
         ` : ''}
-        ${is3D && experience.model_url ? `
+
+    ${isPortal ? `
+    <div id="portalBackBtn" style="position: fixed; top: 16px; left: 16px; z-index: 1200; display: none;">
+      <button style="background:#111827;color:#fff;border:2px solid #000;border-radius:9999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.3);">Exit portal</button>
+    </div>
+    ` : ''}
+        ${(is3D || isPortal) && experience.model_url ? `
         <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
         ` : ''}
       </a-assets>
@@ -936,7 +943,33 @@ export async function GET(
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
         ></a-entity>
         ` : ''}
+        ${isPortal ? `
+        <a-entity id="portalDoor" visible="false" position="0 0 0.01">
+          <a-torus
+            radius="0.5"
+            radius-tubular="0.03"
+            rotation="90 0 0"
+            material="color: #dc2626; metalness: 0.2; roughness: 0.4; emissive: #7f1d1d; emissiveIntensity: 0.3"
+          ></a-torus>
+          <a-plane id="portalEnterHit" width="0.8" height="1.2" position="0 0 0.02" material="opacity: 0; transparent: true"></a-plane>
+        </a-entity>
+        ` : ''}
       </a-entity>
+
+      ${isPortal ? `
+      <!-- Immersive portal world container (hidden until entered) -->
+      <a-entity id="immersiveRoot" visible="false">
+        <a-entity light="type: ambient; intensity: 0.6"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="0 2 1"></a-entity>
+        <a-entity id="portalWorld"
+          gltf-model="#arModel"
+          position="0 0 0"
+          rotation="0 ${experience.model_rotation || 0} 0"
+          scale="${Math.max(1, Number(experience.model_scale || 1))} ${Math.max(1, Number(experience.model_scale || 1))} ${Math.max(1, Number(experience.model_scale || 1))}"
+          animation-mixer="clip: *; loop: repeat; clampWhenFinished: false">
+        </a-entity>
+      </a-entity>
+      ` : ''}
     </a-scene>
 
     ${experience.marker_image_url ? `
@@ -1098,6 +1131,7 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
+        const isPortal = contentType === 'portal';
         const markerGuide = document.getElementById('markerGuide');
         const markerBadge = document.getElementById('markerBadge');
 
@@ -1169,6 +1203,7 @@ export async function GET(
           contentType: contentType,
           isVideo: isVideo,
           is3D: is3D,
+          isPortal: isPortal,
           videoUrl: '${experience.video_url ? "present" : "missing"}',
           modelUrl: '${experience.model_url ? "present" : "missing"}'
         });
@@ -1379,6 +1414,30 @@ export async function GET(
                     console.error('❌ Should show 3D but model3D not found!');
                   }
                 }
+
+                // Handle Portal AR
+                if (isPortal) {
+                  const portalDoor = document.getElementById('portalDoor');
+                  const portalEnterHit = document.getElementById('portalEnterHit');
+                  if (portalDoor) {
+                    portalDoor.setAttribute('visible', 'true');
+                    portalDoor.setAttribute('animation', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 300; easing: easeOutElastic');
+                  }
+                  const enter = () => {
+                    const immersiveRoot = document.getElementById('immersiveRoot');
+                    const portalBackBtn = document.getElementById('portalBackBtn');
+                    if (immersiveRoot) immersiveRoot.setAttribute('visible', 'true');
+                    if (portalDoor) portalDoor.setAttribute('visible', 'false');
+                    // enable look controls on camera
+                    const cam = document.querySelector('a-camera');
+                    if (cam) cam.setAttribute('look-controls', 'enabled: true');
+                    if (portalBackBtn) portalBackBtn.style.display = 'block';
+                  };
+                  if (portalEnterHit) {
+                    portalEnterHit.addEventListener('click', enter, { once: true });
+                    portalEnterHit.addEventListener('touchend', (e)=>{ e.preventDefault(); enter(); }, { once: true, passive: false });
+                  }
+                }
                 
                 // No other overlays on found
               }
@@ -1420,6 +1479,28 @@ export async function GET(
 
         // Setup profile selector event listener
         // Removed profile selector logic
+
+        // Portal back button handler
+        if (isPortal) {
+          const portalBackBtn = document.getElementById('portalBackBtn');
+          if (portalBackBtn) {
+            const btn = portalBackBtn.querySelector('button');
+            const onBack = (e) => {
+              e.preventDefault();
+              const immersiveRoot = document.getElementById('immersiveRoot');
+              const portalDoor = document.getElementById('portalDoor');
+              if (immersiveRoot) immersiveRoot.setAttribute('visible', 'false');
+              if (portalDoor) portalDoor.setAttribute('visible', 'true');
+              const cam = document.querySelector('a-camera');
+              if (cam) cam.setAttribute('look-controls', 'enabled: false');
+              portalBackBtn.style.display = 'none';
+            };
+            if (btn) {
+              btn.addEventListener('click', onBack);
+              btn.addEventListener('touchend', onBack, { passive: false });
+            }
+          }
+        }
 
         setInterval(nukeLoadingScreens, 1000);
       });

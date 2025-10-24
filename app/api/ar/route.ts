@@ -73,6 +73,11 @@ export async function POST(request: NextRequest) {
         error: 'Both video_file_url and model_url are required when content_type is "both"' 
       }, { status: 400 })
     }
+    if (actualContentType === 'portal' && !model_url) {
+      return NextResponse.json({
+        error: 'model_url is required when content_type is "portal"'
+      }, { status: 400 })
+    }
     
     // Must have at least one content URL
     if (!video_file_url && !model_url) {
