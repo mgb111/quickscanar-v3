@@ -1487,9 +1487,7 @@ export async function GET(
     </div>
     ` : ''}
 
-    ${(is3D || isPortal) && experience.model_url ? `
-    <div id="surfaceBtn"><a href="?mode=surface">Place on surface</a></div>
-    ` : ''}
+    ${''}
 
     <!-- Inline surface placement overlay (hidden until opened) -->
     <div id="surfaceOverlay" aria-hidden="true"></div>
