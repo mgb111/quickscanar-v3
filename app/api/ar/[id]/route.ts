@@ -1095,6 +1095,10 @@ export async function GET(
     </div>
     ` : ''}
 
+    ${(is3D || isPortal) && experience.model_url ? `
+    <div id="surfaceBtn"><a href="?mode=surface">Place on surface</a></div>
+    ` : ''}
+
     ${isVideo ? `
     <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
       <!-- Muted: speaker with slash -->
