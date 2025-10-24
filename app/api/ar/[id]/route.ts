@@ -1319,7 +1319,10 @@ export async function GET(
           // Re-show base AR scene
           try {
             const baseSceneEl = document.getElementById('arScene');
-            if (baseSceneEl) baseSceneEl.style.display = '';
+            if (baseSceneEl) {
+              baseSceneEl.style.display = '';
+              if (typeof (baseSceneEl as any)?.play === 'function') (baseSceneEl as any).play();
+            }
           } catch {}
           // Re-show marker badge if there was one
           if (markerBadge) markerBadge.classList.add('show');
@@ -1332,11 +1335,12 @@ export async function GET(
           // Hide base AR scene while WebXR overlay is active
           const sceneEl = document.getElementById('arScene');
           // Pause base scene and release camera if it's in use by MindAR
-          try { (sceneEl as any)?.pause?.(); } catch {}
+          try { if (sceneEl && (sceneEl as any).pause) { (sceneEl as any).pause(); } } catch {}
           try {
-            document.querySelectorAll('video').forEach((v:any)=>{
-              const s: MediaStream | null = (v && v.srcObject) ? v.srcObject : null;
-              if (s && typeof s.getTracks === 'function') s.getTracks().forEach((t:MediaStreamTrack)=>{ try { t.stop(); } catch {} });
+            document.querySelectorAll('video').forEach((v)=>{
+              // @ts-ignore
+              const s = (v && v.srcObject) ? (v as any).srcObject : null;
+              if (s && typeof s.getTracks === 'function') s.getTracks().forEach((t)=>{ try { t.stop(); } catch {} });
             });
           } catch {}
           if (sceneEl) try { sceneEl.style.display = 'none'; } catch {}
