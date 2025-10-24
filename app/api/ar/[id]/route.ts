@@ -383,14 +383,20 @@ export async function GET(
 
       // Helper: attempt to start AR with retries
       let arStarted = false;
+      let startAttempts = 0;
       async function tryStartAR() {
         if (arStarted) return;
+        startAttempts++;
         try {
           // Check support first if available
           if (navigator.xr && navigator.xr.isSessionSupported) {
             const supported = await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false);
             if (!supported) {
               console.warn('immersive-ar not supported');
+              if (loadingOverlay) {
+                loadingOverlay.innerHTML = '<h2>AR Not Supported</h2><p>This device/browser does not support WebXR markerless AR. Use marker mode or try Chrome on Android / iOS 17+ Safari.</p>';
+              }
+              return;
             }
           }
           scene.enterVR();
@@ -399,6 +405,9 @@ export async function GET(
             const presenting = !!(scene.renderer && scene.renderer.xr && scene.renderer.xr.isPresenting);
             if (!presenting) {
               console.warn('AR not presenting yet, will retry...');
+              if (!arStarted && startAttempts >= 3 && loadingOverlay) {
+                loadingOverlay.innerHTML = '<h2>Tap to Start AR</h2><p>Tap anywhere to begin. If it still doesn\'t start, ensure HTTPS and camera permission are allowed for this site.</p>';
+              }
             }
           }, 300);
         } catch (error) {
@@ -445,23 +454,6 @@ export async function GET(
           
           xrSession.requestAnimationFrame(onXRFrame);
           
-          // Hide loading, show UI
-          arStarted = true;
-          if (loadingOverlay) loadingOverlay.classList.add('hidden');
-          controls.classList.add('show');
-          instructions.classList.add('show');
-          
-        } catch (error) {
-          console.error('AR setup failed:', error);
-          loadingOverlay.innerHTML = '<h2>AR Setup Failed</h2><p>Please try again or use marker mode</p>';
-        }
-      });
-
-      // Handle AR session end
-      scene.addEventListener('exit-vr', () => {
-        console.log('AR session ended');
-        window.location.href = '?';
-      });
 
       // Place/Reset object button
       placeBtn.addEventListener('click', () => {
