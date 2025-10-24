@@ -32,10 +32,11 @@ export async function GET(
     })
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const contentType = experience.content_type || 'video'
-    const isVideo = contentType === 'video' || contentType === 'both'
-    const is3D = contentType === '3d' || contentType === 'both'
-    const isPortal = contentType === 'portal'
+    const contentTypeRaw = (experience.content_type || 'video').toString().toLowerCase()
+    const contentType = contentTypeRaw
+    const isVideo = contentTypeRaw === 'video' || contentTypeRaw === 'both'
+    const is3D = contentTypeRaw === '3d' || contentTypeRaw === 'both'
+    const isPortal = contentTypeRaw === 'portal'
 
     // Markerless surface placement mode (WebXR hit-test)
     // Activate when URL has ?mode=surface and content supports 3D/portal
@@ -160,7 +161,7 @@ export async function GET(
     <meta name="msapplication-navbutton-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-title" content="AR Experience" />
     <style>
-      #markerlessBtn { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1005; }
+      #markerlessBtn { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 20000; }
       #markerlessBtn a { text-decoration: none; background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 10px 14px; font-weight: 800; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
     </style>
     <title>${experience.title} - AR Experience</title>
