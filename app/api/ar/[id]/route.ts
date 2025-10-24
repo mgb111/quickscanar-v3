@@ -148,8 +148,7 @@ export async function GET(
       return new NextResponse(markerlessHTML, { status: 200, headers: { 'Content-Type': 'text/html' } })
     }
 
-    const showMarkerlessBtn = !!experience.model_url
-    const markerlessBtnHTML = showMarkerlessBtn ? '<div id="markerlessBtn"><a href="?mode=surface">Place on surface</a></div>' : ''
+    const markerlessBtnHTML = '<div id="markerlessBtn"><a href="?mode=surface">Place on surface</a></div>'
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
