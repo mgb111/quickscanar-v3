@@ -992,6 +992,46 @@ export async function GET(
         #surfaceBtn { bottom: 80px; }
         #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
+
+      /* Surface placement overlay */
+      #surfaceOverlay {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        z-index: 20000;
+        display: none;
+      }
+      #surfaceOverlay.show { display: block; }
+      #surfaceOverlay .ui {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20001;
+        display: flex;
+        gap: 8px;
+      }
+      #surfaceOverlay .btn {
+        background: #dc2626;
+        color: #fff;
+        border: 2px solid #000;
+        border-radius: 9999px;
+        padding: 10px 14px;
+        font-weight: 700;
+        box-shadow: 0 6px 16px rgba(0,0,0,.35);
+      }
+      #surfaceOverlay #hint {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        background: rgba(0,0,0,.45);
+        padding: 10px 14px;
+        border-radius: 10px;
+        z-index: 20001;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
     </style>
   </head>
   <body>
@@ -1098,6 +1138,9 @@ export async function GET(
     ${(is3D || isPortal) && experience.model_url ? `
     <div id="surfaceBtn"><a href="?mode=surface">Place on surface</a></div>
     ` : ''}
+
+    <!-- Inline surface placement overlay (hidden until opened) -->
+    <div id="surfaceOverlay" aria-hidden="true"></div>
 
     ${isVideo ? `
     <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
@@ -1254,6 +1297,120 @@ export async function GET(
         const isPortal = contentType === 'portal';
         const markerGuide = document.getElementById('markerGuide');
         const markerBadge = document.getElementById('markerBadge');
+        const surfaceBtn = document.querySelector('#surfaceBtn a');
+        const surfaceOverlay = document.getElementById('surfaceOverlay');
+
+        const modelUrl = ${((is3D || isPortal) && experience.model_url) ? '`' + String(experience.model_url).replace(/`/g,'\`') + '`' : 'null'};
+        const modelScale = ${Number(experience.model_scale || 1.0)};
+        const modelRotation = ${Number(experience.model_rotation || 0)};
+
+        function closeSurfaceOverlay(scene) {
+          try {
+            if (scene) {
+              const sess = scene.renderer && scene.renderer.xr && scene.renderer.xr.getSession && scene.renderer.xr.getSession();
+              if (sess) sess.end().catch(()=>{});
+            }
+          } catch {} 
+          if (surfaceOverlay) {
+            surfaceOverlay.classList.remove('show');
+            surfaceOverlay.setAttribute('aria-hidden', 'true');
+            surfaceOverlay.innerHTML = '';
+          }
+          // Re-show marker badge if there was one
+          if (markerBadge) markerBadge.classList.add('show');
+        }
+
+        function openSurfaceOverlay() {
+          if (!surfaceOverlay || !modelUrl) return;
+          // Hide marker badge while in surface mode
+          if (markerBadge) markerBadge.classList.remove('show');
+          surfaceOverlay.classList.add('show');
+          surfaceOverlay.setAttribute('aria-hidden', 'false');
+          surfaceOverlay.innerHTML = `
+            <div class="ui">
+              <button id="surfaceBack" class="btn" type="button">Back</button>
+              <button id="surfacePlace" class="btn" type="button">Tap to place</button>
+            </div>
+            <div id="hint">Move your phone to scan surfaces. Tap to place.</div>
+            <a-scene renderer="colorManagement:true" xr-mode="ar" embedded webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
+              <a-entity id="cameraRig"><a-camera position="0 1.6 0"></a-camera></a-entity>
+              <a-entity id="reticle" visible="false" rotation="-90 0 0">
+                <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>
+                <a-circle radius="0.002" color="#39ff14"></a-circle>
+              </a-entity>
+              <a-entity id="placed" visible="false">
+                <a-entity id="surfaceModel" gltf-model="${'${'}modelUrl${'}'}" scale="${'${'}modelScale${'}'} ${'${'}modelScale${'}'} ${'${'}modelScale${'}'}" rotation="0 ${'${'}modelRotation${'}'} 0"></a-entity>
+              </a-entity>
+            </a-scene>
+          `;
+
+          const scene2 = surfaceOverlay.querySelector('a-scene');
+          const reticle = surfaceOverlay.querySelector('#reticle');
+          const placed = surfaceOverlay.querySelector('#placed');
+          const placeBtn = surfaceOverlay.querySelector('#surfacePlace');
+          const backBtn = surfaceOverlay.querySelector('#surfaceBack');
+
+          let xrHitTestSource = null;
+          let viewerSpace = null;
+          let referenceSpace = null;
+          let latestPose = null;
+
+          function onXRFrame(time, frame) {
+            const session = frame.session;
+            if (!referenceSpace || !xrHitTestSource) return;
+            const pose = frame.getViewerPose(referenceSpace);
+            if (!pose) return;
+            const results = frame.getHitTestResults(xrHitTestSource);
+            if (results.length > 0) {
+              const hit = results[0];
+              const hitPose = hit.getPose(referenceSpace);
+              latestPose = hitPose;
+              reticle.object3D.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+              const q = hitPose.transform.orientation;
+              const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ');
+              reticle.object3D.rotation.set(-Math.PI/2, euler.y, 0);
+              reticle.setAttribute('visible', true);
+            } else {
+              reticle.setAttribute('visible', false);
+            }
+            session.requestAnimationFrame(onXRFrame);
+          }
+
+          if (scene2) {
+            scene2.addEventListener('enter-vr', async () => {
+              const xrSession = scene2.renderer.xr.getSession();
+              if (!xrSession) return;
+              referenceSpace = await xrSession.requestReferenceSpace('local');
+              viewerSpace = await xrSession.requestReferenceSpace('viewer');
+              const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+              xrHitTestSource = hitTestSource;
+              xrSession.requestAnimationFrame(onXRFrame);
+            });
+          }
+
+          if (placeBtn) {
+            placeBtn.addEventListener('click', () => {
+              if (!latestPose) return;
+              placed.object3D.position.set(latestPose.transform.position.x, latestPose.transform.position.y, latestPose.transform.position.z);
+              placed.setAttribute('visible', true);
+              const hint = surfaceOverlay.querySelector('#hint');
+              if (hint) hint.textContent = 'Drag on screen to move/rotate. Pinch to scale.';
+            });
+          }
+
+          if (backBtn) {
+            backBtn.addEventListener('click', () => closeSurfaceOverlay(scene2));
+          }
+
+          // Try to auto-start AR session
+          try { scene2 && scene2.enterVR && scene2.enterVR(); } catch {}
+        }
+
+        if (surfaceBtn) {
+          const handler = (e) => { e.preventDefault(); openSurfaceOverlay(); };
+          surfaceBtn.addEventListener('click', handler, { passive: false });
+          surfaceBtn.addEventListener('touchend', handler, { passive: false });
+        }
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
