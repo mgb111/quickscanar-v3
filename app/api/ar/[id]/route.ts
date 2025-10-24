@@ -1331,7 +1331,21 @@ export async function GET(
           if (markerBadge) markerBadge.classList.remove('show');
           // Hide base AR scene while WebXR overlay is active
           const sceneEl = document.getElementById('arScene');
+          // Pause base scene and release camera if it's in use by MindAR
+          try { (sceneEl as any)?.pause?.(); } catch {}
+          try {
+            document.querySelectorAll('video').forEach((v:any)=>{
+              const s: MediaStream | null = (v && v.srcObject) ? v.srcObject : null;
+              if (s && typeof s.getTracks === 'function') s.getTracks().forEach((t:MediaStreamTrack)=>{ try { t.stop(); } catch {} });
+            });
+          } catch {}
           if (sceneEl) try { sceneEl.style.display = 'none'; } catch {}
+          // Basic support check
+          try {
+            if (!(navigator as any).xr) {
+              console.warn('WebXR not available on this browser.');
+            }
+          } catch {}
           surfaceOverlay.classList.add('show');
           surfaceOverlay.setAttribute('aria-hidden', 'false');
           surfaceOverlay.innerHTML = ''
@@ -1340,7 +1354,7 @@ export async function GET(
             + '  <button id="surfacePlace" class="btn" type="button">Tap to place</button>'
             + '</div>'
             + '<div id="hint">Move your phone to scan surfaces. Tap to place.</div>'
-            + '<a-scene renderer="colorManagement:true" xr-mode="ar" embedded webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">'
+            + '<a-scene renderer="colorManagement:true" xr-mode="ar" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">'
             + '  <a-entity id="cameraRig"><a-camera position="0 1.6 0"></a-camera></a-entity>'
             + '  <a-entity id="reticle" visible="false" rotation="-90 0 0">'
             + '    <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>'
@@ -1384,6 +1398,12 @@ export async function GET(
           }
 
           if (scene2) {
+            // Start AR session after scene is ready
+            const startAR = () => { try { scene2.enterVR && scene2.enterVR(); } catch {} };
+            const onLoaded = () => { setTimeout(startAR, 0); scene2.removeEventListener('loaded', onLoaded); };
+            scene2.addEventListener('loaded', onLoaded);
+
+            // WebXR setup when session starts
             scene2.addEventListener('enter-vr', async () => {
               const xrSession = scene2.renderer.xr.getSession();
               if (!xrSession) return;
@@ -1393,6 +1413,9 @@ export async function GET(
               xrHitTestSource = hitTestSource;
               xrSession.requestAnimationFrame(onXRFrame);
             });
+            // Fallback: tap anywhere to start if blocked by autoplay policies
+            const onceTap = () => { startAR(); surfaceOverlay.removeEventListener('click', onceTap); };
+            surfaceOverlay.addEventListener('click', onceTap);
           }
 
           if (placeBtn) {
