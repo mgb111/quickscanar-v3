@@ -65,6 +65,7 @@ export async function GET(
     </style>
   </head>
   <body>
+    <div id="markerlessBtn"><a href="?mode=surface">Place on surface</a></div>
     <div id="ui">
       <button id="placeBtn" class="btn">Tap to place</button>
       <a href="?" class="btn" style="text-decoration:none;">Use Marker Mode</a>
@@ -147,6 +148,7 @@ export async function GET(
       return new NextResponse(markerlessHTML, { status: 200, headers: { 'Content-Type': 'text/html' } })
     }
 
+    const showMarkerlessBtn = (is3D || isPortal) && !!experience.model_url
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -157,6 +159,10 @@ export async function GET(
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="msapplication-navbutton-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-title" content="AR Experience" />
+    <style>
+      #markerlessBtn { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1005; display: ${'${showMarkerlessBtn ? "block" : "none"}'}; }
+      #markerlessBtn a { text-decoration: none; background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 10px 14px; font-weight: 800; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    </style>
     <title>${experience.title} - AR Experience</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
