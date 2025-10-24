@@ -278,14 +278,16 @@ export default function CreateExperience() {
       }
     }
 
-    if (!mindFile) {
-      toast.error('Please upload a mind file')
-      return
-    }
-
-    if (!markerImageFile) {
-      toast.error('Please upload a marker image')
-      return
+    // For video (with or without 3D), require mind + marker (image-tracked video UX)
+    if (videoFile) {
+      if (!mindFile) {
+        toast.error('Please upload a mind file for video experiences')
+        return
+      }
+      if (!markerImageFile) {
+        toast.error('Please upload a marker image for video experiences')
+        return
+      }
     }
 
     setSubmitting(true)
