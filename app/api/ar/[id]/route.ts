@@ -32,475 +32,10 @@ export async function GET(
     })
 
     const mindFileUrl = experience.mind_file_url || 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind'
-    const contentTypeRaw = (experience.content_type || 'video').toString().toLowerCase()
-    const contentType = contentTypeRaw
-    const isVideo = contentTypeRaw === 'video' || contentTypeRaw === 'both'
-    const is3D = contentTypeRaw === '3d' || contentTypeRaw === 'both'
-    const isPortal = contentTypeRaw === 'portal'
+    const contentType = experience.content_type || 'video'
+    const isVideo = contentType === 'video' || contentType === 'both'
+    const is3D = contentType === '3d' || contentType === 'both'
 
-    // Markerless surface placement mode (WebXR hit-test)
-    // Activate when URL has ?mode=surface and content supports 3D/portal
-    const urlObj = new URL(request.url)
-    const modeParam = (urlObj.searchParams.get('mode') || '').toLowerCase()
-    const useMarkerless = (is3D || isPortal) && modeParam === 'surface' && !!experience.model_url
-
-    if (useMarkerless) {
-      const modelUrl = experience.model_url
-      const modelScale = Number(experience.model_scale || 1.0)
-      const modelRotation = Number(experience.model_rotation || 0)
-      const linkUrl = experience.link_url || ''
-
-      const markerlessHTML = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <title>${experience.title} - AR (Surface Placement)</title>
-    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
-    <style>
-      body { margin:0; overflow:hidden; background:#000; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-      
-      /* Loading overlay */
-      #loadingOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: #000;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        text-align: center;
-      }
-      
-      #loadingOverlay.hidden { display: none; }
-      
-      .spinner {
-        width: 50px;
-        height: 50px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top: 3px solid #fff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* UI Controls */
-      #controls {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 100;
-        display: flex;
-        gap: 12px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      
-      #controls.show { opacity: 1; }
-      
-      .control-btn {
-        background: rgba(0,0,0,0.8);
-        color: #fff;
-        border: 2px solid #fff;
-        border-radius: 25px;
-        padding: 12px 20px;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        backdrop-filter: blur(10px);
-        transition: all 0.2s ease;
-      }
-      
-      .control-btn:hover { background: rgba(255,255,255,0.2); }
-      .control-btn:active { transform: scale(0.95); }
-      
-      #placeBtn {
-        background: #dc2626;
-        border-color: #dc2626;
-      }
-      
-      #placeBtn:hover { background: #b91c1c; }
-      
-      /* Instructions */
-      #instructions {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #fff;
-        background: rgba(0,0,0,0.8);
-        padding: 12px 20px;
-        border-radius: 25px;
-        font-size: 14px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-        z-index: 100;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-      
-      #instructions.show { opacity: 1; }
-      
-      /* Link button */
-      #linkBtn {
-        position: fixed;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: ${linkUrl ? 'block' : 'none'};
-        z-index: 100;
-      }
-      
-      #linkBtn a {
-        text-decoration: none;
-        background: #dc2626;
-        color: #fff;
-        border: 2px solid #fff;
-        border-radius: 25px;
-        padding: 12px 20px;
-        font-weight: 700;
-        font-size: 14px;
-        backdrop-filter: blur(10px);
-      }
-      
-      /* A-Frame scene */
-      a-scene {
-        width: 100vw;
-        height: 100vh;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Loading overlay -->
-    <div id="loadingOverlay">
-      <div class="spinner"></div>
-      <h2>Starting AR Camera...</h2>
-      <p>Please allow camera access when prompted</p>
-    </div>
-    
-    <!-- Controls -->
-    <div id="controls">
-      <button id="backBtn" class="control-btn">← Back to Marker</button>
-      <button id="placeBtn" class="control-btn">Tap to Place</button>
-    </div>
-    
-    <!-- Instructions -->
-    <div id="instructions">
-      Move your device to scan surfaces. Tap "Place" when you see the green target.
-    </div>
-    
-    <!-- Link button -->
-    <div id="linkBtn">
-      <a href="${linkUrl}" target="_blank" rel="noopener">Open Link</a>
-    </div>
-    
-    <!-- A-Frame AR Scene -->
-    <a-scene 
-      renderer="colorManagement:true; antialias: true; alpha: true" 
-      xr-mode="ar" 
-      embedded 
-      device-orientation-permission-ui="enabled: false"
-      vr-mode-ui="enabled: false"
-      loading-screen="enabled: false"
-      webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">
-      
-      <a-entity id="cameraRig">
-        <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
-      </a-entity>
-
-      <!-- Surface detection reticle -->
-      <a-entity id="reticle" visible="false" rotation="-90 0 0">
-        <a-ring radius-inner="0.04" radius-outer="0.06" color="#39ff14" opacity="0.8"></a-ring>
-        <a-circle radius="0.003" color="#39ff14"></a-circle>
-        <a-ring radius-inner="0.08" radius-outer="0.09" color="#39ff14" opacity="0.4"></a-ring>
-      </a-entity>
-
-      <!-- Placed model container -->
-      <a-entity id="placed" visible="false">
-        <a-entity id="model"
-                  gltf-model="${modelUrl}"
-                  scale="${modelScale} ${modelScale} ${modelScale}"
-                  rotation="0 ${modelRotation} 0"
-                  gesture-controls="enabled: true; dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.1; maxScale: 3">
-        </a-entity>
-      </a-entity>
-    </a-scene>
-
-    <script>
-      // Register gesture controls component for placed objects
-      AFRAME.registerComponent('gesture-controls', {
-        schema: {
-          enabled: { type: 'boolean', default: true },
-          dragSpeed: { type: 'number', default: 0.003 },
-          rotateSpeed: { type: 'number', default: 1.0 },
-          minScale: { type: 'number', default: 0.1 },
-          maxScale: { type: 'number', default: 3.0 }
-        },
-        init: function () {
-          this.onTouchStart = this.onTouchStart.bind(this);
-          this.onTouchMove = this.onTouchMove.bind(this);
-          this.onTouchEnd = this.onTouchEnd.bind(this);
-          
-          this.el.addEventListener('touchstart', this.onTouchStart);
-          this.el.addEventListener('touchmove', this.onTouchMove);
-          this.el.addEventListener('touchend', this.onTouchEnd);
-          
-          this.startTouches = [];
-          this.startPosition = new THREE.Vector3();
-          this.startScale = new THREE.Vector3();
-          this.startRotation = 0;
-        },
-        onTouchStart: function(e) {
-          if (!this.data.enabled || !this.el.getAttribute('visible')) return;
-          e.preventDefault();
-          this.startTouches = Array.from(e.touches);
-          this.startPosition.copy(this.el.object3D.position);
-          this.startScale.copy(this.el.object3D.scale);
-          const rot = this.el.getAttribute('rotation');
-          this.startRotation = rot ? rot.y : 0;
-        },
-        onTouchMove: function(e) {
-          if (!this.data.enabled || this.startTouches.length === 0) return;
-          e.preventDefault();
-          
-          if (e.touches.length === 1 && this.startTouches.length === 1) {
-            // Single finger drag - move object
-            const dx = (e.touches[0].clientX - this.startTouches[0].clientX) * this.data.dragSpeed;
-            const dz = (e.touches[0].clientY - this.startTouches[0].clientY) * this.data.dragSpeed;
-            this.el.object3D.position.set(
-              this.startPosition.x + dx,
-              this.startPosition.y,
-              this.startPosition.z + dz
-            );
-          } else if (e.touches.length === 2 && this.startTouches.length === 2) {
-            // Two finger pinch/rotate
-            const currentDist = this.getDistance(e.touches[0], e.touches[1]);
-            const startDist = this.getDistance(this.startTouches[0], this.startTouches[1]);
-            const scaleFactor = currentDist / startDist;
-            
-            let newScale = this.startScale.x * scaleFactor;
-            newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale));
-            this.el.object3D.scale.set(newScale, newScale, newScale);
-            
-            // Rotation
-            const currentAngle = this.getAngle(e.touches[0], e.touches[1]);
-            const startAngle = this.getAngle(this.startTouches[0], this.startTouches[1]);
-            const deltaAngle = (currentAngle - startAngle) * this.data.rotateSpeed * (180 / Math.PI);
-            const newRotation = this.startRotation + deltaAngle;
-            this.el.setAttribute('rotation', { x: 0, y: newRotation, z: 0 });
-          }
-        },
-        onTouchEnd: function(e) {
-          if (e.touches.length === 0) {
-            this.startTouches = [];
-          }
-        },
-        getDistance: function(touch1, touch2) {
-          const dx = touch2.clientX - touch1.clientX;
-          const dy = touch2.clientY - touch1.clientY;
-          return Math.sqrt(dx * dx + dy * dy);
-        },
-        getAngle: function(touch1, touch2) {
-          return Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
-        }
-      });
-
-      // Main AR functionality
-      const scene = document.querySelector('a-scene');
-      const reticle = document.getElementById('reticle');
-      const placed = document.getElementById('placed');
-      const placeBtn = document.getElementById('placeBtn');
-      const backBtn = document.getElementById('backBtn');
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const controls = document.getElementById('controls');
-      const instructions = document.getElementById('instructions');
-      
-      let xrHitTestSource = null;
-      let viewerSpace = null;
-      let referenceSpace = null;
-      let latestPose = null;
-      let isPlaced = false;
-
-      // WebXR hit test frame handler
-      function onXRFrame(time, frame) {
-        const session = frame.session;
-        if (!referenceSpace || !xrHitTestSource) return;
-        
-        const pose = frame.getViewerPose(referenceSpace);
-        if (!pose) return;
-        
-        const results = frame.getHitTestResults(xrHitTestSource);
-        if (results.length > 0 && !isPlaced) {
-          const hit = results[0];
-          const hitPose = hit.getPose(referenceSpace);
-          latestPose = hitPose;
-          
-          reticle.object3D.position.set(
-            hitPose.transform.position.x,
-            hitPose.transform.position.y,
-            hitPose.transform.position.z
-          );
-          
-          const q = hitPose.transform.orientation;
-          const euler = new THREE.Euler().setFromQuaternion(
-            new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ'
-          );
-          reticle.object3D.rotation.set(-Math.PI/2, euler.y, 0);
-          reticle.setAttribute('visible', true);
-        } else if (!isPlaced) {
-          reticle.setAttribute('visible', false);
-        }
-        
-        session.requestAnimationFrame(onXRFrame);
-      }
-
-      // Prime camera permission (helps some browsers) then start AR
-      async function primeCameraPermission() {
-        if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return;
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-          // Immediately stop tracks; WebXR will control the camera
-          try { stream.getTracks().forEach(t => t.stop()); } catch {}
-          if (loadingOverlay) {
-            loadingOverlay.querySelector('h2')?.replaceChildren(document.createTextNode('Starting AR...'));
-            const p = loadingOverlay.querySelector('p');
-            if (p) p.textContent = 'Initializing camera and surfaces...';
-          }
-        } catch (err) {
-          console.warn('getUserMedia failed or blocked:', err);
-        }
-      }
-
-      // Helper: attempt to start AR with retries
-      let arStarted = false;
-      let startAttempts = 0;
-      async function tryStartAR() {
-        if (arStarted) return;
-        startAttempts++;
-        try {
-          // Check support first if available
-          if (navigator.xr && navigator.xr.isSessionSupported) {
-            const supported = await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false);
-            if (!supported) {
-              console.warn('immersive-ar not supported');
-              if (loadingOverlay) {
-                loadingOverlay.innerHTML = '<h2>AR Not Supported</h2><p>This device/browser does not support WebXR markerless AR. Use marker mode or try Chrome on Android / iOS 17+ Safari.</p>';
-              }
-              return;
-            }
-          }
-          scene.enterVR();
-          // Give some time for session to attach
-          setTimeout(() => {
-            const presenting = !!(scene.renderer && scene.renderer.xr && scene.renderer.xr.isPresenting);
-            if (!presenting) {
-              console.warn('AR not presenting yet, will retry...');
-              if (!arStarted && startAttempts >= 3 && loadingOverlay) {
-                loadingOverlay.innerHTML = '<h2>Tap to Start AR</h2><p>Tap anywhere to begin. If it still doesn\'t start, ensure HTTPS and camera permission are allowed for this site.</p>';
-              }
-            }
-          }, 300);
-        } catch (error) {
-          console.error('Failed to start AR:', error);
-          if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-            loadingOverlay.innerHTML = '<h2>Secure Context Required</h2><p>AR requires HTTPS. Open this page over https://</p>';
-          } else {
-            loadingOverlay.innerHTML = '<h2>Tap to Start AR</h2><p>If AR did not auto-start, tap anywhere to begin.</p>';
-          }
-        }
-      }
-
-      // Auto-start AR when scene is ready; also add a fallback tap
-      scene.addEventListener('loaded', async () => {
-        console.log('Scene loaded, starting AR...');
-        // Prime camera permission first (non-blocking)
-        await primeCameraPermission();
-        // Immediate attempt
-        tryStartAR();
-        // Retry a couple times in case of race conditions
-        setTimeout(tryStartAR, 600);
-        setTimeout(tryStartAR, 1200);
-      });
-
-      // Tap-to-start fallback (some browsers require a user gesture)
-      const tapStartOnce = () => { tryStartAR(); document.removeEventListener('pointerdown', tapStartOnce); };
-      document.addEventListener('pointerdown', tapStartOnce, { passive: true, once: true });
-      if (loadingOverlay) {
-        const loTapOnce = () => { tryStartAR(); loadingOverlay.removeEventListener('click', loTapOnce); };
-        loadingOverlay.addEventListener('click', loTapOnce, { passive: true, once: true });
-      }
-
-      // Handle AR session start
-      scene.addEventListener('enter-vr', async () => {
-        console.log('AR session started');
-        try {
-          const xrSession = scene.renderer.xr.getSession();
-          if (!xrSession) return;
-          
-          referenceSpace = await xrSession.requestReferenceSpace('local');
-          viewerSpace = await xrSession.requestReferenceSpace('viewer');
-          const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-          xrHitTestSource = hitTestSource;
-          
-          xrSession.requestAnimationFrame(onXRFrame);
-          
-
-      // Place/Reset object button
-      placeBtn.addEventListener('click', () => {
-        if (!isPlaced) {
-          // Place object
-          if (!latestPose) {
-            alert('No surface detected. Move your device to scan for surfaces.');
-            return;
-          }
-          
-          placed.object3D.position.set(
-            latestPose.transform.position.x,
-            latestPose.transform.position.y,
-            latestPose.transform.position.z
-          );
-          placed.setAttribute('visible', true);
-          reticle.setAttribute('visible', false);
-          isPlaced = true;
-          
-          placeBtn.textContent = 'Reset Position';
-          instructions.textContent = 'Object placed! Use touch gestures to move, scale, and rotate.';
-        } else {
-          // Reset placement
-          placed.setAttribute('visible', false);
-          isPlaced = false;
-          placeBtn.textContent = 'Tap to Place';
-          instructions.textContent = 'Move your device to scan surfaces. Tap "Place" when you see the green target.';
-        }
-      });
-
-      // Back to marker mode
-      backBtn.addEventListener('click', () => {
-        window.location.href = '?';
-      });
-
-      // Handle errors
-      window.addEventListener('error', (e) => {
-        console.error('AR Error:', e.error);
-      });
-    </script>
-  </body>
-</html>`
-
-      return new NextResponse(markerlessHTML, { status: 200, headers: { 'Content-Type': 'text/html' } })
-    }
-
-    const markerlessBtnHTML = '<div id="markerlessBtn"><a href="?mode=surface">Place on surface</a></div>'
     const arHTML = `<!DOCTYPE html>
 <html>
   <head>
@@ -511,10 +46,6 @@ export async function GET(
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="msapplication-navbutton-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-title" content="AR Experience" />
-    <style>
-      #markerlessBtn { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 20000; }
-      #markerlessBtn a { text-decoration: none; background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 10px 14px; font-weight: 800; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-    </style>
     <title>${experience.title} - AR Experience</title>
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -1244,17 +775,50 @@ export async function GET(
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
       
-      /* Minimal marker badge (top-right) */
-      #markerBadge { position: fixed; top: 16px; right: 16px; z-index: 1004; display: none; align-items: center; gap: 16px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #000; border-radius: 14px; padding: 12px 20px; backdrop-filter: blur(6px); pointer-events: none; }
-      #markerBadge.show { display: inline-flex; }
-      #markerBadge img { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
-      #markerBadge .txt { font-size: 24px; font-weight: 700; opacity: 0.98; letter-spacing: 0.2px; }
-
-      /* Audio toggle (bottom-right) */
-      #audioToggle { position: fixed; right: 16px; bottom: 16px; z-index: 1200; background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #000; border-radius: 9999px; width: 56px; height: 56px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
-      #audioToggle.show { display: flex; }
-      #audioToggle:active { transform: scale(0.96); }
-      #audioToggle svg { width: 26px; height: 26px; display: block; }
+      /* Marker guidance overlay */
+      #markerGuide {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        background: transparent; /* transparent backdrop */
+        backdrop-filter: none;
+        padding: 20px;
+        pointer-events: none; /* let AR taps pass through if needed */
+      }
+      #markerGuide.show { display: flex; }
+      #markerGuideInner {
+        background: transparent; /* transparent panel */
+        border: 0;
+        border-radius: 16px;
+        box-shadow: none;
+        max-width: 90vw;
+        width: 520px;
+        color: #fff;
+        overflow: hidden;
+      }
+      #markerGuideHeader {
+        padding: 12px 16px;
+        font-weight: 800;
+        font-size: 16px;
+        background: transparent;
+        border-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      }
+      #markerGuideBody { padding: 16px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
+      #markerImgWrap { width: 110px; height: 110px; background: transparent; border: 0; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+      #markerImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+      #markerHint { font-size: 12px; opacity: 0.9; margin-top: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+      @media (max-width: 480px) {
+        #markerGuideBody { grid-template-columns: 1fr; }
+        #markerImgWrap { width: 100%; height: 160px; }
+      }
 
       /* 3D Annotations */
       .hotspot {
@@ -1344,49 +908,16 @@ export async function GET(
         #surfaceBtn { bottom: 80px; }
         #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
-
-      /* Surface placement overlay */
-      #surfaceOverlay {
-        position: fixed;
-        inset: 0;
-        background: #000;
-        z-index: 20000;
-        display: none;
-      }
-      #surfaceOverlay.show { display: block; }
-      #surfaceOverlay .ui {
-        position: fixed;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 20001;
-        display: flex;
-        gap: 8px;
-      }
-      #surfaceOverlay .btn {
-        background: #dc2626;
-        color: #fff;
-        border: 2px solid #000;
-        border-radius: 9999px;
-        padding: 10px 14px;
-        font-weight: 700;
-        box-shadow: 0 6px 16px rgba(0,0,0,.35);
-      }
-      #surfaceOverlay #hint {
-        position: fixed;
-        bottom: 18px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #fff;
-        background: rgba(0,0,0,.45);
-        padding: 10px 14px;
-        border-radius: 10px;
-        z-index: 20001;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      }
     </style>
   </head>
   <body>
+    <div class="status-indicator" id="status-indicator">
+      <h3 id="status-title">Point camera at your marker</h3>
+      <p id="status-message">Look for your uploaded image</p>
+    </div>
+
+
+
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
@@ -1413,13 +944,7 @@ export async function GET(
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
         ` : ''}
-
-    ${isPortal ? `
-    <div id="portalBackBtn" style="position: fixed; top: 16px; left: 16px; z-index: 1200; display: none;">
-      <button style="background:#111827;color:#fff;border:2px solid #000;border-radius:9999px;padding:10px 16px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.3);">Exit portal</button>
-    </div>
-    ` : ''}
-        ${(is3D || isPortal) && experience.model_url ? `
+        ${is3D && experience.model_url ? `
         <a-asset-item id="arModel" src="${experience.model_url}"></a-asset-item>
         ` : ''}
       </a-assets>
@@ -1451,63 +976,52 @@ export async function GET(
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
         ></a-entity>
         ` : ''}
-        ${isPortal ? `
-        <a-entity id="portalDoor" visible="false" position="0 0 0.01">
-          <a-torus
-            radius="0.5"
-            radius-tubular="0.03"
-            rotation="90 0 0"
-            material="color: #dc2626; metalness: 0.2; roughness: 0.4; emissive: #7f1d1d; emissiveIntensity: 0.3"
-          ></a-torus>
-          <a-plane id="portalEnterHit" width="0.8" height="1.2" position="0 0 0.02" material="opacity: 0; transparent: true"></a-plane>
-        </a-entity>
-        ` : ''}
       </a-entity>
-
-      ${isPortal ? `
-      <!-- Immersive portal world container (hidden until entered) -->
-      <a-entity id="immersiveRoot" visible="false">
-        <a-entity light="type: ambient; intensity: 0.6"></a-entity>
-        <a-entity light="type: directional; intensity: 0.8" position="0 2 1"></a-entity>
-        <a-entity id="portalWorld"
-          gltf-model="#arModel"
-          position="0 0 0"
-          rotation="0 ${experience.model_rotation || 0} 0"
-          scale="${Math.max(1, Number(experience.model_scale || 1))} ${Math.max(1, Number(experience.model_scale || 1))} ${Math.max(1, Number(experience.model_scale || 1))}"
-          animation-mixer="clip: *; loop: repeat; clampWhenFinished: false">
-        </a-entity>
-      </a-entity>
-      ` : ''}
     </a-scene>
 
-    ${experience.marker_image_url ? `
-    <div id="markerBadge" class="show" aria-label="Scan the marker">
-      <img src="${experience.marker_image_url}" alt="Marker" />
-      <span class="txt">Scan this marker</span>
+    ${experience.link_url ? `
+    <div id="externalLinkBtn">
+      <a href="${experience.link_url}" target="_blank" rel="noopener noreferrer" aria-label="Open link">
+        Open Link
+      </a>
     </div>
     ` : ''}
 
-    ${''}
-
-    <!-- Inline surface placement overlay (hidden until opened) -->
-    <div id="surfaceOverlay" aria-hidden="true"></div>
+    ${is3D && experience.model_url ? `
+    <div id="surfaceBtn">
+      <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
+    </div>
+    ` : ''}
 
     ${isVideo ? `
-    <button id="audioToggle" class="show" aria-label="Toggle audio" title="Toggle audio">
-      <!-- Muted: speaker with slash -->
-      <svg id="iconMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <line x1="23" y1="9" x2="17" y2="15"></line>
-        <line x1="17" y1="9" x2="23" y2="15"></line>
-      </svg>
-      <!-- Unmuted: speaker with waves -->
-      <svg id="iconUnmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none" aria-hidden="true">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <path d="M15 9a3 3 0 0 1 0 6"></path>
-        <path d="M17 5a7 7 0 0 1 0 14"></path>
-      </svg>
-    </button>
+    <div id="unmuteOverlay">
+      <button id="unmuteBtn">Tap to Enable Sound</button>
+      <p class="unmute-text">Tap anywhere to unmute the AR video</p>
+    </div>
     ` : ''}
+
+    ${experience.marker_image_url ? `
+    <div id="markerGuide" role="dialog" aria-live="polite">
+      <div id="markerGuideInner">
+        <div id="markerGuideHeader">Scan the Marker</div>
+        <div id="markerGuideBody">
+          <div id="markerImgWrap">
+            <img src="${experience.marker_image_url}" alt="Marker image to scan" />
+          </div>
+          <div id="markerText">
+            Point your camera at this marker image to start the AR experience.
+            <div id="markerHint">Make sure the whole marker is visible and well lit.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- Annotation panel (3D model info) -->
+    <div id="annotationPanel" role="dialog" aria-live="polite">
+      <div class="title"></div>
+      <div class="desc"></div>
+    </div>
 
     <script>
       async function preflightMind(url) {
@@ -1644,157 +1158,18 @@ export async function GET(
         const contentType = '${contentType}';
         const isVideo = contentType === 'video' || contentType === 'both';
         const is3D = contentType === '3d' || contentType === 'both';
-        const isPortal = contentType === 'portal';
         const markerGuide = document.getElementById('markerGuide');
-        const markerBadge = document.getElementById('markerBadge');
-        const surfaceBtn = document.querySelector('#surfaceBtn a');
-        const surfaceOverlay = document.getElementById('surfaceOverlay');
-
-        const modelUrl = ${((is3D || isPortal) && experience.model_url) ? '`' + String(experience.model_url).replace(/`/g,'\`') + '`' : 'null'};
-        const modelScale = ${Number(experience.model_scale || 1.0)};
-        const modelRotation = ${Number(experience.model_rotation || 0)};
-
-        function closeSurfaceOverlay(scene) {
-          try {
-            if (scene) {
-              const sess = scene.renderer && scene.renderer.xr && scene.renderer.xr.getSession && scene.renderer.xr.getSession();
-              if (sess) sess.end().catch(()=>{});
-            }
-          } catch {} 
-          if (surfaceOverlay) {
-            surfaceOverlay.classList.remove('show');
-            surfaceOverlay.setAttribute('aria-hidden', 'true');
-            surfaceOverlay.innerHTML = '';
-          }
-          // Re-show base AR scene
-          try {
-            const baseSceneEl = document.getElementById('arScene');
-            if (baseSceneEl) {
-              baseSceneEl.style.display = '';
-              if (typeof (baseSceneEl as any)?.play === 'function') (baseSceneEl as any).play();
-            }
-          } catch {}
-          // Re-show marker badge if there was one
-          if (markerBadge) markerBadge.classList.add('show');
-        }
-
-        function openSurfaceOverlay() {
-          if (!surfaceOverlay || !modelUrl) return;
-          // Hide marker badge while in surface mode
-          if (markerBadge) markerBadge.classList.remove('show');
-          // Hide base AR scene while WebXR overlay is active
-          const sceneEl = document.getElementById('arScene');
-          // Pause base scene and release camera if it's in use by MindAR
-          try { if (sceneEl && (sceneEl as any).pause) { (sceneEl as any).pause(); } } catch {}
-          try {
-            document.querySelectorAll('video').forEach((v)=>{
-              // @ts-ignore
-              const s = (v && v.srcObject) ? (v as any).srcObject : null;
-              if (s && typeof s.getTracks === 'function') s.getTracks().forEach((t)=>{ try { t.stop(); } catch {} });
-            });
-          } catch {}
-          if (sceneEl) try { sceneEl.style.display = 'none'; } catch {}
-          // Basic support check
-          try {
-            if (!(navigator as any).xr) {
-              console.warn('WebXR not available on this browser.');
-            }
-          } catch {}
-          surfaceOverlay.classList.add('show');
-          surfaceOverlay.setAttribute('aria-hidden', 'false');
-          surfaceOverlay.innerHTML = ''
-            + '<div class="ui">'
-            + '  <button id="surfaceBack" class="btn" type="button">Back</button>'
-            + '  <button id="surfacePlace" class="btn" type="button">Tap to place</button>'
-            + '</div>'
-            + '<div id="hint">Move your phone to scan surfaces. Tap to place.</div>'
-            + '<a-scene renderer="colorManagement:true" xr-mode="ar" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" webxr="optionalFeatures: hit-test; requiredFeatures: hit-test">'
-            + '  <a-entity id="cameraRig"><a-camera position="0 1.6 0"></a-camera></a-entity>'
-            + '  <a-entity id="reticle" visible="false" rotation="-90 0 0">'
-            + '    <a-ring radius-inner="0.045" radius-outer="0.05" color="#39ff14"></a-ring>'
-            + '    <a-circle radius="0.002" color="#39ff14"></a-circle>'
-            + '  </a-entity>'
-            + '  <a-entity id="placed" visible="false">'
-            + '    <a-entity id="surfaceModel" gltf-model="' + modelUrl + '" scale="' + modelScale + ' ' + modelScale + ' ' + modelScale + '" rotation="0 ' + modelRotation + ' 0"></a-entity>'
-            + '  </a-entity>'
-            + '</a-scene>';
-
-          const scene2 = surfaceOverlay.querySelector('a-scene');
-          const reticle = surfaceOverlay.querySelector('#reticle');
-          const placed = surfaceOverlay.querySelector('#placed');
-          const placeBtn = surfaceOverlay.querySelector('#surfacePlace');
-          const backBtn = surfaceOverlay.querySelector('#surfaceBack');
-
-          let xrHitTestSource = null;
-          let viewerSpace = null;
-          let referenceSpace = null;
-          let latestPose = null;
-
-          function onXRFrame(time, frame) {
-            const session = frame.session;
-            if (!referenceSpace || !xrHitTestSource) return;
-            const pose = frame.getViewerPose(referenceSpace);
-            if (!pose) return;
-            const results = frame.getHitTestResults(xrHitTestSource);
-            if (results.length > 0) {
-              const hit = results[0];
-              const hitPose = hit.getPose(referenceSpace);
-              latestPose = hitPose;
-              reticle.object3D.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-              const q = hitPose.transform.orientation;
-              const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w), 'YXZ');
-              reticle.object3D.rotation.set(-Math.PI/2, euler.y, 0);
-              reticle.setAttribute('visible', true);
-            } else {
-              reticle.setAttribute('visible', false);
-            }
-            session.requestAnimationFrame(onXRFrame);
-          }
-
-          if (scene2) {
-            // Start AR session after scene is ready
-            const startAR = () => { try { scene2.enterVR && scene2.enterVR(); } catch {} };
-            const onLoaded = () => { setTimeout(startAR, 0); scene2.removeEventListener('loaded', onLoaded); };
-            scene2.addEventListener('loaded', onLoaded);
-
-            // WebXR setup when session starts
-            scene2.addEventListener('enter-vr', async () => {
-              const xrSession = scene2.renderer.xr.getSession();
-              if (!xrSession) return;
-              referenceSpace = await xrSession.requestReferenceSpace('local');
-              viewerSpace = await xrSession.requestReferenceSpace('viewer');
-              const hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-              xrHitTestSource = hitTestSource;
-              xrSession.requestAnimationFrame(onXRFrame);
-            });
-            // Fallback: tap anywhere to start if blocked by autoplay policies
-            const onceTap = () => { startAR(); surfaceOverlay.removeEventListener('click', onceTap); };
-            surfaceOverlay.addEventListener('click', onceTap);
-          }
-
-          if (placeBtn) {
-            placeBtn.addEventListener('click', () => {
-              if (!latestPose) return;
-              placed.object3D.position.set(latestPose.transform.position.x, latestPose.transform.position.y, latestPose.transform.position.z);
-              placed.setAttribute('visible', true);
-              const hint = surfaceOverlay.querySelector('#hint');
-              if (hint) hint.textContent = 'Drag on screen to move/rotate. Pinch to scale.';
-            });
-          }
-
-          if (backBtn) {
-            backBtn.addEventListener('click', () => closeSurfaceOverlay(scene2));
-          }
-
-          // Try to auto-start AR session
-          try { scene2 && scene2.enterVR && scene2.enterVR(); } catch {}
-        }
-
-        if (surfaceBtn) {
-          const handler = (e) => { e.preventDefault(); openSurfaceOverlay(); };
-          surfaceBtn.addEventListener('click', handler, { passive: false });
-          surfaceBtn.addEventListener('touchend', handler, { passive: false });
-        }
+        const annotationPanel = document.getElementById('annotationPanel');
+        const setAnnotation = (title, desc) => {
+          if (!annotationPanel) return;
+          const t = annotationPanel.querySelector('.title');
+          const d = annotationPanel.querySelector('.desc');
+          if (t) t.textContent = title || 'Info';
+          if (d) d.textContent = desc || '';
+          annotationPanel.classList.add('show');
+        };
+        const hideAnnotation = () => { if (annotationPanel) annotationPanel.classList.remove('show'); };
+        if (annotationPanel) annotationPanel.addEventListener('click', hideAnnotation);
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
@@ -1853,7 +1228,13 @@ export async function GET(
 
         // Defer showing external link until marker is scanned (handled in targetFound)
 
-        // No overlays: keep UI minimal
+        // Brief initializing message (no user interaction needed)
+        showStatus('Initializing...', 'Starting camera and tracker');
+        setTimeout(() => {
+          hideStatus();
+          // Show marker guide while scanning
+          if (markerGuide) markerGuide.classList.add('show');
+        }, 800);
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -1864,7 +1245,6 @@ export async function GET(
           contentType: contentType,
           isVideo: isVideo,
           is3D: is3D,
-          isPortal: isPortal,
           videoUrl: '${experience.video_url ? "present" : "missing"}',
           modelUrl: '${experience.model_url ? "present" : "missing"}'
         });
@@ -1903,43 +1283,42 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Audio toggle handler (bottom-right)
-          const audioToggle = document.getElementById('audioToggle');
-          const iconMuted = document.getElementById('iconMuted');
-          const iconUnmuted = document.getElementById('iconUnmuted');
-          const updateAudioIcon = () => {
-            if (!audioToggle || !iconMuted || !iconUnmuted) return;
-            const isMuted = video.muted || video.volume === 0;
-            iconMuted.style.display = isMuted ? 'block' : 'none';
-            iconUnmuted.style.display = isMuted ? 'none' : 'block';
-            audioToggle.setAttribute('aria-pressed', String(!isMuted));
-            audioToggle.setAttribute('title', isMuted ? 'Unmute' : 'Mute');
+          // Safari unmute handler
+          const unmuteOverlay = document.getElementById('unmuteOverlay');
+          const unmuteBtn = document.getElementById('unmuteBtn');
+          let hasUnmuted = false;
+          
+          const handleUnmute = () => {
+            if (!hasUnmuted && video) {
+              video.muted = false;
+              video.play().catch(e => console.log('Play after unmute:', e));
+              hasUnmuted = true;
+              if (unmuteOverlay) unmuteOverlay.classList.remove('show');
+              console.log('Video unmuted');
+            }
           };
-          if (audioToggle) {
-            const toggleHandler = (e) => {
-              e.preventDefault();
-              // Toggle mute state; this counts as a user gesture for autoplay policies
-              const isMuted = video.muted || video.volume === 0;
-              if (isMuted) {
-                video.muted = false;
-                if (video.volume === 0) video.volume = 1.0;
-              } else {
-                video.muted = true;
-              }
-              if (video.paused) {
-                video.play().catch(() => {});
-              }
-              updateAudioIcon();
-            };
-            audioToggle.addEventListener('click', toggleHandler, { passive: false });
-            audioToggle.addEventListener('touchend', toggleHandler, { passive: false });
-            // Keep icon in sync with media state
-            video.addEventListener('volumechange', updateAudioIcon);
-            video.addEventListener('play', updateAudioIcon);
-            video.addEventListener('loadedmetadata', updateAudioIcon);
-            // Ensure correct initial icon
-            updateAudioIcon();
-          }
+          
+          // Show unmute overlay after target found
+          let unmuteShown = false;
+          const showUnmuteIfNeeded = () => {
+            if (!unmuteShown && !hasUnmuted && unmuteOverlay) {
+              setTimeout(() => {
+                if (!hasUnmuted) {
+                  unmuteOverlay.classList.add('show');
+                  unmuteShown = true;
+                }
+              }, 2000);
+            }
+          };
+          
+          if (unmuteBtn) unmuteBtn.addEventListener('click', handleUnmute);
+          if (unmuteOverlay) unmuteOverlay.addEventListener('click', handleUnmute);
+          document.body.addEventListener('touchstart', () => {
+            if (isTargetVisible && !hasUnmuted) handleUnmute();
+          }, { once: false });
+          
+          // Expose for target found handler
+          window.showUnmuteOverlay = showUnmuteIfNeeded;
         }
 
         // Setup 3D model animation
@@ -1958,7 +1337,73 @@ export async function GET(
               console.log('Available animations:', mixer.mixer ? mixer.mixer._actions : 'none');
             }
 
-            // No UI annotations/hotspots per minimal overlay requirement
+            // Enable mouse/touch raycasting against hotspots
+            try {
+              const scene = document.getElementById('arScene');
+              if (scene) {
+                scene.setAttribute('cursor', 'rayOrigin: mouse');
+                scene.setAttribute('raycaster', 'objects: .hotspot; far: 20');
+              }
+            } catch (e) { console.warn('Raycaster setup failed', e); }
+
+            // Traverse model for annotations and create hotspots
+            try {
+              const threeObj = model3D.getObject3D('mesh') || model3D.object3D;
+              if (!threeObj) return;
+              const worldToLocal = (v) => model3D.object3D.worldToLocal(v.clone());
+              const annNodes = [];
+              threeObj.traverse((node) => {
+                if (!node) return;
+                let title = null, desc = '';
+                // From userData.annotation
+                if (node.userData && node.userData.annotation) {
+                  const a = node.userData.annotation;
+                  title = a.title || null;
+                  desc = a.description || a.desc || '';
+                }
+                // From name: ann__Title__Description
+                if (!title && node.name && node.name.startsWith('ann__')) {
+                  const parts = node.name.split('__');
+                  if (parts.length >= 2) {
+                    title = decodeURIComponent((parts[1] || '').replace(/_/g, ' '));
+                    desc = decodeURIComponent((parts[2] || '').replace(/_/g, ' '));
+                  }
+                }
+                if (title) {
+                  const wp = new THREE.Vector3();
+                  node.getWorldPosition(wp);
+                  const lp = worldToLocal(wp);
+                  annNodes.push({ pos: lp, title, desc });
+                }
+              });
+
+              if (annNodes.length) {
+                const container = document.createElement('a-entity');
+                container.setAttribute('id', 'annotationHotspots');
+                model3D.appendChild(container);
+                annNodes.forEach((a, i) => {
+                  const hs = document.createElement('a-entity');
+                  hs.setAttribute('class', 'hotspot');
+                  hs.setAttribute('position', '' + a.pos.x + ' ' + a.pos.y + ' ' + a.pos.z);
+                  hs.setAttribute('geometry', 'primitive: sphere; radius: 0.02');
+                  hs.setAttribute('material', 'color: #f59e0b; emissive: #f59e0b; emissiveIntensity: 0.8; metalness: 0.2; roughness: 0.4');
+                  hs.setAttribute('look-at', '[camera]');
+                  hs.setAttribute('scale', '1 1 1');
+                  // Store data
+                  hs.dataset.title = a.title;
+                  hs.dataset.desc = a.desc;
+                  hs.addEventListener('click', (ev) => {
+                    setAnnotation(hs.dataset.title, hs.dataset.desc);
+                  });
+                  container.appendChild(hs);
+                });
+                console.log('Created ' + annNodes.length + ' annotation hotspots');
+              } else {
+                console.log('No annotation nodes found in model');
+              }
+            } catch (e) {
+              console.warn('Failed to create annotation hotspots', e);
+            }
           });
           
           model3D.addEventListener('model-error', (e) => {
@@ -1999,6 +1444,7 @@ export async function GET(
           });
           scene.addEventListener('arError', (e) => {
             console.error('MindAR arError', e);
+            showStatus('AR Initialization Error', 'Please allow camera access and try again.');
           });
         }
 
@@ -2014,8 +1460,8 @@ export async function GET(
           
           target.addEventListener('targetFound', () => {
             console.log('Target found!');
-            // Hide marker badge once target is found
-            if (markerBadge) markerBadge.classList.remove('show');
+            // Hide marker guide once target is found
+            if (markerGuide) markerGuide.classList.remove('show');
             
             // Track target recognition analytics
             if (window.trackAREvent) {
@@ -2050,7 +1496,8 @@ export async function GET(
                       video.muted = true;
                       video.play().catch(() => {});
                     }
-                    // No unmute overlay; rely on audio toggle button
+                    // Show unmute prompt after a delay
+                    if (window.showUnmuteOverlay) window.showUnmuteOverlay();
                   }
                 }
                 
@@ -2075,32 +1522,14 @@ export async function GET(
                     console.error('❌ Should show 3D but model3D not found!');
                   }
                 }
-
-                // Handle Portal AR
-                if (isPortal) {
-                  const portalDoor = document.getElementById('portalDoor');
-                  const portalEnterHit = document.getElementById('portalEnterHit');
-                  if (portalDoor) {
-                    portalDoor.setAttribute('visible', 'true');
-                    portalDoor.setAttribute('animation', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 300; easing: easeOutElastic');
-                  }
-                  const enter = () => {
-                    const immersiveRoot = document.getElementById('immersiveRoot');
-                    const portalBackBtn = document.getElementById('portalBackBtn');
-                    if (immersiveRoot) immersiveRoot.setAttribute('visible', 'true');
-                    if (portalDoor) portalDoor.setAttribute('visible', 'false');
-                    // enable look controls on camera
-                    const cam = document.querySelector('a-camera');
-                    if (cam) cam.setAttribute('look-controls', 'enabled: true');
-                    if (portalBackBtn) portalBackBtn.style.display = 'block';
-                  };
-                  if (portalEnterHit) {
-                    portalEnterHit.addEventListener('click', enter, { once: true });
-                    portalEnterHit.addEventListener('touchend', (e)=>{ e.preventDefault(); enter(); }, { once: true, passive: false });
-                  }
-                }
                 
-                // No other overlays on found
+                // Reveal external link button now that marker is scanned
+                if (externalLinkBtn) {
+                  externalLinkBtn.style.display = 'block';
+                }
+
+                showStatus('Target Found!', 'AR content should be visible');
+                setTimeout(hideStatus, 1500);
               }
             }, 100); // 100ms debounce
           });
@@ -2127,8 +1556,11 @@ export async function GET(
             targetLostTimeout = setTimeout(() => {
               if (isTargetVisible) {
                 isTargetVisible = false;
-                // Keep content playing and visible; re-show minimal marker badge to help re-acquire
-                if (markerBadge) markerBadge.classList.add('show');
+                // Keep content playing and visible; rely on missTolerance and last pose.
+                // Optional: show a brief status without hiding content.
+                showStatus('Target Lost', 'Content will re-align when marker is visible');
+                // Re-show marker guide to help user re-acquire target
+                if (markerGuide) markerGuide.classList.add('show');
               }
             }, 1000);
           });
@@ -2140,28 +1572,6 @@ export async function GET(
 
         // Setup profile selector event listener
         // Removed profile selector logic
-
-        // Portal back button handler
-        if (isPortal) {
-          const portalBackBtn = document.getElementById('portalBackBtn');
-          if (portalBackBtn) {
-            const btn = portalBackBtn.querySelector('button');
-            const onBack = (e) => {
-              e.preventDefault();
-              const immersiveRoot = document.getElementById('immersiveRoot');
-              const portalDoor = document.getElementById('portalDoor');
-              if (immersiveRoot) immersiveRoot.setAttribute('visible', 'false');
-              if (portalDoor) portalDoor.setAttribute('visible', 'true');
-              const cam = document.querySelector('a-camera');
-              if (cam) cam.setAttribute('look-controls', 'enabled: false');
-              portalBackBtn.style.display = 'none';
-            };
-            if (btn) {
-              btn.addEventListener('click', onBack);
-              btn.addEventListener('touchend', onBack, { passive: false });
-            }
-          }
-        }
 
         setInterval(nukeLoadingScreens, 1000);
       });

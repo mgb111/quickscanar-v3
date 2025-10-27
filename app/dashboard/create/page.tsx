@@ -40,7 +40,6 @@ export default function CreateExperience() {
   const [linkUrl, setLinkUrl] = useState('')
   const [modelScale, setModelScale] = useState(1.0)
   const [modelRotation, setModelRotation] = useState(0)
-  const [isPortal, setIsPortal] = useState(false)
 
   // Preview states
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
@@ -265,29 +264,20 @@ export default function CreateExperience() {
       return
     }
     
-    // Must have at least one content depending on mode
-    if (isPortal) {
-      if (!modelFile) {
-        toast.error('Portal mode requires a 3D model (GLB/GLTF)')
-        return
-      }
-    } else {
-      if (!videoFile && !modelFile) {
-        toast.error('Please upload at least a video file or a 3D model file (or both)')
-        return
-      }
+    // Must have at least video OR 3D model (or both)
+    if (!videoFile && !modelFile) {
+      toast.error('Please upload at least a video file or a 3D model file (or both)')
+      return
     }
 
-    // For video (with or without 3D), require mind + marker (image-tracked video UX)
-    if (videoFile) {
-      if (!mindFile) {
-        toast.error('Please upload a mind file for video experiences')
-        return
-      }
-      if (!markerImageFile) {
-        toast.error('Please upload a marker image for video experiences')
-        return
-      }
+    if (!mindFile) {
+      toast.error('Please upload a mind file')
+      return
+    }
+
+    if (!markerImageFile) {
+      toast.error('Please upload a marker image')
+      return
     }
 
     setSubmitting(true)
@@ -443,16 +433,14 @@ export default function CreateExperience() {
         markerImageUrl = markerImagePresignedData.publicUrl
       }
 
-      // Determine content type
-      let determinedContentType = 'video'
-      if (isPortal && modelUrl) {
-        determinedContentType = 'portal'
-      } else if (videoUrl && modelUrl) {
-        determinedContentType = 'both'
+      // Determine content type based on what was uploaded
+      let determinedContentType = 'video' // default
+      if (videoUrl && modelUrl) {
+        determinedContentType = 'both' // both video and 3D
       } else if (modelUrl && !videoUrl) {
-        determinedContentType = '3d'
+        determinedContentType = '3d' // only 3D
       } else if (videoUrl && !modelUrl) {
-        determinedContentType = 'video'
+        determinedContentType = 'video' // only video
       }
 
       // Create AR experience record
@@ -652,22 +640,6 @@ export default function CreateExperience() {
                   </ul>
                 </div>
               </div>
-            </div>
-
-            {/* Portal Mode Toggle */}
-            <div className="bg-cream border border-black rounded-xl p-4">
-              <label className="flex items-center gap-3 text-black text-base">
-                <input
-                  type="checkbox"
-                  checked={isPortal}
-                  onChange={(e) => setIsPortal(e.target.checked)}
-                  className="h-5 w-5 border-2 border-black rounded"
-                />
-                <span className="font-medium">Treat 3D model as a Portal (tap to enter immersive space)</span>
-              </label>
-              <p className="text-sm text-black opacity-70 mt-2 ml-8">
-                Requires a GLB/GLTF apartment/space model. Video is optional and shown on marker if uploaded.
-              </p>
             </div>
 
             {/* Optional Link URL */}
