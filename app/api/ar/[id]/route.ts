@@ -647,71 +647,7 @@ export async function GET(
       }
 
       
-      .status-indicator {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: black;
-        text-align: center;
-        z-index: 1002;
-        background: white;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
-        border-radius: 20px;
-        border: 2px solid black;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        display: none;
-        max-width: 90vw;
-        min-width: 280px;
-        animation: fadeInUp 0.3s ease-out;
-      }
-
-      .status-indicator h3 {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: #dc2626;
-        margin: 0 0 8px 0;
-      }
-
-      .status-indicator p {
-        font-size: 14px;
-        color: black;
-        line-height: 1.4;
-        margin: 0;
-      }
-
-      /* Mobile status indicator */
-      @media (max-width: 768px) {
-        .status-indicator {
-          padding: 20px;
-          border-radius: 16px;
-          max-width: 85vw;
-          min-width: 260px;
-        }
-        
-        .status-indicator h3 {
-          font-size: 16px;
-          margin-bottom: 6px;
-        }
-        
-        .status-indicator p {
-          font-size: 13px;
-        }
-      }
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translate(-50%, -40%);
-        }
-        to {
-          opacity: 1;
-          transform: translate(-50%, -50%);
-        }
-      }
+      
 
       .a-loader,
       .a-loader-title,
@@ -775,50 +711,39 @@ export async function GET(
         #externalLinkBtn a { padding: 16px 22px; font-size: 16px; }
       }
       
-      /* Marker guidance overlay */
+      /* Marker guidance badge (top-right) */
       #markerGuide {
         position: fixed;
-        inset: 0;
+        top: 12px;
+        right: 12px;
         display: none;
-        align-items: center;
-        justify-content: center;
         z-index: 2000;
-        background: transparent; /* transparent backdrop */
-        backdrop-filter: none;
-        padding: 20px;
-        pointer-events: none; /* let AR taps pass through if needed */
+        pointer-events: none;
       }
-      #markerGuide.show { display: flex; }
+      #markerGuide.show { display: block; }
       #markerGuideInner {
-        background: transparent; /* transparent panel */
-        border: 0;
-        border-radius: 16px;
-        box-shadow: none;
-        max-width: 90vw;
-        width: 520px;
-        color: #fff;
-        overflow: hidden;
-      }
-      #markerGuideHeader {
-        padding: 12px 16px;
-        font-weight: 800;
-        font-size: 16px;
-        background: transparent;
-        border-bottom: 0;
         display: flex;
         align-items: center;
-        gap: 10px;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        gap: 8px;
+        background: rgba(0,0,0,0.65);
+        color: #fff;
+        border: 1px solid #000;
+        border-radius: 12px;
+        padding: 8px 10px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
       }
-      #markerGuideBody { padding: 16px; display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; }
-      #markerImgWrap { width: 110px; height: 110px; background: transparent; border: 0; border-radius: 12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-      #markerImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
-      #markerText { font-size: 14px; line-height: 1.4; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-      #markerHint { font-size: 12px; opacity: 0.9; margin-top: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-      @media (max-width: 480px) {
-        #markerGuideBody { grid-template-columns: 1fr; }
-        #markerImgWrap { width: 100%; height: 160px; }
+      #markerImgThumb {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
+      #markerImgThumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      #markerLabel { font-size: 12px; font-weight: 700; white-space: nowrap; }
 
       /* 3D Annotations */
       .hotspot {
@@ -842,45 +767,7 @@ export async function GET(
       #annotationPanel .title { font-weight: 800; margin-bottom: 6px; }
       #annotationPanel .desc { opacity: 0.95; font-size: 14px; }
 
-      /* Unmute overlay for Safari */
-      #unmuteOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        z-index: 2000;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 16px;
-      }
-      #unmuteOverlay.show {
-        display: flex;
-      }
-      #unmuteBtn {
-        background: #dc2626;
-        color: #fff;
-        border: 2px solid #000;
-        border-radius: 9999px;
-        padding: 16px 32px;
-        font-size: 18px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      }
-      #unmuteBtn:active {
-        transform: scale(0.95);
-      }
-      .unmute-text {
-        color: #fff;
-        font-size: 14px;
-        text-align: center;
-        max-width: 80%;
-      }
+      
       
       /* Surface placement button */
       #surfaceBtn {
@@ -911,10 +798,7 @@ export async function GET(
     </style>
   </head>
   <body>
-    <div class="status-indicator" id="status-indicator">
-      <h3 id="status-title">Point camera at your marker</h3>
-      <p id="status-message">Look for your uploaded image</p>
-    </div>
+    
 
 
 
@@ -935,7 +819,6 @@ export async function GET(
           id="arVideo"
           src="${experience.video_url}"
           loop
-          muted
           playsinline
           webkit-playsinline
           crossorigin="anonymous"
@@ -993,26 +876,15 @@ export async function GET(
     </div>
     ` : ''}
 
-    ${isVideo ? `
-    <div id="unmuteOverlay">
-      <button id="unmuteBtn">Tap to Enable Sound</button>
-      <p class="unmute-text">Tap anywhere to unmute the AR video</p>
-    </div>
-    ` : ''}
+    
 
     ${experience.marker_image_url ? `
-    <div id="markerGuide" role="dialog" aria-live="polite">
+    <div id="markerGuide" role="status" aria-live="polite">
       <div id="markerGuideInner">
-        <div id="markerGuideHeader">Scan the Marker</div>
-        <div id="markerGuideBody">
-          <div id="markerImgWrap">
-            <img src="${experience.marker_image_url}" alt="Marker image to scan" />
-          </div>
-          <div id="markerText">
-            Point your camera at this marker image to start the AR experience.
-            <div id="markerHint">Make sure the whole marker is visible and well lit.</div>
-          </div>
+        <div id="markerImgThumb">
+          <img src="${experience.marker_image_url}" alt="Marker" />
         </div>
+        <div id="markerLabel">Scan this marker</div>
       </div>
     </div>
     ` : ''}
@@ -1044,24 +916,8 @@ export async function GET(
         }
       }
 
-      function showStatus(title, message) {
-        const statusIndicator = document.getElementById('status-indicator');
-        const statusTitle = document.getElementById('status-title');
-        const statusMessage = document.getElementById('status-message');
-
-        if (statusIndicator && statusTitle && statusMessage) {
-          statusTitle.textContent = title;
-          statusMessage.textContent = message;
-          statusIndicator.style.display = 'block';
-        }
-      }
-
-      function hideStatus() {
-        const statusIndicator = document.getElementById('status-indicator');
-        if (statusIndicator) {
-          statusIndicator.style.display = 'none';
-        }
-      }
+      function showStatus(title, message) {}
+      function hideStatus() {}
 
       function nukeLoadingScreens() {
         const selectors = [
@@ -1228,13 +1084,8 @@ export async function GET(
 
         // Defer showing external link until marker is scanned (handled in targetFound)
 
-        // Brief initializing message (no user interaction needed)
-        showStatus('Initializing...', 'Starting camera and tracker');
-        setTimeout(() => {
-          hideStatus();
-          // Show marker guide while scanning
-          if (markerGuide) markerGuide.classList.add('show');
-        }, 800);
+        // Show marker guide while scanning
+        if (markerGuide) markerGuide.classList.add('show');
 
         console.log('AR Elements found:', {
           scene: !!scene,
@@ -1283,42 +1134,13 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Safari unmute handler
-          const unmuteOverlay = document.getElementById('unmuteOverlay');
-          const unmuteBtn = document.getElementById('unmuteBtn');
-          let hasUnmuted = false;
-          
-          const handleUnmute = () => {
-            if (!hasUnmuted && video) {
-              video.muted = false;
-              video.play().catch(e => console.log('Play after unmute:', e));
-              hasUnmuted = true;
-              if (unmuteOverlay) unmuteOverlay.classList.remove('show');
-              console.log('Video unmuted');
-            }
-          };
-          
-          // Show unmute overlay after target found
-          let unmuteShown = false;
-          const showUnmuteIfNeeded = () => {
-            if (!unmuteShown && !hasUnmuted && unmuteOverlay) {
-              setTimeout(() => {
-                if (!hasUnmuted) {
-                  unmuteOverlay.classList.add('show');
-                  unmuteShown = true;
-                }
-              }, 2000);
-            }
-          };
-          
-          if (unmuteBtn) unmuteBtn.addEventListener('click', handleUnmute);
-          if (unmuteOverlay) unmuteOverlay.addEventListener('click', handleUnmute);
-          document.body.addEventListener('touchstart', () => {
-            if (isTargetVisible && !hasUnmuted) handleUnmute();
-          }, { once: false });
-          
-          // Expose for target found handler
-          window.showUnmuteOverlay = showUnmuteIfNeeded;
+          // Enable sound directly
+          try {
+            video.muted = false;
+            await video.play();
+          } catch (e) {
+            console.log('Autoplay with sound may be blocked by the browser:', e);
+          }
         }
 
         // Setup 3D model animation
@@ -1422,8 +1244,8 @@ export async function GET(
             scene.style.opacity = '1';
             
             if (video) {
-              // Start muted for Safari compatibility
-              video.muted = true;
+              // Try to play with sound enabled
+              video.muted = false;
               video.play().then(() => {
                 console.log('Video playing (muted)');
                 // After video starts playing, update the aspect ratio
@@ -1491,13 +1313,11 @@ export async function GET(
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
                   if (video) {
-                    // Ensure video is playing (muted initially for Safari)
+                    // Ensure video is playing with sound
                     if (video.paused) {
-                      video.muted = true;
+                      video.muted = false;
                       video.play().catch(() => {});
                     }
-                    // Show unmute prompt after a delay
-                    if (window.showUnmuteOverlay) window.showUnmuteOverlay();
                   }
                 }
                 
