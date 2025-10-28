@@ -93,10 +93,11 @@ export async function GET(
         backdrop.setAttribute('material', 'color: #000; opacity: 0.6; side: double')
         this.el.appendChild(backdrop)
 
-        // Immersive environment container (initially hidden until inside)
+        // Immersive environment container (hidden until inside)
         const env = document.createElement('a-entity')
         env.setAttribute('id', 'envContainer')
         env.setAttribute('visible', 'false')
+        env.setAttribute('scale', '0 0 0')
         // Make a huge inverted sphere so it surrounds the user when inside
         const sky = document.createElement('a-sphere')
         sky.setAttribute('radius', '20')
@@ -113,15 +114,6 @@ export async function GET(
           model.setAttribute('position', '0 0 -1.5')
           model.setAttribute('visible', 'true')
           env.appendChild(model)
-
-          // Add a preview clone visible while outside the portal
-          const preview = modelT.cloneNode(true)
-          preview.setAttribute('id', 'contentPreview')
-          preview.setAttribute('position', '0 0 -1.5')
-          preview.setAttribute('scale', '${modelScale} ${modelScale} ${modelScale}')
-          preview.setAttribute('visible', 'true')
-          this.el.appendChild(preview)
-          this.previewModel = preview
         }
       },
       tick: function () {
@@ -144,18 +136,16 @@ export async function GET(
           if (env && frame) {
             if (inside) {
               env.setAttribute('visible', 'true')
+              env.setAttribute('scale', '1 1 1')
               frame.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
-              // Hide preview when inside
-              if (this.previewModel) this.previewModel.setAttribute('visible', 'false')
             } else {
               env.setAttribute('visible', 'false')
+              env.setAttribute('scale', '0 0 0')
               frame.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
-              // Show preview when outside
-              if (this.previewModel) this.previewModel.setAttribute('visible', 'true')
             }
           }
         }
