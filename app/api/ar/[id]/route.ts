@@ -770,15 +770,17 @@ export async function GET(
 
       
       
-      /* Surface placement button */
-      #surfaceBtn {
+      /* Markerless action buttons */
+      #surfaceBtn, #portalBtn {
         position: fixed;
         bottom: 90px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1004;
       }
-      #surfaceBtn a {
+      /* Raise the Portal button so both are visible */
+      #portalBtn { bottom: 140px; }
+      #surfaceBtn a, #portalBtn a {
         text-decoration: none;
         background: #111827; /* slate-900 */
         color: #ffffff;
@@ -791,10 +793,11 @@ export async function GET(
         opacity: 0.98;
         transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
       }
-      #surfaceBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+      #surfaceBtn a:hover, #portalBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
       @media (max-width: 768px) {
         #surfaceBtn { bottom: 80px; }
-        #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
+        #portalBtn { bottom: 120px; }
+        #surfaceBtn a, #portalBtn a { padding: 12px 18px; font-size: 15px; }
       }
     </style>
   </head>
@@ -877,7 +880,11 @@ export async function GET(
     </div>
     ` : ''}
 
-    
+    ${is3D && experience.model_url ? `
+    <div id="portalBtn">
+      <a href="/api/ar/portal/${experience.id}" aria-label="Open portal">Open Portal</a>
+    </div>
+    ` : ''}
 
     ${experience.marker_image_url ? `
     <div id="markerGuide" role="status" aria-live="polite">
