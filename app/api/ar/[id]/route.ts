@@ -47,9 +47,10 @@ export async function GET(
     <meta name="msapplication-navbutton-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-title" content="AR Experience" />
     <title>${experience.title} - AR Experience</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+    <script src="/js/portal-effect.js"></script>
     
     <!-- Analytics Tracking Script -->
     <script>
@@ -515,14 +516,14 @@ export async function GET(
       /* Mobile-first responsive design */
       @media (max-width: 768px) {
         body {
-          background: #f5f5dc;
+          background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%);
         }
       }
 
       a-scene {
         width: 100vw;
         height: 100vh;
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         transform: translateZ(0);
@@ -534,53 +535,11 @@ export async function GET(
         perspective: 1000;
       }
 
-      /* Ensure transparent backgrounds to prevent dark splits/overlays */
-      html, body, a-scene, a-scene canvas {
-        background: transparent !important;
-      }
-
       a-scene canvas {
         transform: translateZ(0);
         will-change: transform;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
-      }
-
-      /* Ensure MindAR injected elements cover the viewport exactly */
-      .mindar-container, .mindar-container video, .mindar-container canvas {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: 100vw !important;
-        max-height: 100vh !important;
-        object-fit: cover !important;
-        background: #000 !important;
-      }
-      /* A-Frame canvas class */
-      .a-canvas {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-      }
-      /* MindAR default video id selector */
-      #mindar-image-video, #mindar-video, video#arVideo {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        background: #000 !important;
-      }
-      /* Generic fallback when class name differs */
-      body > video:not(#arVideo), body > canvas {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        background: #000 !important;
       }
 
       /* Mobile AR scene optimization */
@@ -837,33 +796,6 @@ export async function GET(
         #surfaceBtn { bottom: 80px; }
         #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
-      
-      /* Portal entry button */
-      #portalBtn {
-        position: fixed;
-        bottom: 140px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1004;
-      }
-      #portalBtn a {
-        text-decoration: none;
-        background: #1f2937; /* gray-800 */
-        color: #ffffff;
-        border: 2px solid #000000;
-        border-radius: 9999px;
-        padding: 14px 22px;
-        font-size: 16px;
-        font-weight: 700;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        opacity: 0.98;
-        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
-      }
-      #portalBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
-      @media (max-width: 768px) {
-        #portalBtn { bottom: 125px; }
-        #portalBtn a { padding: 12px 18px; font-size: 15px; }
-      }
     </style>
   </head>
   <body>
@@ -874,8 +806,8 @@ export async function GET(
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
-      renderer="antialias: true; alpha: true"
-      background="color: #0000"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
@@ -925,6 +857,7 @@ export async function GET(
           gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.005; maxScale: 5"
           visible="false"
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
+          ${experience.portal_enabled ? `portal-effect="enabled: true; color: ${experience.portal_color || '#00ffff'}; intensity: ${experience.portal_intensity || 0.8}; frameEnabled: ${experience.portal_frame_enabled !== false}; frameThickness: ${experience.portal_frame_thickness || 0.05}; animation: ${experience.portal_animation || 'pulse'}"` : ''}
         ></a-entity>
         ` : ''}
       </a-entity>
@@ -941,12 +874,6 @@ export async function GET(
     ${is3D && experience.model_url ? `
     <div id="surfaceBtn">
       <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
-    </div>
-    ` : ''}
-
-    ${is3D && experience.model_url ? `
-    <div id="portalBtn">
-      <a href="/api/ar/portal/${experience.id}" aria-label="Enter Portal">Enter Portal</a>
     </div>
     ` : ''}
 
@@ -1100,44 +1027,6 @@ export async function GET(
         };
         const hideAnnotation = () => { if (annotationPanel) annotationPanel.classList.remove('show'); };
         if (annotationPanel) annotationPanel.addEventListener('click', hideAnnotation);
-
-        // Force renderer/canvas/video to match viewport size to avoid split overlays
-        const forceResize = () => {
-          try {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            // A-Frame renderer sizing
-            const afScene = (scene as any);
-            if (afScene && afScene.renderer) {
-              afScene.renderer.setSize(w, h, false);
-              afScene.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-            }
-            if (typeof (afScene as any)?.resize === 'function') {
-              (afScene as any).resize();
-            }
-            // MindAR video/canvases
-            const vid = document.getElementById('mindar-image-video') || document.getElementById('mindar-video') || document.getElementById('arVideo');
-            const canvases = document.querySelectorAll('canvas');
-            if (vid instanceof HTMLVideoElement) {
-              vid.style.width = '100vw';
-              vid.style.height = '100vh';
-              vid.style.objectFit = 'cover';
-            }
-            canvases.forEach((c:any)=>{
-              c.style.width = '100vw';
-              c.style.height = '100vh';
-            });
-          } catch(e) { console.warn('forceResize failed', e); }
-        };
-        window.addEventListener('resize', forceResize);
-        window.addEventListener('orientationchange', forceResize);
-        // Run immediately and after scene render target is ready
-        forceResize();
-        if (scene) {
-          scene.addEventListener('render-target-loaded', forceResize);
-        }
-        setTimeout(forceResize, 200);
-        setTimeout(forceResize, 800);
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {

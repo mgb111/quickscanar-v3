@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Effect Demo - QuickScanAR</title>
+  <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+  <script src="/js/portal-effect.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+    }
+    
+    #info-panel {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 300px;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    #info-panel h1 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+      color: #00ffff;
+    }
+    
+    #info-panel p {
+      margin: 5px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 20px;
+      border-radius: 12px;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .control-group {
+      margin-bottom: 15px;
+    }
+    
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .control-group label {
+      display: block;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    .control-group input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #00ffff;
+      cursor: pointer;
+    }
+    
+    .control-group input[type="color"] {
+      width: 100%;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .control-group select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .toggle-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #00ffff;
+      color: black;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle-btn:hover {
+      background: #00cccc;
+      transform: translateY(-2px);
+    }
+    
+    .toggle-btn.disabled {
+      background: #666;
+      color: white;
+    }
+    
+    .value-display {
+      display: inline-block;
+      float: right;
+      color: #00ffff;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      #info-panel {
+        max-width: calc(100% - 40px);
+      }
+      
+      #controls {
+        max-height: 40vh;
+        overflow-y: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="info-panel">
+    <h1>🌀 Portal Effect Demo</h1>
+    <p>Experience the sci-fi portal effect for 3D AR models.</p>
+    <p><strong>Controls:</strong> Use the panel below to customize the portal in real-time.</p>
+  </div>
+
+  <div id="controls">
+    <div class="control-group">
+      <button id="togglePortal" class="toggle-btn">Enable Portal Effect</button>
+    </div>
+    
+    <div class="control-group">
+      <label>Portal Color</label>
+      <input type="color" id="colorPicker" value="#00ffff">
+    </div>
+    
+    <div class="control-group">
+      <label>
+        Glow Intensity
+        <span class="value-display" id="intensityValue">0.80</span>
+      </label>
+      <input type="range" id="intensitySlider" min="0" max="1" step="0.05" value="0.8">
+    </div>
+    
+    <div class="control-group">
+      <label>
+        Frame Thickness
+        <span class="value-display" id="thicknessValue">0.05</span>
+      </label>
+      <input type="range" id="thicknessSlider" min="0.01" max="0.2" step="0.01" value="0.05">
+    </div>
+    
+    <div class="control-group">
+      <label>Animation Type</label>
+      <select id="animationSelect">
+        <option value="none">None - Static</option>
+        <option value="pulse" selected>Pulse - Breathing</option>
+        <option value="rotate">Rotate - Spinning</option>
+        <option value="shimmer">Shimmer - Flickering</option>
+      </select>
+    </div>
+  </div>
+
+  <a-scene background="color: #1a1a2e">
+    <a-assets>
+      <!-- Using a simple box as placeholder - replace with your GLB model -->
+    </a-assets>
+
+    <a-entity id="model-container" position="0 1.5 -3">
+      <!-- Simple box as demo model -->
+      <a-box 
+        id="demoModel"
+        width="0.5" 
+        height="0.8" 
+        depth="0.5"
+        color="#ff6b6b"
+        metalness="0.8"
+        roughness="0.2"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"
+      ></a-box>
+    </a-entity>
+
+    <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
+    <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="1 2 1"></a-entity>
+    
+    <a-camera position="0 1.6 0" look-controls wasd-controls></a-camera>
+  </a-scene>
+
+  <script>
+    // Get references
+    const modelContainer = document.getElementById('model-container');
+    const toggleBtn = document.getElementById('togglePortal');
+    const colorPicker = document.getElementById('colorPicker');
+    const intensitySlider = document.getElementById('intensitySlider');
+    const intensityValue = document.getElementById('intensityValue');
+    const thicknessSlider = document.getElementById('thicknessSlider');
+    const thicknessValue = document.getElementById('thicknessValue');
+    const animationSelect = document.getElementById('animationSelect');
+    
+    let portalEnabled = false;
+    
+    // Wait for A-Frame to load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Toggle portal
+      toggleBtn.addEventListener('click', () => {
+        portalEnabled = !portalEnabled;
+        
+        if (portalEnabled) {
+          toggleBtn.textContent = 'Disable Portal Effect';
+          toggleBtn.classList.remove('disabled');
+          
+          // Add portal effect component
+          modelContainer.setAttribute('portal-effect', {
+            enabled: true,
+            color: colorPicker.value,
+            intensity: parseFloat(intensitySlider.value),
+            frameEnabled: true,
+            frameThickness: parseFloat(thicknessSlider.value),
+            animation: animationSelect.value
+          });
+        } else {
+          toggleBtn.textContent = 'Enable Portal Effect';
+          toggleBtn.classList.add('disabled');
+          
+          // Remove portal effect
+          modelContainer.setAttribute('portal-effect', {
+            enabled: false
+          });
+        }
+      });
+      
+      // Color picker
+      colorPicker.addEventListener('input', (e) => {
+        if (portalEnabled) {
+          modelContainer.setAttribute('portal-effect', 'color', e.target.value);
+        }
+      });
+      
+      // Intensity slider
+      intensitySlider.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        intensityValue.textContent = value.toFixed(2);
+        if (portalEnabled) {
+          modelContainer.setAttribute('portal-effect', 'intensity', value);
+        }
+      });
+      
+      // Thickness slider
+      thicknessSlider.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        thicknessValue.textContent = value.toFixed(2);
+        if (portalEnabled) {
+          modelContainer.setAttribute('portal-effect', 'frameThickness', value);
+        }
+      });
+      
+      // Animation select
+      animationSelect.addEventListener('change', (e) => {
+        if (portalEnabled) {
+          modelContainer.setAttribute('portal-effect', 'animation', e.target.value);
+        }
+      });
+      
+      // Preset buttons (optional)
+      window.applyPreset = (preset) => {
+        if (!portalEnabled) {
+          toggleBtn.click(); // Enable portal first
+        }
+        
+        const presets = {
+          scifi: { color: '#00ffff', intensity: 0.8, thickness: 0.05, animation: 'pulse' },
+          mystical: { color: '#9333ea', intensity: 0.9, thickness: 0.08, animation: 'shimmer' },
+          professional: { color: '#3b82f6', intensity: 0.6, thickness: 0.05, animation: 'none' },
+          energy: { color: '#10b981', intensity: 0.85, thickness: 0.03, animation: 'rotate' }
+        };
+        
+        const p = presets[preset];
+        if (p) {
+          colorPicker.value = p.color;
+          intensitySlider.value = p.intensity;
+          intensityValue.textContent = p.intensity.toFixed(2);
+          thicknessSlider.value = p.thickness;
+          thicknessValue.textContent = p.thickness.toFixed(2);
+          animationSelect.value = p.animation;
+          
+          modelContainer.setAttribute('portal-effect', {
+            enabled: true,
+            color: p.color,
+            intensity: p.intensity,
+            frameEnabled: true,
+            frameThickness: p.thickness,
+            animation: p.animation
+          });
+        }
+      };
+    });
+  </script>
+</body>
+</html>

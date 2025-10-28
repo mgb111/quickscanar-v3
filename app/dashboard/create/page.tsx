@@ -40,6 +40,14 @@ export default function CreateExperience() {
   const [linkUrl, setLinkUrl] = useState('')
   const [modelScale, setModelScale] = useState(1.0)
   const [modelRotation, setModelRotation] = useState(0)
+  
+  // Portal effect settings
+  const [portalEnabled, setPortalEnabled] = useState(false)
+  const [portalColor, setPortalColor] = useState('#00ffff')
+  const [portalIntensity, setPortalIntensity] = useState(0.8)
+  const [portalFrameEnabled, setPortalFrameEnabled] = useState(true)
+  const [portalFrameThickness, setPortalFrameThickness] = useState(0.05)
+  const [portalAnimation, setPortalAnimation] = useState<'none' | 'pulse' | 'rotate' | 'shimmer'>('pulse')
 
   // Preview states
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
@@ -459,6 +467,13 @@ export default function CreateExperience() {
         user_id: user!.id,
         link_url: linkUrl.trim() ? linkUrl.trim() : null,
         video_scale: videoFile ? videoScale : 1.0,
+        // Portal effect settings (only for 3D models)
+        portal_enabled: modelUrl ? portalEnabled : false,
+        portal_color: modelUrl && portalEnabled ? portalColor : '#00ffff',
+        portal_intensity: modelUrl && portalEnabled ? portalIntensity : 0.8,
+        portal_frame_enabled: modelUrl && portalEnabled ? portalFrameEnabled : true,
+        portal_frame_thickness: modelUrl && portalEnabled ? portalFrameThickness : 0.05,
+        portal_animation: modelUrl && portalEnabled ? portalAnimation : 'pulse',
       }
 
       const experienceResponse = await fetch('/api/ar', {
@@ -1199,6 +1214,135 @@ export default function CreateExperience() {
                   />
                   <p className="text-sm text-black opacity-70 mt-2">Rotation around Y-axis (0-360 degrees)</p>
                 </div>
+              </div>
+            )}
+
+            {/* Portal Effect Settings - Show if 3D model is uploaded */}
+            {modelFile && (
+              <div className="border-2 border-black rounded-xl p-6 space-y-6 bg-gradient-to-br from-cyan-50 to-blue-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-black">Portal Effect</h3>
+                    <p className="text-sm text-black opacity-70 mt-1">Add a sci-fi portal effect around your 3D model</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={portalEnabled}
+                      onChange={(e) => setPortalEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-600"></div>
+                  </label>
+                </div>
+
+                {portalEnabled && (
+                  <div className="space-y-6 pt-4 border-t-2 border-black/10">
+                    {/* Portal Color */}
+                    <div>
+                      <label htmlFor="portal_color" className="block text-base font-medium text-black mb-2">
+                        Portal Color
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="color"
+                          id="portal_color"
+                          value={portalColor}
+                          onChange={(e) => setPortalColor(e.target.value)}
+                          className="h-12 w-20 rounded-lg border-2 border-black cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={portalColor}
+                          onChange={(e) => setPortalColor(e.target.value)}
+                          className="flex-1 px-4 py-3 border-2 border-black rounded-lg focus:ring-2 focus:ring-cyan-600 focus:border-transparent"
+                          placeholder="#00ffff"
+                        />
+                      </div>
+                      <p className="text-xs text-black opacity-70 mt-1">Choose the glow color for your portal</p>
+                    </div>
+
+                    {/* Portal Intensity */}
+                    <div>
+                      <label htmlFor="portal_intensity" className="block text-base font-medium text-black mb-2">
+                        Glow Intensity: {portalIntensity.toFixed(2)}
+                      </label>
+                      <input
+                        type="range"
+                        id="portal_intensity"
+                        value={portalIntensity}
+                        onChange={(e) => setPortalIntensity(parseFloat(e.target.value))}
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                      />
+                      <div className="flex justify-between text-xs text-black opacity-70 mt-1">
+                        <span>Subtle</span>
+                        <span>Intense</span>
+                      </div>
+                    </div>
+
+                    {/* Portal Frame */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-base font-medium text-black">Portal Frame</label>
+                        <p className="text-xs text-black opacity-70 mt-1">Add a glowing frame around the portal</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={portalFrameEnabled}
+                          onChange={(e) => setPortalFrameEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Frame Thickness */}
+                    {portalFrameEnabled && (
+                      <div>
+                        <label htmlFor="portal_frame_thickness" className="block text-base font-medium text-black mb-2">
+                          Frame Thickness: {portalFrameThickness.toFixed(2)}
+                        </label>
+                        <input
+                          type="range"
+                          id="portal_frame_thickness"
+                          value={portalFrameThickness}
+                          onChange={(e) => setPortalFrameThickness(parseFloat(e.target.value))}
+                          min="0.01"
+                          max="0.2"
+                          step="0.01"
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                        />
+                        <div className="flex justify-between text-xs text-black opacity-70 mt-1">
+                          <span>Thin</span>
+                          <span>Thick</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Portal Animation */}
+                    <div>
+                      <label htmlFor="portal_animation" className="block text-base font-medium text-black mb-2">
+                        Animation Effect
+                      </label>
+                      <select
+                        id="portal_animation"
+                        value={portalAnimation}
+                        onChange={(e) => setPortalAnimation(e.target.value as 'none' | 'pulse' | 'rotate' | 'shimmer')}
+                        className="w-full px-4 py-3 border-2 border-black rounded-lg focus:ring-2 focus:ring-cyan-600 focus:border-transparent bg-white"
+                      >
+                        <option value="none">None - Static portal</option>
+                        <option value="pulse">Pulse - Breathing effect</option>
+                        <option value="rotate">Rotate - Spinning portal</option>
+                        <option value="shimmer">Shimmer - Flickering glow</option>
+                      </select>
+                      <p className="text-xs text-black opacity-70 mt-1">Choose how your portal animates</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
