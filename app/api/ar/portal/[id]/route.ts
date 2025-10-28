@@ -117,11 +117,11 @@ export async function GET(
         backdrop.setAttribute('material', 'color: #000; opacity: 0.6; side: double')
         this.el.appendChild(backdrop)
 
-        // Immersive environment container (hidden until inside)
+        // Immersive environment container (always rendered; masked by occluders until inside)
         const env = document.createElement('a-entity')
         env.setAttribute('id', 'envContainer')
-        env.setAttribute('visible', 'false')
-        env.setAttribute('scale', '0 0 0')
+        env.setAttribute('visible', 'true')
+        env.setAttribute('scale', '1 1 1')
         // Make a huge inverted sphere so it surrounds the user when inside
         const sky = document.createElement('a-sphere')
         sky.setAttribute('radius', '20')
@@ -160,7 +160,28 @@ export async function GET(
         frame.appendChild(leftBar)
         frame.appendChild(rightBar)
 
-        // No occluders needed when env is hidden outside
+        // Occluders: four large planes around the opening, slightly in front of portal plane
+        const makeOcc = (w,h,x,y)=>{
+          const p = document.createElement('a-plane')
+          p.setAttribute('width', String(w))
+          p.setAttribute('height', String(h))
+          p.setAttribute('position', '' + x + ' ' + y + ' 0.005')
+          p.setAttribute('rotation', '0 0 0')
+          p.setAttribute('depth-occluder', '')
+          return p
+        }
+        const BIG = 20, GAP = 0.02
+        const occLeft = makeOcc(BIG, BIG, -(doorW/2 + BIG/2 + GAP), centerY)
+        const occRight = makeOcc(BIG, BIG, (doorW/2 + BIG/2 + GAP), centerY)
+        const occTop = makeOcc(BIG, BIG, 0, centerY + (doorH/2 + BIG/2 + GAP))
+        const occBottom = makeOcc(BIG, BIG, 0, centerY - (doorH/2 + BIG/2 + GAP))
+        const occlusionGroup = document.createElement('a-entity')
+        occlusionGroup.setAttribute('id', 'portalOccluders')
+        occlusionGroup.appendChild(occLeft)
+        occlusionGroup.appendChild(occRight)
+        occlusionGroup.appendChild(occTop)
+        occlusionGroup.appendChild(occBottom)
+        this.el.appendChild(occlusionGroup)
       },
       tick: function () {
         if (!this.camera) return
@@ -174,6 +195,7 @@ export async function GET(
 
         const env = this.el.querySelector('#envContainer')
         const frame = this.el.querySelector('#portalFrame')
+        const occ = this.el.querySelector('#portalOccluders')
 
         // If camera is beyond the portal plane (local z < immersiveDistance) -> inside
         const inside = camLocal.z < this.data.immersiveDistance
@@ -181,17 +203,15 @@ export async function GET(
           this._inside = inside
           if (env && frame) {
             if (inside) {
-              // Inside: show environment and hide frame
-              env.setAttribute('visible', 'true')
-              env.setAttribute('scale', '1 1 1')
+              // Inside: hide frame and occluders to reveal full environment
               if (frame) frame.setAttribute('visible', 'false')
+              if (occ) occ.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
             } else {
-              // Outside: hide environment and show frame
-              env.setAttribute('visible', 'false')
-              env.setAttribute('scale', '0 0 0')
+              // Outside: show frame and occluders so env is only seen through opening
               if (frame) frame.setAttribute('visible', 'true')
+              if (occ) occ.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
             }
