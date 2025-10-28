@@ -515,7 +515,7 @@ export async function GET(
       /* Mobile-first responsive design */
       @media (max-width: 768px) {
         body {
-          background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%);
+          background: #f5f5dc;
         }
       }
 
@@ -532,6 +532,11 @@ export async function GET(
         -webkit-transform: translateZ(0);
         -webkit-perspective: 1000;
         perspective: 1000;
+      }
+
+      /* Ensure transparent backgrounds to prevent dark splits/overlays */
+      html, body, a-scene, a-scene canvas {
+        background: transparent !important;
       }
 
       a-scene canvas {
@@ -832,8 +837,7 @@ export async function GET(
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
+      renderer="colorManagement: false; physicallyCorrectLights: false; antialias: true; alpha: true; precision: mediump; logarithmicDepthBuffer: true; preserveDrawingBuffer: false"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
