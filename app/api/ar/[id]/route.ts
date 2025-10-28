@@ -47,7 +47,7 @@ export async function GET(
     <meta name="msapplication-navbutton-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-title" content="AR Experience" />
     <title>${experience.title} - AR Experience</title>
-    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
     
@@ -522,7 +522,7 @@ export async function GET(
       a-scene {
         width: 100vw;
         height: 100vh;
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         transform: translateZ(0);
@@ -554,6 +554,22 @@ export async function GET(
         height: 100vh !important;
         max-width: 100vw !important;
         max-height: 100vh !important;
+        object-fit: cover !important;
+        background: #000 !important;
+      }
+      /* A-Frame canvas class */
+      .a-canvas {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+      }
+      /* MindAR default video id selector */
+      #mindar-image-video, #mindar-video, video#arVideo {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
         object-fit: cover !important;
         background: #000 !important;
       }
@@ -858,7 +874,8 @@ export async function GET(
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
-      renderer="colorManagement: false; physicallyCorrectLights: false; antialias: true; alpha: false; precision: highp; logarithmicDepthBuffer: true; powerPreference: high-performance; sortObjects: true; preserveDrawingBuffer: false"
+      renderer="antialias: true; alpha: true"
+      background="color: #0000"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
@@ -1083,6 +1100,44 @@ export async function GET(
         };
         const hideAnnotation = () => { if (annotationPanel) annotationPanel.classList.remove('show'); };
         if (annotationPanel) annotationPanel.addEventListener('click', hideAnnotation);
+
+        // Force renderer/canvas/video to match viewport size to avoid split overlays
+        const forceResize = () => {
+          try {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            // A-Frame renderer sizing
+            const afScene = (scene as any);
+            if (afScene && afScene.renderer) {
+              afScene.renderer.setSize(w, h, false);
+              afScene.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            }
+            if (typeof (afScene as any)?.resize === 'function') {
+              (afScene as any).resize();
+            }
+            // MindAR video/canvases
+            const vid = document.getElementById('mindar-image-video') || document.getElementById('mindar-video') || document.getElementById('arVideo');
+            const canvases = document.querySelectorAll('canvas');
+            if (vid instanceof HTMLVideoElement) {
+              vid.style.width = '100vw';
+              vid.style.height = '100vh';
+              vid.style.objectFit = 'cover';
+            }
+            canvases.forEach((c:any)=>{
+              c.style.width = '100vw';
+              c.style.height = '100vh';
+            });
+          } catch(e) { console.warn('forceResize failed', e); }
+        };
+        window.addEventListener('resize', forceResize);
+        window.addEventListener('orientationchange', forceResize);
+        // Run immediately and after scene render target is ready
+        forceResize();
+        if (scene) {
+          scene.addEventListener('render-target-loaded', forceResize);
+        }
+        setTimeout(forceResize, 200);
+        setTimeout(forceResize, 800);
 
         // Pinch-to-scale for video plane (does not affect marker tracking)
         if (isVideo && videoPlane && scene) {
