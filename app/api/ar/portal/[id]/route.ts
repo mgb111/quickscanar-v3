@@ -117,11 +117,11 @@ export async function GET(
         backdrop.setAttribute('material', 'color: #000; opacity: 0.6; side: double')
         this.el.appendChild(backdrop)
 
-        // Immersive environment container (visible; masked by occluders until inside)
+        // Immersive environment container (hidden until inside)
         const env = document.createElement('a-entity')
         env.setAttribute('id', 'envContainer')
-        env.setAttribute('visible', 'true')
-        env.setAttribute('scale', '1 1 1')
+        env.setAttribute('visible', 'false')
+        env.setAttribute('scale', '0 0 0')
         // Make a huge inverted sphere so it surrounds the user when inside
         const sky = document.createElement('a-sphere')
         sky.setAttribute('radius', '20')
@@ -160,28 +160,7 @@ export async function GET(
         frame.appendChild(leftBar)
         frame.appendChild(rightBar)
 
-        // Invisible occlusion wall made of 4 giant planes around the opening to mask env when outside
-        const makeOcc = (w,h,x,y)=>{
-          const p = document.createElement('a-plane')
-          p.setAttribute('width', String(w))
-          p.setAttribute('height', String(h))
-          p.setAttribute('position', '' + x + ' ' + y + ' 0')
-          p.setAttribute('rotation', '0 0 0')
-          p.setAttribute('material', 'color: #000; transparent: true; opacity: 0.0; depthTest: true; depthWrite: true; side: double')
-          return p
-        }
-        const BIG = 20, GAP = 0.02
-        const occLeft = makeOcc(BIG, BIG, -(doorW/2 + BIG/2 + GAP), centerY); occLeft.setAttribute('depth-occluder', '')
-        const occRight = makeOcc(BIG, BIG, (doorW/2 + BIG/2 + GAP), centerY); occRight.setAttribute('depth-occluder', '')
-        const occTop = makeOcc(BIG, BIG, 0, centerY + (doorH/2 + BIG/2 + GAP)); occTop.setAttribute('depth-occluder', '')
-        const occBottom = makeOcc(BIG, BIG, 0, centerY - (doorH/2 + BIG/2 + GAP)); occBottom.setAttribute('depth-occluder', '')
-        const occlusionGroup = document.createElement('a-entity')
-        occlusionGroup.setAttribute('id', 'portalOccluders')
-        occlusionGroup.appendChild(occLeft)
-        occlusionGroup.appendChild(occRight)
-        occlusionGroup.appendChild(occTop)
-        occlusionGroup.appendChild(occBottom)
-        this.el.appendChild(occlusionGroup)
+        // No occluders needed when env is hidden outside
       },
       tick: function () {
         if (!this.camera) return
@@ -195,7 +174,6 @@ export async function GET(
 
         const env = this.el.querySelector('#envContainer')
         const frame = this.el.querySelector('#portalFrame')
-        const occ = this.el.querySelector('#portalOccluders')
 
         // If camera is beyond the portal plane (local z < immersiveDistance) -> inside
         const inside = camLocal.z < this.data.immersiveDistance
@@ -203,15 +181,17 @@ export async function GET(
           this._inside = inside
           if (env && frame) {
             if (inside) {
-              // Inside: hide frame and occluders to reveal full environment
+              // Inside: show environment and hide frame
+              env.setAttribute('visible', 'true')
+              env.setAttribute('scale', '1 1 1')
               if (frame) frame.setAttribute('visible', 'false')
-              if (occ) occ.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
             } else {
-              // Outside: show frame and occluders so environment is visible only through doorway
+              // Outside: hide environment and show frame
+              env.setAttribute('visible', 'false')
+              env.setAttribute('scale', '0 0 0')
               if (frame) frame.setAttribute('visible', 'true')
-              if (occ) occ.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
             }
