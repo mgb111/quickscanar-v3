@@ -195,6 +195,7 @@ export async function GET(
 
         const env = this.el.querySelector('#envContainer')
         const frame = this.el.querySelector('#portalFrame')
+        const occ = this.el.querySelector('#portalOccluders')
 
         // If camera is beyond the portal plane (local z < immersiveDistance) -> inside
         const inside = camLocal.z < this.data.immersiveDistance
@@ -205,12 +206,14 @@ export async function GET(
               env.setAttribute('visible', 'true')
               env.setAttribute('scale', '1 1 1')
               frame.setAttribute('visible', 'false')
+              if (occ) occ.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
             } else {
               env.setAttribute('visible', 'false')
               env.setAttribute('scale', '0 0 0')
               frame.setAttribute('visible', 'true')
+              if (occ) occ.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
             }
