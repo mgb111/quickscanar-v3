@@ -171,10 +171,10 @@ export async function GET(
           return p
         }
         const BIG = 20, GAP = 0.02
-        const occLeft = makeOcc(BIG, BIG, -(doorW/2 + BIG/2 + GAP), centerY)
-        const occRight = makeOcc(BIG, BIG, (doorW/2 + BIG/2 + GAP), centerY)
-        const occTop = makeOcc(BIG, BIG, 0, centerY + (doorH/2 + BIG/2 + GAP))
-        const occBottom = makeOcc(BIG, BIG, 0, centerY - (doorH/2 + BIG/2 + GAP))
+        const occLeft = makeOcc(BIG, BIG, -(doorW/2 + BIG/2 + GAP), centerY); occLeft.setAttribute('depth-occluder', '')
+        const occRight = makeOcc(BIG, BIG, (doorW/2 + BIG/2 + GAP), centerY); occRight.setAttribute('depth-occluder', '')
+        const occTop = makeOcc(BIG, BIG, 0, centerY + (doorH/2 + BIG/2 + GAP)); occTop.setAttribute('depth-occluder', '')
+        const occBottom = makeOcc(BIG, BIG, 0, centerY - (doorH/2 + BIG/2 + GAP)); occBottom.setAttribute('depth-occluder', '')
         const occlusionGroup = document.createElement('a-entity')
         occlusionGroup.setAttribute('id', 'portalOccluders')
         occlusionGroup.appendChild(occLeft)
@@ -203,16 +203,14 @@ export async function GET(
           this._inside = inside
           if (env && frame) {
             if (inside) {
-              env.setAttribute('visible', 'true')
-              env.setAttribute('scale', '1 1 1')
-              frame.setAttribute('visible', 'false')
+              // Inside: hide frame and occluders to reveal full environment
+              if (frame) frame.setAttribute('visible', 'false')
               if (occ) occ.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
             } else {
-              env.setAttribute('visible', 'false')
-              env.setAttribute('scale', '0 0 0')
-              frame.setAttribute('visible', 'true')
+              // Outside: show frame and occluders so environment is visible only through doorway
+              if (frame) frame.setAttribute('visible', 'true')
               if (occ) occ.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
