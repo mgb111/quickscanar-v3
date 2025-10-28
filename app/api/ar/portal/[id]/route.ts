@@ -101,21 +101,7 @@ export async function GET(
         frame.appendChild(glow)
         this.el.appendChild(frame)
 
-        // A subtle floor disc inside portal for orientation
-        const floor = document.createElement('a-cylinder')
-        floor.setAttribute('radius', '0.65')
-        floor.setAttribute('height', '0.02')
-        floor.setAttribute('position', '0 0.01 -0.6')
-        floor.setAttribute('rotation', '0 0 0')
-        floor.setAttribute('material', 'color: #111827; metalness: 0.1; roughness: 1.0; opacity: 0.85')
-        this.el.appendChild(floor)
-
-        // Black vignette behind the gate to create contrast with camera feed
-        const backdrop = document.createElement('a-circle')
-        backdrop.setAttribute('radius', '0.8')
-        backdrop.setAttribute('position', '0 1.5 -0.02')
-        backdrop.setAttribute('material', 'color: #000; opacity: 0.6; side: double')
-        this.el.appendChild(backdrop)
+        // Removed dark floor and backdrop for full camera visibility
 
         // Immersive environment container (always rendered; masked by occluders until inside)
         const env = document.createElement('a-entity')
