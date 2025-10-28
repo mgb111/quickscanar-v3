@@ -108,11 +108,7 @@ export async function GET(
         env.setAttribute('id', 'envContainer')
         env.setAttribute('visible', 'true')
         env.setAttribute('scale', '1 1 1')
-        // Make a huge inverted sphere so it surrounds the user when inside
-        const sky = document.createElement('a-sphere')
-        sky.setAttribute('radius', '20')
-        sky.setAttribute('material', 'color: #000; side: back; opacity: 1')
-        env.appendChild(sky)
+        // Removed sky sphere to avoid any dark background leaking through mask
         this.el.appendChild(env)
 
         // Move the content model under the env container (cloned from template placeholder)
