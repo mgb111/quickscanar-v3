@@ -36,7 +36,6 @@ export async function GET(
   <title>${experience.title} - AR Portal</title>
   <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
-  <script type="module" src="https://unpkg.com/@google/model-viewer@3.3.0/dist/model-viewer.min.js"></script>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     a-scene { width: 100vw; height: 100vh; }
@@ -167,24 +166,12 @@ export async function GET(
 <body>
   <div id="hint" class="hint">Walk forward to enter the portal<small>Move physically toward the glowing ring</small></div>
 
-  <!-- Pre-AR interactive preview overlay -->
-  <div id="overlay">
-    <model-viewer id="preview"
-      src="${experience.model_url}"
-      camera-controls
-      auto-rotate
-      exposure="1.0"
-      shadow-intensity="1"
-      style="background: transparent;"
-    ></model-viewer>
-    <button id="startBtn" type="button">Start AR</button>
-    <div id="note">Preview the 3D model, then start AR to see the portal with your camera feed</div>
-  </div>
+  
 
   <a-scene
     renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
     xr-mode-ui="enabled: true"
-    webxr="requiredFeatures: local-floor; optionalFeatures: hit-test, dom-overlay; overlayElement: #hint"
+    webxr="requiredFeatures: local; optionalFeatures: local-floor, hit-test, dom-overlay; overlayElement: #hint"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     embedded
@@ -213,48 +200,44 @@ export async function GET(
   </a-scene>
 
   <script>
-    // Explicit AR start with fallback
+    // Auto-start AR with one-tap fallback
     document.addEventListener('DOMContentLoaded', () => {
       const scene = document.querySelector('a-scene')
-      const overlay = document.getElementById('overlay')
-      const startBtn = document.getElementById('startBtn')
       const hint = document.getElementById('hint')
+      let started = false
 
       const enterAR = async () => {
+        if (started) return
         try {
-          // Preferred path via A-Frame
           if (scene && scene.enterVR) {
             await scene.enterVR()
-            if (overlay) overlay.classList.add('hidden')
+            started = true
             return
           }
-        } catch (e) {
-          // Fall through
-        }
-        // Manual WebXR session as fallback
+        } catch (e) {}
         try {
           const xr = navigator.xr
           if (!xr || !xr.requestSession) throw new Error('WebXR not available')
           const session = await xr.requestSession('immersive-ar', {
-            requiredFeatures: ['local-floor'],
-            optionalFeatures: ['hit-test', 'dom-overlay'],
+            requiredFeatures: ['local'],
+            optionalFeatures: ['local-floor', 'hit-test', 'dom-overlay'],
             domOverlay: { root: document.body }
           })
           const threeRenderer = scene && scene.renderer
           if (threeRenderer && threeRenderer.xr && threeRenderer.xr.setSession) {
             await threeRenderer.xr.setSession(session)
-            if (overlay) overlay.classList.add('hidden')
+            started = true
           }
         } catch (err) {
-          // Keep preview; show info
-          if (hint) hint.textContent = 'AR not supported on this device/browser'
+          if (hint) hint.textContent = 'Tap anywhere to start AR'
         }
       }
 
-      if (startBtn) startBtn.addEventListener('click', enterAR)
-
-      // Show overlay preview by default; user taps Start AR
-      if (overlay) overlay.classList.remove('hidden')
+      // Auto attempt
+      enterAR()
+      // One-tap fallback
+      const onTap = async () => { await enterAR(); document.body.removeEventListener('click', onTap) }
+      document.body.addEventListener('click', onTap, { once: true })
     })
   </script>
 </body>
