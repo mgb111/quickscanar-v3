@@ -795,6 +795,33 @@ export async function GET(
         #surfaceBtn { bottom: 80px; }
         #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
+      
+      /* Portal entry button */
+      #portalBtn {
+        position: fixed;
+        bottom: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1004;
+      }
+      #portalBtn a {
+        text-decoration: none;
+        background: #1f2937; /* gray-800 */
+        color: #ffffff;
+        border: 2px solid #000000;
+        border-radius: 9999px;
+        padding: 14px 22px;
+        font-size: 16px;
+        font-weight: 700;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        opacity: 0.98;
+        transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
+      }
+      #portalBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+      @media (max-width: 768px) {
+        #portalBtn { bottom: 125px; }
+        #portalBtn a { padding: 12px 18px; font-size: 15px; }
+      }
     </style>
   </head>
   <body>
@@ -872,6 +899,12 @@ export async function GET(
     ${is3D && experience.model_url ? `
     <div id="surfaceBtn">
       <a href="/api/ar/surface/${experience.id}" aria-label="Place on surface">Place on Surface</a>
+    </div>
+    ` : ''}
+
+    ${is3D && experience.model_url ? `
+    <div id="portalBtn">
+      <a href="/api/ar/portal/${experience.id}" aria-label="Enter Portal">Enter Portal</a>
     </div>
     ` : ''}
 
