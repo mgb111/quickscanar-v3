@@ -36,11 +36,19 @@ export async function GET(
   <title>${experience.title} - AR Portal</title>
   <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+  <script type="module" src="https://unpkg.com/@google/model-viewer@3.3.0/dist/model-viewer.min.js"></script>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     a-scene { width: 100vw; height: 100vh; }
     .hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; color: #fff; background: rgba(0,0,0,0.6); border: 1px solid #000; border-radius: 12px; padding: 10px 14px; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-weight: 700; z-index: 10; }
     .hint small { display: block; font-weight: 500; opacity: 0.9; }
+    /* Overlay for pre-AR interactive preview */
+    #overlay { position: fixed; inset: 0; background: radial-gradient(1200px 600px at 50% 100%, rgba(15,23,42,0.95), rgba(0,0,0,0.98)); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
+    #overlay.hidden { display: none; }
+    #startBtn { background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 14px 22px; font-weight: 800; font-size: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); cursor: pointer; }
+    #startBtn:active { transform: scale(0.98); }
+    #preview { width: min(520px, 92vw); height: min(66vh, 520px); background: transparent; border-radius: 16px; overflow: hidden; }
+    #note { color: #cbd5e1; font-weight: 600; font-size: 14px; text-align: center; }
   </style>
   <script>
     // Simple inside/outside portal logic
@@ -109,6 +117,7 @@ export async function GET(
           model.setAttribute('id', 'contentModel')
           // Place it a bit in front so once inside, it surrounds the user
           model.setAttribute('position', '0 0 -1.5')
+          model.setAttribute('visible', 'true')
           env.appendChild(model)
         }
       },
@@ -150,10 +159,24 @@ export async function GET(
 <body>
   <div id="hint" class="hint">Walk forward to enter the portal<small>Move physically toward the glowing ring</small></div>
 
+  <!-- Pre-AR interactive preview overlay -->
+  <div id="overlay">
+    <model-viewer id="preview"
+      src="${experience.model_url}"
+      camera-controls
+      auto-rotate
+      exposure="1.0"
+      shadow-intensity="1"
+      style="background: transparent;"
+    ></model-viewer>
+    <button id="startBtn" type="button">Start AR</button>
+    <div id="note">Preview the 3D model, then start AR to see the portal with your camera feed</div>
+  </div>
+
   <a-scene
     renderer="colorManagement: true, physicallyCorrectLights: true, antialias: true, alpha: true"
     xr-mode-ui="enabled: true"
-    webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #hint"
+    webxr="requiredFeatures: local-floor; optionalFeatures: hit-test, dom-overlay; overlayElement: #hint"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     embedded
@@ -182,22 +205,48 @@ export async function GET(
   </a-scene>
 
   <script>
-    // Autostart AR (where supported)
+    // Explicit AR start with fallback
     document.addEventListener('DOMContentLoaded', () => {
       const scene = document.querySelector('a-scene')
-      const startIfReady = () => {
+      const overlay = document.getElementById('overlay')
+      const startBtn = document.getElementById('startBtn')
+      const hint = document.getElementById('hint')
+
+      const enterAR = async () => {
+        try {
+          // Preferred path via A-Frame
+          if (scene && scene.enterVR) {
+            await scene.enterVR()
+            if (overlay) overlay.classList.add('hidden')
+            return
+          }
+        } catch (e) {
+          // Fall through
+        }
+        // Manual WebXR session as fallback
         try {
           const xr = navigator.xr
-          if (!xr || !xr.isSessionSupported) return
-          xr.isSessionSupported('immersive-ar').then(supported => {
-            if (supported) {
-              const enter = scene && scene.renderer && scene.renderer.xr && scene.renderer.xr.setSession
-              // A-Frame shows an Enter AR button automatically; we can prompt user
-            }
+          if (!xr || !xr.requestSession) throw new Error('WebXR not available')
+          const session = await xr.requestSession('immersive-ar', {
+            requiredFeatures: ['local-floor'],
+            optionalFeatures: ['hit-test', 'dom-overlay'],
+            domOverlay: { root: document.body }
           })
-        } catch (e) {}
+          const threeRenderer = scene && scene.renderer
+          if (threeRenderer && threeRenderer.xr && threeRenderer.xr.setSession) {
+            await threeRenderer.xr.setSession(session)
+            if (overlay) overlay.classList.add('hidden')
+          }
+        } catch (err) {
+          // Keep preview; show info
+          if (hint) hint.textContent = 'AR not supported on this device/browser'
+        }
       }
-      startIfReady()
+
+      if (startBtn) startBtn.addEventListener('click', enterAR)
+
+      // Show overlay preview by default; user taps Start AR
+      if (overlay) overlay.classList.remove('hidden')
     })
   </script>
 </body>
