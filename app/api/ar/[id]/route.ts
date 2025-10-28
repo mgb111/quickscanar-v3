@@ -546,6 +546,27 @@ export async function GET(
         -webkit-backface-visibility: hidden;
       }
 
+      /* Ensure MindAR injected elements cover the viewport exactly */
+      .mindar-container, .mindar-container video, .mindar-container canvas {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        object-fit: cover !important;
+        background: #000 !important;
+      }
+      /* Generic fallback when class name differs */
+      body > video:not(#arVideo), body > canvas {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        object-fit: cover !important;
+        background: #000 !important;
+      }
+
       /* Mobile AR scene optimization */
       @media (max-width: 768px) {
         a-scene {
@@ -837,7 +858,7 @@ export async function GET(
     <a-scene
       id="arScene"
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
-      renderer="colorManagement: false; physicallyCorrectLights: false; antialias: true; alpha: true; precision: mediump; logarithmicDepthBuffer: true; preserveDrawingBuffer: false"
+      renderer="colorManagement: false; physicallyCorrectLights: false; antialias: true; alpha: false; precision: highp; logarithmicDepthBuffer: true; powerPreference: high-performance; sortObjects: true; preserveDrawingBuffer: false"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
