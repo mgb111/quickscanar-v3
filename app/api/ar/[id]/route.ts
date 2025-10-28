@@ -823,7 +823,6 @@ export async function GET(
           webkit-playsinline
           crossorigin="anonymous"
           preload="auto"
-          autoplay
           style="transform: translateZ(0); will-change: transform; backface-visibility: hidden;"
         ></video>
         ` : ''}
@@ -1110,10 +1109,10 @@ export async function GET(
         }
 
         if (video && videoPlane) {
-          // Optimize video for performance
+          // Optimize video for performance (do not autoplay; will start on targetFound)
           video.playsInline = true;
-          video.muted = true; // Start muted for Safari autoplay
-          video.autoplay = true;
+          video.muted = false;
+          video.autoplay = false;
           video.controls = false;
           video.setAttribute('webkit-playsinline', 'true');
           video.setAttribute('x5-playsinline', 'true');
@@ -1122,7 +1121,7 @@ export async function GET(
           // We'll handle the dimensions in updateVideoAspectRatio
           video.addEventListener('loadedmetadata', () => {
             console.log('Video metadata loaded');
-            // Trigger the aspect ratio update
+            // Trigger the aspect ratio update (playback will start on targetFound)
             updateVideoAspectRatio(video, videoPlane);
             
             // Log video dimensions for debugging
@@ -1134,13 +1133,7 @@ export async function GET(
             video.style.backfaceVisibility = 'hidden';
           });
 
-          // Enable sound directly
-          try {
-            video.muted = false;
-            await video.play();
-          } catch (e) {
-            console.log('Autoplay with sound may be blocked by the browser:', e);
-          }
+          // Do not start playback yet; wait for marker scan (targetFound)
         }
 
         // Setup 3D model animation
@@ -1243,15 +1236,7 @@ export async function GET(
             console.log('MindAR arReady');
             scene.style.opacity = '1';
             
-            if (video) {
-              // Try to play with sound enabled
-              video.muted = false;
-              video.play().then(() => {
-                console.log('Video playing (muted)');
-                // After video starts playing, update the aspect ratio
-                updateVideoAspectRatio(video, videoPlane);
-              }).catch(e => console.error('Video play error:', e));
-            }
+            // Do not start media here; will start after marker is scanned
             
             // For 3D models, ensure animations are ready
             if (is3D && model3D) {
@@ -1313,7 +1298,7 @@ export async function GET(
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
                   }
                   if (video) {
-                    // Ensure video is playing with sound
+                    // Start playback with sound only after marker is scanned
                     if (video.paused) {
                       video.muted = false;
                       video.play().catch(() => {});
