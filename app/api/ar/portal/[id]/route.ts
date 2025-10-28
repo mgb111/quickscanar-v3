@@ -46,6 +46,30 @@ export async function GET(
   </style>
   <script>
     // Simple inside/outside portal logic
+    // Depth-only occluder: writes depth, not color
+    AFRAME.registerComponent('depth-occluder', {
+      init: function () {
+        const mesh = this.el.getObject3D('mesh')
+        if (mesh) this.apply(mesh)
+        this.el.addEventListener('object3dset', (e) => {
+          if (e.detail && e.detail.type === 'mesh') this.apply(this.el.getObject3D('mesh'))
+        })
+      },
+      apply(mesh) {
+        if (!mesh) return
+        const applyMat = (m) => {
+          if (!m) return
+          m.transparent = true
+          m.opacity = 0.0
+          m.depthWrite = true
+          m.depthTest = true
+          // @ts-ignore colorWrite exists on three.js materials
+          m.colorWrite = false
+        }
+        if (Array.isArray(mesh.material)) mesh.material.forEach(applyMat)
+        else applyMat(mesh.material)
+      }
+    })
     AFRAME.registerComponent('portal-gate', {
       schema: {
         width: { type: 'number', default: 1.2 },
@@ -93,11 +117,11 @@ export async function GET(
         backdrop.setAttribute('material', 'color: #000; opacity: 0.6; side: double')
         this.el.appendChild(backdrop)
 
-        // Immersive environment container (hidden until inside)
+        // Immersive environment container (visible; masked by occluders until inside)
         const env = document.createElement('a-entity')
         env.setAttribute('id', 'envContainer')
-        env.setAttribute('visible', 'false')
-        env.setAttribute('scale', '0 0 0')
+        env.setAttribute('visible', 'true')
+        env.setAttribute('scale', '1 1 1')
         // Make a huge inverted sphere so it surrounds the user when inside
         const sky = document.createElement('a-sphere')
         sky.setAttribute('radius', '20')
@@ -115,6 +139,49 @@ export async function GET(
           model.setAttribute('visible', 'true')
           env.appendChild(model)
         }
+
+        // Build rectangular portal frame (door) using boxes
+        const doorW = 1.0, doorH = 2.2, thickness = 0.06, centerY = 1.5
+        const mkBar = (w,h,x,y,z)=>{
+          const b = document.createElement('a-box')
+          b.setAttribute('width', String(w))
+          b.setAttribute('height', String(h))
+          b.setAttribute('depth', String(thickness))
+          b.setAttribute('position', '' + x + ' ' + y + ' ' + z)
+          b.setAttribute('material', 'color: #7dd3fc; metalness: 0.2; roughness: 0.4; emissive: #0ea5e9; emissiveIntensity: 0.6')
+          return b
+        }
+        const topBar = mkBar(doorW + 0.12, thickness, 0, centerY + doorH/2, 0)
+        const botBar = mkBar(doorW + 0.12, thickness, 0, centerY - doorH/2, 0)
+        const leftBar = mkBar(thickness, doorH, -doorW/2, centerY, 0)
+        const rightBar = mkBar(thickness, doorH, doorW/2, centerY, 0)
+        frame.appendChild(topBar)
+        frame.appendChild(botBar)
+        frame.appendChild(leftBar)
+        frame.appendChild(rightBar)
+
+        // Invisible occlusion wall made of 4 giant planes around the opening to mask env when outside
+        const makeOcc = (w,h,x,y)=>{
+          const p = document.createElement('a-plane')
+          p.setAttribute('width', String(w))
+          p.setAttribute('height', String(h))
+          p.setAttribute('position', '' + x + ' ' + y + ' 0')
+          p.setAttribute('rotation', '0 0 0')
+          p.setAttribute('material', 'color: #000; transparent: true; opacity: 0.0; depthTest: true; depthWrite: true; side: double')
+          return p
+        }
+        const BIG = 20, GAP = 0.02
+        const occLeft = makeOcc(BIG, BIG, -(doorW/2 + BIG/2 + GAP), centerY)
+        const occRight = makeOcc(BIG, BIG, (doorW/2 + BIG/2 + GAP), centerY)
+        const occTop = makeOcc(BIG, BIG, 0, centerY + (doorH/2 + BIG/2 + GAP))
+        const occBottom = makeOcc(BIG, BIG, 0, centerY - (doorH/2 + BIG/2 + GAP))
+        const occlusionGroup = document.createElement('a-entity')
+        occlusionGroup.setAttribute('id', 'portalOccluders')
+        occlusionGroup.appendChild(occLeft)
+        occlusionGroup.appendChild(occRight)
+        occlusionGroup.appendChild(occTop)
+        occlusionGroup.appendChild(occBottom)
+        this.el.appendChild(occlusionGroup)
       },
       tick: function () {
         if (!this.camera) return
