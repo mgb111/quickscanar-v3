@@ -42,13 +42,8 @@ export async function GET(
     a-scene { width: 100vw; height: 100vh; }
     .hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; color: #fff; background: rgba(0,0,0,0.6); border: 1px solid #000; border-radius: 12px; padding: 10px 14px; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-weight: 700; z-index: 10; }
     .hint small { display: block; font-weight: 500; opacity: 0.9; }
-    /* Overlay for pre-AR interactive preview */
-    #overlay { position: fixed; inset: 0; background: radial-gradient(1200px 600px at 50% 100%, rgba(15,23,42,0.95), rgba(0,0,0,0.98)); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
-    #overlay.hidden { display: none; }
-    #startBtn { background: #dc2626; color: #fff; border: 2px solid #000; border-radius: 9999px; padding: 14px 22px; font-weight: 800; font-size: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.35); cursor: pointer; }
-    #startBtn:active { transform: scale(0.98); }
-    #preview { width: min(520px, 92vw); height: min(66vh, 520px); background: transparent; border-radius: 16px; overflow: hidden; }
-    #note { color: #cbd5e1; font-weight: 600; font-size: 14px; text-align: center; }
+    /* Hide A-Frame default AR/VR UI */
+    .a-enter-ar, .a-enter-vr, .a-enter-ar-button, .a-enter-vr-button, [class*="a-enter-"] { display: none !important; }
   </style>
   <script>
     // Simple inside/outside portal logic
@@ -119,6 +114,15 @@ export async function GET(
           model.setAttribute('position', '0 0 -1.5')
           model.setAttribute('visible', 'true')
           env.appendChild(model)
+
+          // Add a preview clone visible while outside the portal
+          const preview = modelT.cloneNode(true)
+          preview.setAttribute('id', 'contentPreview')
+          preview.setAttribute('position', '0 0 -1.5')
+          preview.setAttribute('scale', '${modelScale} ${modelScale} ${modelScale}')
+          preview.setAttribute('visible', 'true')
+          this.el.appendChild(preview)
+          this.previewModel = preview
         }
       },
       tick: function () {
@@ -144,11 +148,15 @@ export async function GET(
               frame.setAttribute('visible', 'false')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Inside portal — explore the scene around you'
+              // Hide preview when inside
+              if (this.previewModel) this.previewModel.setAttribute('visible', 'false')
             } else {
               env.setAttribute('visible', 'false')
               frame.setAttribute('visible', 'true')
               const hint = document.getElementById('hint')
               if (hint) hint.textContent = 'Walk forward to enter the portal'
+              // Show preview when outside
+              if (this.previewModel) this.previewModel.setAttribute('visible', 'true')
             }
           }
         }
