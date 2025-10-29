@@ -641,7 +641,7 @@ export default function CreateExperience() {
                 required
               />
             </div>
-            )}
+            
 
             {/* Content Type Selection */}
             <div>
@@ -722,77 +722,78 @@ export default function CreateExperience() {
 
             {/* File Uploads */}
             {contentType !== 'portal' && (
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Video Upload - Always show, optional */}
-            <div>
-              <label className="block text-lg font-medium text-black mb-3">
-                Video File <span className="text-sm font-normal text-black opacity-70">(Optional, Max 100MB)</span>
-              </label>
-              <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
-                  {videoFile ? (
-                    <div className="space-y-3">
-                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
-                      <p className="text-base text-black font-medium">{videoFile.name}</p>
-                      {videoPreviewUrl && !showCombinedPreview && (
-                        <div className="mt-4">
-                          <video 
-                            key={videoPreviewUrl}
-                            src={videoPreviewUrl} 
-                            controls 
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
-                            style={{ objectFit: 'contain' }}
-                            onLoadedData={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              video.play().catch(() => {});
-                            }}
-                          />
-                          <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={openVideoScalePreview}
-                              className="bg-red-600 text-white px-3 py-2 rounded-lg border-2 border-black text-sm font-semibold hover:bg-red-700"
-                            >
-                              Open Scale Preview
-                            </button>
+            <>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Video Upload - Always show, optional */}
+                <div>
+                  <label className="block text-lg font-medium text-black mb-3">
+                    Video File <span className="text-sm font-normal text-black opacity-70">(Optional, Max 100MB)</span>
+                  </label>
+                  <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                    {videoFile ? (
+                      <div className="space-y-3">
+                        <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                        <p className="text-base text-black font-medium">{videoFile.name}</p>
+                        {videoPreviewUrl && !showCombinedPreview && (
+                          <div className="mt-4">
+                            <video 
+                              key={videoPreviewUrl}
+                              src={videoPreviewUrl} 
+                              controls 
+                              muted
+                              loop
+                              playsInline
+                              preload="metadata"
+                              className="w-full max-h-64 rounded-lg border-2 border-black bg-black"
+                              style={{ objectFit: 'contain' }}
+                              onLoadedData={(e) => {
+                                const video = e.target as HTMLVideoElement;
+                                video.play().catch(() => {});
+                              }}
+                            />
+                            <p className="text-xs text-black opacity-70 mt-2">Preview - Click to play</p>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={openVideoScalePreview}
+                                className="bg-red-600 text-white px-3 py-2 rounded-lg border-2 border-black text-sm font-semibold hover:bg-red-700"
+                              >
+                                Open Scale Preview
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeFile('video')}
-                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </button>
-            </div>
-                  ) : (
-            <div>
-                      <Video className="h-10 w-10 text-black mx-auto mb-3" />
-                      <p className="text-base text-black">
-                        <label htmlFor="video-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
-                          Click to upload video
-              </label>
-              </p>
-                      <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
-                <input
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFile('video')}
+                          className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <Video className="h-10 w-10 text-black mx-auto mb-3" />
+                        <p className="text-base text-black">
+                          <label htmlFor="video-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                            Click to upload video
+                          </label>
+                        </p>
+                        <p className="text-sm text-black opacity-70 mt-2">MP4, WebM, or other common formats</p>
+                        <input
                           id="video-upload"
-                  type="file"
+                          type="file"
                           accept="video/mp4,video/webm,video/ogg,video/avi,video/mov,video/quicktime"
                           onChange={handleVideoUpload}
-                  className="hidden"
-                />
-              </div>
-                  )}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-            </div>
 
-              {/* 3D Model Upload - Always show, optional */}
+                {/* 3D Model Upload - Always show, optional */}
                 <div>
                   <label className="block text-lg font-medium text-black mb-3">
                     3D Model File <span className="text-sm font-normal text-black opacity-70">(Optional, Max 50MB)</span>
@@ -846,48 +847,48 @@ export default function CreateExperience() {
                   </div>
                 </div>
 
-              {/* Mind File Upload */}
-              <div>
-                <label className="block text-lg font-medium text-black mb-3">
-                  Mind File (.mind) *
-                </label>
-                <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
-                  {mindFile ? (
-                    <div className="space-y-3">
-                      <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
-                      <p className="text-base text-black font-medium">{mindFile.name}</p>
-                      <button
-                        type="button"
-                        onClick={() => removeFile('mind')}
-                        className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-            <div>
-                      <Upload className="h-10 w-10 text-black mx-auto mb-3" />
-                      <p className="text-base text-black">
-                        <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
-                          Upload .mind file
-              </label>
-              </p>
-                      <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
-                <input
-                        id="mind-upload"
-                  type="file"
-                        accept=".mind"
-                        onChange={handleMindUpload}
-                  className="hidden"
-                />
-              </div>
-                  )}
+                {/* Mind File Upload */}
+                <div>
+                  <label className="block text-lg font-medium text-black mb-3">
+                    Mind File (.mind) *
+                  </label>
+                  <div className="border-2 border-dashed border-black rounded-xl p-8 text-center hover:border-red-600 transition-colors">
+                    {mindFile ? (
+                      <div className="space-y-3">
+                        <CheckCircle className="h-10 w-10 text-red-600 mx-auto" />
+                        <p className="text-base text-black font-medium">{mindFile.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeFile('mind')}
+                          className="text-red-600 hover:text-red-800 text-sm flex items-center justify-center mx-auto font-medium"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <Upload className="h-10 w-10 text-black mx-auto mb-3" />
+                        <p className="text-base text-black">
+                          <label htmlFor="mind-upload" className="cursor-pointer text-red-600 hover:text-red-800 font-semibold">
+                            Upload .mind file
+                          </label>
+                        </p>
+                        <p className="text-sm text-black opacity-70 mt-2">From Step 1 compiler</p>
+                        <input
+                          id="mind-upload"
+                          type="file"
+                          accept=".mind"
+                          onChange={handleMindUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-
-            </div>
+            </>            
+            )}
 
             {/* Combined Preview - Show if both video and 3D model uploaded */}
             {videoFile && modelFile && (
@@ -1265,6 +1266,7 @@ export default function CreateExperience() {
             )}
 
             {/* Marker Image Upload */}
+            {contentType !== 'portal' && (
             <div className="col-span-full">
               <label className="block text-lg font-medium text-black mb-3">
                 Marker Image (.png, .jpg, .jpeg) * <span className="text-sm font-normal text-black opacity-70">(Max 10MB)</span>
@@ -1313,6 +1315,7 @@ export default function CreateExperience() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-center pt-4">

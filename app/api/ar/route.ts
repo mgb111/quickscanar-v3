@@ -82,11 +82,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Must have at least one content URL
-    if (!video_file_url && !model_url) {
-      return NextResponse.json({ 
-        error: 'At least video_file_url or model_url is required' 
-      }, { status: 400 })
+    // Must have at least one content URL for non-portal types
+    if (actualContentType !== 'portal') {
+      if (!video_file_url && !model_url) {
+        return NextResponse.json({ 
+          error: 'At least video_file_url or model_url is required' 
+        }, { status: 400 })
+      }
     }
 
     // Enforce 1 campaign per user (free plan)
