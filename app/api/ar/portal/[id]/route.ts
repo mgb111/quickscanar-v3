@@ -40,6 +40,18 @@ export async function GET(
 <body>
   <div id="hint">Move your device to find a surface, then tap to place the portal</div>
   <div id="ui"><button id="startBtn">Start AR</button></div>
+  <div id="unsupported" style="display:none; position: fixed; inset: 16px; z-index: 20; background: rgba(0,0,0,0.85); color:#fff; padding:16px; border-radius:12px; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <h2 style="margin:0 0 8px 0; font-size:18px;">Portal AR not supported on this device/browser</h2>
+    <ol style="margin:8px 0 12px 18px; line-height:1.5;">
+      <li>Use Chrome on Android (ARCore) — best support for WebXR Hit Test.</li>
+      <li>On iOS 17+, enable Safari Settings → Advanced → Feature Flags:<br/>WebXR, WebXR: AR Module, WebXR: Hit Test.</li>
+      <li>Make sure you are on HTTPS (or localhost) and allowed camera permission.</li>
+    </ol>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a href="/api/ar/surface/${experience.id}" style="background:#111827;color:#fff;border:2px solid #000;border-radius:9999px;padding:12px 16px;font-weight:800;text-decoration:none;">Try Surface AR Instead</a>
+      <a href="/api/ar/${experience.id}" style="background:#374151;color:#fff;border:2px solid #000;border-radius:9999px;padding:12px 16px;font-weight:800;text-decoration:none;">Use Marker Mode</a>
+    </div>
+  </div>
 
   ${hasModel ? `
   <a-scene
@@ -162,8 +174,20 @@ export async function GET(
       }
     });
 
+    // Capability check
+    async function checkSupport() {
+      const unsupported = document.getElementById('unsupported');
+      try {
+        if (!('xr' in navigator)) { unsupported && (unsupported.style.display='block'); return; }
+        // @ts-ignore
+        const ok = await navigator.xr.isSessionSupported('immersive-ar');
+        if (!ok) { unsupported && (unsupported.style.display='block'); return; }
+      } catch (e) { unsupported && (unsupported.style.display='block'); return; }
+    }
+
     if (scene) scene.setAttribute('hit-test-updater', '');
     if (startBtn) startBtn.addEventListener('click', startAR);
+    checkSupport();
   </script>
 </body>
 </html>`
