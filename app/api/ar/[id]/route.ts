@@ -35,6 +35,57 @@ export async function GET(
     const contentType = experience.content_type || 'video'
     const isVideo = contentType === 'video' || contentType === 'both'
     const is3D = contentType === '3d' || contentType === 'both'
+    const isPortal = contentType === 'portal'
+
+    if (isPortal) {
+      const envUrl = experience.portal_env_url || 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg'
+      const portalDistance = Number(experience.portal_distance ?? 2.0)
+      const portalScale = Number(experience.portal_scale ?? 1.0)
+
+      const portalHTML = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>${experience.title} - AR Portal</title>
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <style>
+      html, body { margin:0; height:100%; overflow:hidden; background:#000; }
+      a-scene { width:100vw; height:100vh; }
+      .a-enter-ar-button { display:none !important; }
+    </style>
+    <script>
+      // Try to auto-enter AR on load where supported
+      document.addEventListener('DOMContentLoaded', function(){
+        const scene = document.querySelector('a-scene');
+        if (scene && scene.renderer && navigator.xr) {
+          setTimeout(()=>{ try { scene.enterVR && scene.enterVR(); } catch(e){} }, 300);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene embedded renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true" vr-mode-ui="enabled: false">
+      <a-assets>
+        <img id="portalEnv" src="${envUrl}" crossorigin="anonymous" />
+      </a-assets>
+
+      <a-entity camera look-controls position="0 1.6 0"></a-entity>
+
+      <!-- Portal frame -->
+      <a-entity position="0 1.4 -${portalDistance}">
+        <a-ring radius-inner="0.45" radius-outer="0.5" color="#ffffff" material="metalness:0.6; roughness:0.2" scale="${portalScale} ${portalScale} ${portalScale}"></a-ring>
+        <!-- Inside world as a small inverted sphere window aligned behind the ring -->
+        <a-sphere radius="0.75" position="0 0 -0.01" material="src: #portalEnv; side: back; shader: standard" scale="${portalScale} ${portalScale} ${portalScale}"></a-sphere>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>`
+
+      return new NextResponse(portalHTML, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      })
+    }
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -50,7 +101,6 @@ export async function GET(
     <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
-    <script src="/js/portal-effect.js"></script>
     
     <!-- Analytics Tracking Script -->
     <script>
@@ -770,17 +820,15 @@ export async function GET(
 
       
       
-      /* Markerless action buttons */
-      #surfaceBtn, #portalBtn {
+      /* Surface placement button */
+      #surfaceBtn {
         position: fixed;
         bottom: 90px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1004;
       }
-      /* Raise the Portal button so both are visible */
-      #portalBtn { bottom: 140px; }
-      #surfaceBtn a, #portalBtn a {
+      #surfaceBtn a {
         text-decoration: none;
         background: #111827; /* slate-900 */
         color: #ffffff;
@@ -793,11 +841,10 @@ export async function GET(
         opacity: 0.98;
         transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease, background-color .2s ease;
       }
-      #surfaceBtn a:hover, #portalBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+      #surfaceBtn a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
       @media (max-width: 768px) {
         #surfaceBtn { bottom: 80px; }
-        #portalBtn { bottom: 120px; }
-        #surfaceBtn a, #portalBtn a { padding: 12px 18px; font-size: 15px; }
+        #surfaceBtn a { padding: 12px 18px; font-size: 15px; }
       }
     </style>
   </head>
@@ -860,7 +907,6 @@ export async function GET(
           gesture-controls="dragSpeed: 0.003; rotateSpeed: 1; minScale: 0.005; maxScale: 5"
           visible="false"
           animation-mixer="clip: *; loop: repeat; clampWhenFinished: false"
-          ${experience.portal_enabled ? `portal-effect="enabled: true; color: ${experience.portal_color || '#00ffff'}; intensity: ${experience.portal_intensity || 0.8}; frameEnabled: ${experience.portal_frame_enabled !== false}; frameThickness: ${experience.portal_frame_thickness || 0.05}; animation: ${experience.portal_animation || 'pulse'}"` : ''}
         ></a-entity>
         ` : ''}
       </a-entity>
@@ -880,11 +926,7 @@ export async function GET(
     </div>
     ` : ''}
 
-    ${is3D && experience.model_url ? `
-    <div id="portalBtn">
-      <a href="/api/ar/portal/${experience.id}" aria-label="Open portal">Open Portal</a>
-    </div>
-    ` : ''}
+    
 
     ${experience.marker_image_url ? `
     <div id="markerGuide" role="status" aria-live="polite">

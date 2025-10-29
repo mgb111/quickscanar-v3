@@ -26,12 +26,9 @@ export async function POST(request: NextRequest) {
       user_id, 
       link_url,
       video_scale,
-      portal_enabled,
-      portal_color,
-      portal_intensity,
-      portal_frame_enabled,
-      portal_frame_thickness,
-      portal_animation,
+      portal_env_url,
+      portal_distance,
+      portal_scale,
     } = body
     
     console.log('📝 Creating AR experience with data:', {
@@ -77,6 +74,11 @@ export async function POST(request: NextRequest) {
     if (actualContentType === 'both' && (!video_file_url || !model_url)) {
       return NextResponse.json({ 
         error: 'Both video_file_url and model_url are required when content_type is "both"' 
+      }, { status: 400 })
+    }
+    if (actualContentType === 'portal' && !portal_env_url) {
+      return NextResponse.json({
+        error: 'portal_env_url is required when content_type is "portal"'
       }, { status: 400 })
     }
     
@@ -191,16 +193,10 @@ export async function POST(request: NextRequest) {
         model_position_z: model_position_z || 0.15,
         link_url: link_url ? String(link_url).trim() : null,
         video_scale: typeof video_scale === 'number' && video_scale > 0 ? video_scale : 1.0,
-        
-        // Portal effect settings
-        portal_enabled: portal_enabled || false,
-        portal_color: portal_color || '#00ffff',
-        portal_intensity: typeof portal_intensity === 'number' ? portal_intensity : 0.8,
-        portal_frame_enabled: portal_frame_enabled !== false,
-        portal_frame_thickness: typeof portal_frame_thickness === 'number' ? portal_frame_thickness : 0.05,
-        portal_animation: portal_animation || 'pulse',
-        
         user_id: user_id,
+        portal_env_url: portal_env_url || null,
+        portal_distance: typeof portal_distance === 'number' && portal_distance > 0 ? portal_distance : 2.0,
+        portal_scale: typeof portal_scale === 'number' && portal_scale > 0 ? portal_scale : 1.0,
         
         // Default values for other fields as needed
         created_at: new Date().toISOString(),
