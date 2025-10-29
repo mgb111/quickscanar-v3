@@ -52,6 +52,10 @@ export async function GET(
       html, body { margin:0; height:100%; overflow:hidden; background:#000; }
       a-scene { width:100vw; height:100vh; }
       .a-enter-ar-button { display:none !important; }
+      #ui { position:fixed; top:12px; left:0; right:0; display:flex; justify-content:center; z-index:5; pointer-events:none; }
+      #hint { background:rgba(0,0,0,0.55); color:#fff; border:1px solid #000; border-radius:12px; padding:10px 14px; font-weight:700; font-size:14px; pointer-events:auto; }
+      #exitBtn { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:6; display:none; }
+      #exitBtn button { background:#111827; color:#fff; border:2px solid #000; border-radius:9999px; padding:12px 18px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,.35); }
     </style>
     <script>
       // Try to auto-enter AR on load where supported
@@ -64,6 +68,8 @@ export async function GET(
     </script>
   </head>
   <body>
+    <div id="ui"><div id="hint">Tap the portal to enter. Tap Exit to return.</div></div>
+    <div id="exitBtn"><button type="button" id="exitBtnInner">Exit portal</button></div>
     <a-scene embedded renderer="colorManagement: true; physicallyCorrectLights: true" xr-mode-ui="enabled: true" vr-mode-ui="enabled: false">
       <a-assets>
         <img id="portalEnv" src="${envUrl}" crossorigin="anonymous" />
@@ -72,12 +78,51 @@ export async function GET(
       <a-entity camera look-controls position="0 1.6 0"></a-entity>
 
       <!-- Portal frame -->
-      <a-entity position="0 1.4 -${portalDistance}">
+      <a-entity id="portal" position="0 1.4 -${portalDistance}">
         <a-ring radius-inner="0.45" radius-outer="0.5" color="#ffffff" material="metalness:0.6; roughness:0.2" scale="${portalScale} ${portalScale} ${portalScale}"></a-ring>
         <!-- Inside world as a small inverted sphere window aligned behind the ring -->
         <a-sphere radius="0.75" position="0 0 -0.01" material="src: #portalEnv; side: back; shader: standard" scale="${portalScale} ${portalScale} ${portalScale}"></a-sphere>
       </a-entity>
+
+      <!-- Immersive sky when entered -->
+      <a-sky id="portalSky" src="#portalEnv" radius="25" visible="false"></a-sky>
+      
+      <a-entity id="logic" position="0 0 0"></a-entity>
     </a-scene>
+    <script>
+      (function(){
+        const portal = document.getElementById('portal');
+        const sky = document.getElementById('portalSky');
+        const exitWrap = document.getElementById('exitBtn');
+        const exitBtn = document.getElementById('exitBtnInner');
+        const hint = document.getElementById('hint');
+        let entered = false;
+
+        function enter(){
+          if (entered) return;
+          entered = true;
+          if (portal) portal.setAttribute('visible', 'false');
+          if (sky) sky.setAttribute('visible', 'true');
+          if (exitWrap) exitWrap.style.display = 'block';
+          if (hint) hint.textContent = 'You are inside the portal';
+        }
+
+        function exit(){
+          if (!entered) return;
+          entered = false;
+          if (portal) portal.setAttribute('visible', 'true');
+          if (sky) sky.setAttribute('visible', 'false');
+          if (exitWrap) exitWrap.style.display = 'none';
+          if (hint) hint.textContent = 'Tap the portal to enter. Tap Exit to return.';
+        }
+
+        // Click to enter on the portal entity
+        if (portal) {
+          portal.addEventListener('click', enter);
+        }
+        if (exitBtn) exitBtn.addEventListener('click', exit);
+      })();
+    </script>
   </body>
 </html>`
 

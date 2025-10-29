@@ -32,7 +32,7 @@ export default function CreateExperience() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [title, setTitle] = useState('')
-  const [contentType, setContentType] = useState<'video' | '3d'>('video')
+  const [contentType, setContentType] = useState<'video' | '3d' | 'both' | 'portal'>('video')
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [modelFile, setModelFile] = useState<File | null>(null)
   const [mindFile, setMindFile] = useState<File | null>(null)
@@ -55,6 +55,11 @@ export default function CreateExperience() {
   const [modelPositionZ, setModelPositionZ] = useState(0.15)
   // Video zoom for combined preview
   const [videoScale, setVideoScale] = useState(1.0)
+
+  // Portal fields
+  const [portalEnvUrl, setPortalEnvUrl] = useState('')
+  const [portalDistance, setPortalDistance] = useState(2.0)
+  const [portalScale, setPortalScale] = useState(1.0)
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -264,20 +269,27 @@ export default function CreateExperience() {
       return
     }
     
-    // Must have at least video OR 3D model (or both)
-    if (!videoFile && !modelFile) {
-      toast.error('Please upload at least a video file or a 3D model file (or both)')
-      return
-    }
+    if (contentType !== 'portal') {
+      // Must have at least video OR 3D model (or both)
+      if (!videoFile && !modelFile) {
+        toast.error('Please upload at least a video file or a 3D model file (or both)')
+        return
+      }
 
-    if (!mindFile) {
-      toast.error('Please upload a mind file')
-      return
-    }
+      if (!mindFile) {
+        toast.error('Please upload a mind file')
+        return
+      }
 
-    if (!markerImageFile) {
-      toast.error('Please upload a marker image')
-      return
+      if (!markerImageFile) {
+        toast.error('Please upload a marker image')
+        return
+      }
+    } else {
+      if (!portalEnvUrl.trim()) {
+        toast.error('Please provide a portal environment URL')
+        return
+      }
     }
 
     setSubmitting(true)
@@ -287,7 +299,7 @@ export default function CreateExperience() {
       let modelUrl = ''
 
       // Upload video if provided
-      if (videoFile) {
+      if (contentType !== 'portal' && videoFile) {
         // Step 1: Get presigned URL for video upload to R2
         const videoPresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -323,7 +335,7 @@ export default function CreateExperience() {
       }
 
       // Upload 3D model if provided
-      if (modelFile) {
+      if (contentType !== 'portal' && modelFile) {
         // Step 1: Get presigned URL for 3D model upload to R2
         const modelPresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -360,7 +372,7 @@ export default function CreateExperience() {
 
       // Upload mind file to R2 (two-step: presign then upload)
       let mindUrl = ''
-      if (mindFile) {
+      if (contentType !== 'portal' && mindFile) {
         // Step 1: Get presigned URL for .mind upload
         const mindPresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -398,7 +410,7 @@ export default function CreateExperience() {
 
       // Upload marker image to R2 (two-step: presign then upload)
       let markerImageUrl = ''
-      if (markerImageFile) {
+      if (contentType !== 'portal' && markerImageFile) {
         // Step 1: Get presigned URL for marker image upload
         const markerImagePresignedResponse = await fetch('/api/upload/r2', {
           method: 'POST',
@@ -433,18 +445,17 @@ export default function CreateExperience() {
         markerImageUrl = markerImagePresignedData.publicUrl
       }
 
-      // Determine content type based on what was uploaded
-      let determinedContentType = 'video' // default
-      if (videoUrl && modelUrl) {
-        determinedContentType = 'both' // both video and 3D
-      } else if (modelUrl && !videoUrl) {
-        determinedContentType = '3d' // only 3D
-      } else if (videoUrl && !modelUrl) {
-        determinedContentType = 'video' // only video
+      // Determine content type
+      let determinedContentType = contentType
+      if (contentType !== 'portal') {
+        if (videoUrl && modelUrl) determinedContentType = 'both'
+        else if (modelUrl && !videoUrl) determinedContentType = '3d'
+        else if (videoUrl && !modelUrl) determinedContentType = 'video'
+        else determinedContentType = 'video'
       }
 
       // Create AR experience record
-      const experienceData = {
+      const experienceData: any = {
         title: title.trim(),
         content_type: determinedContentType,
         video_file_url: videoUrl || null,
@@ -459,6 +470,17 @@ export default function CreateExperience() {
         user_id: user!.id,
         link_url: linkUrl.trim() ? linkUrl.trim() : null,
         video_scale: videoFile ? videoScale : 1.0,
+      }
+
+      if (determinedContentType === 'portal') {
+        experienceData.video_file_url = null
+        experienceData.model_url = null
+        experienceData.mind_file_url = null
+        experienceData.marker_image_url = null
+        experienceData.video_scale = 1.0
+        experienceData.portal_env_url = portalEnvUrl.trim()
+        experienceData.portal_distance = portalDistance
+        experienceData.portal_scale = portalScale
       }
 
       const experienceResponse = await fetch('/api/ar', {
@@ -619,6 +641,18 @@ export default function CreateExperience() {
                 required
               />
             </div>
+            )}
+
+            {/* Content Type Selection */}
+            <div>
+              <label className="block text-lg font-medium text-black mb-3">Content Type</label>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" onClick={() => setContentType('video')} className={`px-4 py-2 rounded-lg border-2 ${contentType==='video' ? 'bg-red-600 text-white border-black' : 'bg-white text-black border-black'}`}>Video</button>
+                <button type="button" onClick={() => setContentType('3d')} className={`px-4 py-2 rounded-lg border-2 ${contentType==='3d' ? 'bg-red-600 text-white border-black' : 'bg-white text-black border-black'}`}>3D</button>
+                <button type="button" onClick={() => setContentType('both')} className={`px-4 py-2 rounded-lg border-2 ${contentType==='both' ? 'bg-red-600 text-white border-black' : 'bg-white text-black border-black'}`}>Both</button>
+                <button type="button" onClick={() => setContentType('portal')} className={`px-4 py-2 rounded-lg border-2 ${contentType==='portal' ? 'bg-red-600 text-white border-black' : 'bg-white text-black border-black'}`}>Portal</button>
+              </div>
+            </div>
 
             {/* Content Type Info */}
             <div className="bg-blue-50 border-2 border-blue-600 rounded-xl p-6">
@@ -629,14 +663,15 @@ export default function CreateExperience() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-black mb-2">Upload Video, 3D Model, or Both!</h4>
+                  <h4 className="font-semibold text-black mb-2">Upload Video, 3D Model, Both, or choose Portal</h4>
                   <p className="text-sm text-black opacity-80">
-                    You can upload just a video, just a 3D model, or both together. If you upload both, they'll appear together in AR.
+                    For marker-based modes, upload a video and/or 3D model. For Portal, just provide a 360 equirectangular image URL.
                   </p>
                   <ul className="text-sm text-black opacity-80 mt-2 space-y-1">
                     <li>• <strong>Video only:</strong> Video plays on the marker</li>
                     <li>• <strong>3D model only:</strong> 3D model appears on the marker</li>
                     <li>• <strong>Both:</strong> Video plays with 3D model displayed together</li>
+                    <li>• <strong>Portal:</strong> Immediate AR portal without marker</li>
                   </ul>
                 </div>
               </div>
@@ -659,7 +694,34 @@ export default function CreateExperience() {
               <p className="text-sm text-black opacity-70 mt-2">If provided, a small button will appear in the AR experience.</p>
             </div>
 
+            {/* Portal Inputs */}
+            {contentType === 'portal' && (
+              <div className="bg-cream border border-black rounded-xl p-6">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="md:col-span-3">
+                    <label className="block text-lg font-medium text-black mb-2">Portal Environment URL (360 equirectangular image)</label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/360.jpg"
+                      value={portalEnvUrl}
+                      onChange={(e) => setPortalEnvUrl(e.target.value)}
+                      className="w-full px-6 py-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-red-600 focus:border-transparent text-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-lg font-medium text-black mb-2">Distance (m)</label>
+                    <input type="number" step="0.1" min="0.5" max="10" value={portalDistance} onChange={(e)=> setPortalDistance(parseFloat(e.target.value)||2)} className="w-full px-4 py-3 border-2 border-black rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-lg font-medium text-black mb-2">Scale</label>
+                    <input type="number" step="0.1" min="0.2" max="5" value={portalScale} onChange={(e)=> setPortalScale(parseFloat(e.target.value)||1)} className="w-full px-4 py-3 border-2 border-black rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* File Uploads */}
+            {contentType !== 'portal' && (
             <div className="grid md:grid-cols-2 gap-8">
               {/* Video Upload - Always show, optional */}
             <div>
