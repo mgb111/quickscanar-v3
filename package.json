@@ -18,6 +18,9 @@
     "@david18284/one-euro-filter": "^1.0.3",
     "@maherboughdiri/mind-ar-compiler": "^1.0.1",
     "@msgpack/msgpack": "^3.1.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@react-three/xr": "^6.6.27",
     "@sparticuz/chromium": "^119.0.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
@@ -46,6 +49,7 @@
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.4.1",
     "tailwindcss": "^3.3.0",
+    "three": "^0.181.0",
     "typescript": "^5.6.2",
     "uuid": "^9.0.1"
   }
