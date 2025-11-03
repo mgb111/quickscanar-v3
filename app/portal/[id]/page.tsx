@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import { Canvas, useFrame, useLoader } from "@react-three/fiber"
-import { ARButton, XR, useXR } from "@react-three/xr"
-import { TextureLoader, BackSide, Mesh, MeshBasicMaterial } from "three"
+import { ARButton, XR } from "@react-three/xr"
+import { TextureLoader, BackSide, Mesh } from "three"
 
 // Minimal Supabase client (public anon) for client-side fetch
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -45,7 +45,6 @@ function useExperience(id: string) {
 function PortalObject({ envUrl = "", distance = 2, scale = 1, onEnter }: { envUrl: string; distance: number; scale: number; onEnter: () => void }) {
   const tex = useLoader(TextureLoader, envUrl)
   const ringRef = useRef<Mesh>(null)
-  const { isPresenting } = useXR()
 
   useFrame((state, delta) => {
     if (ringRef.current) {
@@ -63,12 +62,6 @@ function PortalObject({ envUrl = "", distance = 2, scale = 1, onEnter }: { envUr
         <sphereGeometry args={[0.75, 32, 32]} />
         <meshStandardMaterial map={tex} side={BackSide} />
       </mesh>
-      {!isPresenting && (
-        <mesh position={[0, -0.75, 0]}>
-          <boxGeometry args={[0.02, 0.02, 0.02]} />
-          <meshBasicMaterial color="#ff0000" />
-        </mesh>
-      )}
     </group>
   )
 }
