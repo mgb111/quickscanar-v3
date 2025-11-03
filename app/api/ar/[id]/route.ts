@@ -1048,7 +1048,10 @@ export async function GET(
         const updateDimensions = () => {
           if (videoElement.videoWidth && videoElement.videoHeight) {
             const videoScale = ${Number(experience.video_scale || 1.0).toFixed(3)}; // server-provided scale (default 1.0)
-            const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+            const rotation = ${Number(experience.video_rotation || 0)};
+            const isRotated = Math.abs(rotation) % 180 !== 0;
+            const rawAspect = videoElement.videoWidth / videoElement.videoHeight;
+            const videoAspect = isRotated ? (1 / rawAspect) : rawAspect; // invert aspect if 90/270 deg
             // Marker dimensions (1.0 x 1.0 by default in MindAR)
             const markerWidth = 1.0;
             const markerHeight = 1.0;
@@ -1389,6 +1392,8 @@ export async function GET(
                 // Handle video AR
                 if (isVideo) {
                   if (videoPlane) {
+                    // Recompute sizing on reveal to avoid tiny initial render
+                    try { if (video && videoPlane) updateVideoAspectRatio(video, videoPlane); } catch(e) { }
                     videoPlane.setAttribute('visible', 'true');
                     // Add smooth animation for appearance
                     videoPlane.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 300');
