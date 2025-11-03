@@ -95,7 +95,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <ARButton sessionInit={{ requiredFeatures: ["hit-test", "camera-access"] }} style={{ position: "fixed", bottom: 16, left: 16, zIndex: 6 }} />
+      <ARButton style={{ position: "fixed", bottom: 16, left: 16, zIndex: 6 }} />
       {inside && (
         <button
           onClick={() => setInside(false)}
