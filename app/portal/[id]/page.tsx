@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber"
 import { ARButton, XR, Interactive, useXR } from "@react-three/xr"
-import { TextureLoader, BackSide, Mesh, Vector3 } from "three"
+import { TextureLoader, BackSide, Mesh, Vector3, AlwaysStencilFunc, NotEqualStencilFunc, KeepStencilOp, EqualStencilFunc, NeverStencilFunc } from "three"
 import { Float, MeshDistortMaterial } from "@react-three/drei"
 
 // Minimal Supabase client (public anon) for client-side fetch
@@ -55,10 +55,10 @@ function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) 
         side={BackSide}
         stencilWrite={false}
         stencilRef={1}
-        stencilFunc={invert ? 517 : 514}
-        stencilFail={7680}
-        stencilZFail={7680}
-        stencilZPass={7680}
+        stencilFunc={invert ? NotEqualStencilFunc : EqualStencilFunc}
+        stencilFail={KeepStencilOp}
+        stencilZFail={KeepStencilOp}
+        stencilZPass={KeepStencilOp}
       />
     </mesh>
   )
@@ -69,14 +69,12 @@ function PortalPlane({
   distance = 2, 
   scale = 1, 
   onSelect,
-  colorWrite,
-  depthWrite 
+  invert
 }: { 
   distance: number; 
   scale: number; 
   onSelect: () => void;
-  colorWrite: boolean;
-  depthWrite: boolean;
+  invert: boolean;
 }) {
   return (
     <Interactive onSelect={onSelect}>
@@ -94,14 +92,14 @@ function PortalPlane({
             radius={1}
             speed={10}
             color="#4a90e2"
-            colorWrite={colorWrite}
-            depthWrite={depthWrite}
+            colorWrite={!invert}
+            depthWrite={true}
             stencilWrite={true}
             stencilRef={1}
-            stencilFunc={colorWrite ? 519 : 512}
-            stencilFail={7680}
-            stencilZFail={7680}
-            stencilZPass={7680}
+            stencilFunc={invert ? NeverStencilFunc : AlwaysStencilFunc}
+            stencilFail={KeepStencilOp}
+            stencilZFail={KeepStencilOp}
+            stencilZPass={KeepStencilOp}
           />
         </mesh>
       </Float>
@@ -118,7 +116,7 @@ function CameraTracker({
   onWalkThrough: (entered: boolean) => void 
 }) {
   const { camera } = useThree()
-  const lastSideRef = useRef<number>(0)
+  const lastSideRef = useRef<number | null>(null)
   
   useFrame(() => {
     // Calculate which side of the portal the camera is on
@@ -126,9 +124,16 @@ function CameraTracker({
     const portalZ = portalPosition.z
     const currentSide = Math.sign(cameraZ - portalZ)
     
+    // Initialize on first frame
+    if (lastSideRef.current === null) {
+      lastSideRef.current = currentSide
+      return
+    }
+    
     // Check if we crossed the portal plane
-    if (lastSideRef.current !== 0 && currentSide !== lastSideRef.current) {
+    if (currentSide !== lastSideRef.current && currentSide !== 0) {
       // We crossed! Determine if we entered or exited
+      // currentSide < 0 means camera is now on the negative Z side (inside)
       onWalkThrough(currentSide < 0)
     }
     
@@ -143,8 +148,6 @@ export default function PortalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { data, loading, error } = useExperience(params.id)
   const [invert, setInvert] = useState(false)
-  const [colorWrite, setColorWrite] = useState(true)
-  const depthWrite = false
   const [arSupported, setArSupported] = useState<boolean | null>(null)
 
   const envUrl = data?.portal_env_url || "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
@@ -156,13 +159,11 @@ export default function PortalPage({ params }: { params: { id: string } }) {
 
   const handleSelect = () => {
     setInvert(!invert)
-    setColorWrite(!colorWrite)
   }
 
   const handleWalkThrough = (entered: boolean) => {
     // Automatically invert when walking through
     setInvert(entered)
-    setColorWrite(!entered)
   }
 
   // Check WebXR AR support on mount
@@ -203,7 +204,11 @@ export default function PortalPage({ params }: { params: { id: string } }) {
       {arSupported && (
         <Canvas
           camera={{ position: [0, 1.6, 5] }}
-          gl={{ alpha: true, antialias: true }}
+          gl={{ 
+            alpha: true, 
+            antialias: true,
+            stencil: true
+          }}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0)
           }}
@@ -219,8 +224,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
                 distance={distance}
                 scale={portalScale}
                 onSelect={handleSelect}
-                colorWrite={colorWrite}
-                depthWrite={depthWrite}
+                invert={invert}
               />
               <MaskedContent invert={invert} envUrl={envUrl} />
               <CameraTracker
