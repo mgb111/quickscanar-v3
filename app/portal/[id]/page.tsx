@@ -63,7 +63,7 @@ function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) 
         map={texture}
         side={BackSide}
         // Don't write to stencil, just read from it
-        stencilWrite={false}
+        stencilWrite={true}
         stencilRef={1}
         // Outside portal: show only where stencil equals 1 (through portal)
         // Inside portal: show where stencil does NOT equal 1 (everywhere but portal back)
