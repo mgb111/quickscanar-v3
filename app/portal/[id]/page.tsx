@@ -110,15 +110,25 @@ function PortalPlane({
 // Camera position tracker to detect walk-through
 function CameraTracker({ 
   portalPosition, 
-  onWalkThrough 
+  onWalkThrough,
+  enableAfterMs = 800,
+  enterThreshold = 0.75
 }: { 
   portalPosition: Vector3; 
-  onWalkThrough: (entered: boolean) => void 
+  onWalkThrough: (entered: boolean) => void,
+  enableAfterMs?: number,
+  enterThreshold?: number
 }) {
   const { camera } = useThree()
   const lastSideRef = useRef<number | null>(null)
+  const startRef = useRef<number | null>(null)
   
   useFrame(() => {
+    const now = performance.now()
+    if (startRef.current === null) startRef.current = now
+    // Don't allow entry immediately after session starts
+    if (now - startRef.current < enableAfterMs) return
+
     // Calculate which side of the portal the camera is on
     const cameraZ = camera.position.z
     const portalZ = portalPosition.z
@@ -132,6 +142,12 @@ function CameraTracker({
     
     // Check if we crossed the portal plane
     if (currentSide !== lastSideRef.current && currentSide !== 0) {
+      // Require proximity to the portal to avoid accidental toggles
+      const dist = camera.position.distanceTo(portalPosition)
+      if (dist > enterThreshold) {
+        lastSideRef.current = currentSide
+        return
+      }
       // We crossed! Determine if we entered or exited
       // currentSide < 0 means camera is now on the negative Z side (inside)
       onWalkThrough(currentSide < 0)
