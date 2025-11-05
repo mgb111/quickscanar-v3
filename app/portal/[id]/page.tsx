@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber"
-import { ARButton, XR, Interactive } from "@react-three/xr"
+import { ARButton, XR, Interactive, useXR } from "@react-three/xr"
 import { TextureLoader, BackSide, Mesh, Vector3 } from "three"
 import { Float, MeshDistortMaterial } from "@react-three/drei"
 
@@ -145,6 +145,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
   const [invert, setInvert] = useState(false)
   const [colorWrite, setColorWrite] = useState(true)
   const depthWrite = false
+  const [arSupported, setArSupported] = useState<boolean | null>(null)
 
   const envUrl = data?.portal_env_url || "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
   const distance = Number(data?.portal_distance ?? 2)
@@ -164,37 +165,79 @@ export default function PortalPage({ params }: { params: { id: string } }) {
     setColorWrite(!entered)
   }
 
+  // Check WebXR AR support on mount
+  useEffect(() => {
+    let mounted = true
+    async function check() {
+      try {
+        const supported = !!(navigator as any).xr && await (navigator as any).xr.isSessionSupported?.("immersive-ar")
+        if (mounted) setArSupported(!!supported)
+      } catch {
+        if (mounted) setArSupported(false)
+      }
+    }
+    check()
+    return () => { mounted = false }
+  }, [])
+
+  // Render nothing until we know support
+  if (arSupported === null) {
+    return null
+  }
+
   return (
-    <div style={{ height: "100vh", width: "100vw", background: "#000" }}>
-      <div style={{ position: "fixed", top: 12, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 5 }}>
+    <div style={{ height: "100vh", width: "100vw", background: "transparent" }}>
+      {/* Instructions / status bar */}
+      <div style={{ position: "fixed", top: 12, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 1001 }}>
         <div style={{ background: "rgba(0,0,0,0.55)", color: "#fff", border: "1px solid #000", borderRadius: 12, padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
-          {invert ? "You are inside the portal world" : "Walk toward the portal to enter, or tap it"}
+          {invert ? "You are inside the portal world" : arSupported ? "Tap Enter AR, then walk toward the portal to enter" : "AR not supported on this device/browser"}
         </div>
       </div>
 
-      <ARButton style={{ position: "fixed", bottom: 16, left: 16, zIndex: 6 }} />
+      {/* Show ARButton only if AR is supported */}
+      {arSupported && (
+        <ARButton style={{ position: "fixed", bottom: 16, left: 16, zIndex: 1002 }} />
+      )}
 
-      <Canvas camera={{ position: [0, 1.6, 5] }}>
-        <XR>
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[3, 5, 2]} intensity={1} />
-          
-          <PortalPlane
-            distance={distance}
-            scale={portalScale}
-            onSelect={handleSelect}
-            colorWrite={colorWrite}
-            depthWrite={depthWrite}
-          />
-          
-          <MaskedContent invert={invert} envUrl={envUrl} />
-          
-          <CameraTracker
-            portalPosition={portalPosition}
-            onWalkThrough={handleWalkThrough}
-          />
-        </XR>
-      </Canvas>
+      {/* Only render the XR scene when supported. The portal content itself will render only when presenting. */}
+      {arSupported && (
+        <Canvas
+          camera={{ position: [0, 1.6, 5] }}
+          gl={{ alpha: true, antialias: true }}
+          onCreated={({ gl }) => {
+            gl.setClearColor(0x000000, 0)
+          }}
+          style={{ background: "transparent" }}
+        >
+          <XR>
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[3, 5, 2]} intensity={1} />
+
+            {/* Render portal elements only when an AR session is active */}
+            <RenderWhenPresenting>
+              <PortalPlane
+                distance={distance}
+                scale={portalScale}
+                onSelect={handleSelect}
+                colorWrite={colorWrite}
+                depthWrite={depthWrite}
+              />
+              <MaskedContent invert={invert} envUrl={envUrl} />
+              <CameraTracker
+                portalPosition={portalPosition}
+                onWalkThrough={handleWalkThrough}
+              />
+            </RenderWhenPresenting>
+          </XR>
+        </Canvas>
+      )}
     </div>
   )
+}
+
+// Helper component: renders children only when XR session is presenting
+function RenderWhenPresenting({ children }: { children: React.ReactNode }) {
+  const { isPresenting } = useXR()
+  if (!isPresenting) return null
+  return <>{children}</>
 }
