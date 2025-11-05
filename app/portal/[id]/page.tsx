@@ -15,7 +15,7 @@ import {
   ReplaceStencilOp,
   KeepStencilOp
 } from "three"
-import { Float, MeshDistortMaterial } from "@react-three/drei"
+import { MeshDistortMaterial, Edges } from "@react-three/drei"
 
 // Minimal Supabase client (public anon) for client-side fetch
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -88,53 +88,31 @@ function PortalPlane({
   onSelect: () => void;
   invert: boolean;
 }) {
+  // Door dimensions (meters)
+  const doorWidth = 1.0
+  const doorHeight = 2.1
   return (
     <Interactive onSelect={onSelect}>
-      <Float
-        floatIntensity={3}
-        rotationIntensity={1}
-        speed={5}
-        position={[0, 1.4, -distance]}
-        scale={scale}
-      >
-        <mesh>
-          <planeGeometry args={[1.5, 1.5, 128, 128]} />
-          <MeshDistortMaterial
-            distort={0.5}
-            radius={1}
-            speed={10}
-            color="#4a90e2"
-            // Outside: show the portal (colorWrite=true)
-            // Inside: invisible portal, acts as clear window (colorWrite=false)
-            colorWrite={false}
-            depthWrite={false}
-            // Always write to stencil buffer
-            stencilWrite={true}
-            stencilRef={1}
-            // Always pass stencil test and write ref value
-            stencilFunc={AlwaysStencilFunc}
-            stencilFail={KeepStencilOp}
-            stencilZFail={KeepStencilOp}
-            // Write stencil value when depth test passes
-            stencilZPass={ReplaceStencilOp}
-          />
-        </mesh>
-        {/* Visual frame (does not affect stencil) */}
-        <mesh>
-          <planeGeometry args={[1.52, 1.52, 128, 128]} />
-          <MeshDistortMaterial
-            distort={0.5}
-            radius={1}
-            speed={10}
-            color="#4a90e2"
-            transparent={true}
-            opacity={0.65}
-            colorWrite={true}
-            depthWrite={true}
-            stencilWrite={false}
-          />
-        </mesh>
-      </Float>
+      {/* Stencil writer: invisible portal window, bottom at y=0 */}
+      <mesh position={[0, doorHeight / 2, -distance]} scale={scale}>
+        <planeGeometry args={[doorWidth, doorHeight, 64, 64]} />
+        <MeshDistortMaterial
+          distort={0.25}
+          radius={1}
+          speed={6}
+          color="#4a90e2"
+          colorWrite={false}
+          depthWrite={false}
+          stencilWrite={true}
+          stencilRef={1}
+          stencilFunc={AlwaysStencilFunc}
+          stencilFail={KeepStencilOp}
+          stencilZFail={KeepStencilOp}
+          stencilZPass={ReplaceStencilOp}
+        />
+        {/* Visible frame (edges only), does not affect stencil */}
+        <Edges scale={1.002} color="#4a90e2" />
+      </mesh>
     </Interactive>
   )
 }
@@ -246,7 +224,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
           }}
           style={{ background: "transparent" }}
         >
-          <XR>
+          <XR referenceSpace="local-floor">
             <ambientLight intensity={0.8} />
             <directionalLight position={[3, 5, 2]} intensity={1} />
 
