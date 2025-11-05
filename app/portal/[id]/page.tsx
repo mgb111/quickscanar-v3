@@ -106,8 +106,8 @@ function PortalPlane({
             color="#4a90e2"
             // Outside: show the portal (colorWrite=true)
             // Inside: invisible portal, acts as clear window (colorWrite=false)
-            colorWrite={!invert}
-            depthWrite={true}
+            colorWrite={false}
+            depthWrite={false}
             // Always write to stencil buffer
             stencilWrite={true}
             stencilRef={1}
@@ -117,6 +117,21 @@ function PortalPlane({
             stencilZFail={KeepStencilOp}
             // Write stencil value when depth test passes
             stencilZPass={ReplaceStencilOp}
+          />
+        </mesh>
+        {/* Visual frame (does not affect stencil) */}
+        <mesh>
+          <planeGeometry args={[1.52, 1.52, 128, 128]} />
+          <MeshDistortMaterial
+            distort={0.5}
+            radius={1}
+            speed={10}
+            color="#4a90e2"
+            transparent={true}
+            opacity={0.65}
+            colorWrite={true}
+            depthWrite={true}
+            stencilWrite={false}
           />
         </mesh>
       </Float>
@@ -235,16 +250,15 @@ export default function PortalPage({ params }: { params: { id: string } }) {
             <ambientLight intensity={0.8} />
             <directionalLight position={[3, 5, 2]} intensity={1} />
 
-            {/* Always show the portal and masked content so users see a preview before starting AR */}
-            <PortalPlane
-              distance={distance}
-              scale={portalScale}
-              onSelect={handleSelect}
-              invert={invert}
-            />
-            <MaskedContent invert={invert} envUrl={envUrl} />
-            {/* Activate camera walk-through detection only when AR session is active */}
+            {/* Render portal elements only when an AR session is active */}
             <RenderWhenPresenting>
+              <PortalPlane
+                distance={distance}
+                scale={portalScale}
+                onSelect={handleSelect}
+                invert={invert}
+              />
+              <MaskedContent invert={invert} envUrl={envUrl} />
               <CameraTracker
                 portalPosition={portalPosition}
                 onWalkThrough={handleWalkThrough}
