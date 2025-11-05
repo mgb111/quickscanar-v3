@@ -54,35 +54,7 @@ function useExperience(id: string) {
 
 // Component that shows the portal world through the mask
 function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) {
-  const [textureError, setTextureError] = useState(false)
-  const texture = useLoader(
-    TextureLoader, 
-    envUrl,
-    undefined,
-    (error) => {
-      console.error("Failed to load texture:", error)
-      setTextureError(true)
-    }
-  )
-  
-  // Fallback color if texture fails
-  if (textureError) {
-    return (
-      <mesh>
-        <sphereGeometry args={[500, 60, 40]} />
-        <meshBasicMaterial
-          color="#87ceeb"
-          side={BackSide}
-          stencilWrite={false}
-          stencilRef={1}
-          stencilFunc={invert ? NotEqualStencilFunc : EqualStencilFunc}
-          stencilFail={KeepStencilOp}
-          stencilZFail={KeepStencilOp}
-          stencilZPass={KeepStencilOp}
-        />
-      </mesh>
-    )
-  }
+  const texture = useLoader(TextureLoader, envUrl)
   
   return (
     <mesh>
@@ -90,8 +62,11 @@ function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) 
       <meshBasicMaterial
         map={texture}
         side={BackSide}
+        // Don't write to stencil, just read from it
         stencilWrite={false}
         stencilRef={1}
+        // Outside portal: show only where stencil equals 1 (through portal)
+        // Inside portal: show where stencil does NOT equal 1 (everywhere but portal back)
         stencilFunc={invert ? NotEqualStencilFunc : EqualStencilFunc}
         stencilFail={KeepStencilOp}
         stencilZFail={KeepStencilOp}
@@ -113,15 +88,6 @@ function PortalPlane({
   onSelect: () => void;
   invert: boolean;
 }) {
-  const meshRef = useRef<any>(null)
-  
-  // Debug: log portal position
-  useEffect(() => {
-    if (meshRef.current) {
-      console.log("Portal position:", meshRef.current.position)
-    }
-  }, [])
-  
   return (
     <Interactive onSelect={onSelect}>
       <Float
@@ -131,23 +97,26 @@ function PortalPlane({
         position={[0, 1.4, -distance]}
         scale={scale}
       >
-        <mesh ref={meshRef}>
+        <mesh>
           <planeGeometry args={[1.5, 1.5, 128, 128]} />
           <MeshDistortMaterial
             distort={0.5}
             radius={1}
             speed={10}
             color="#4a90e2"
+            // Outside: show the portal (colorWrite=true)
+            // Inside: invisible portal, acts as clear window (colorWrite=false)
             colorWrite={!invert}
             depthWrite={true}
+            // Always write to stencil buffer
             stencilWrite={true}
             stencilRef={1}
+            // Always pass stencil test and write ref value
             stencilFunc={AlwaysStencilFunc}
             stencilFail={KeepStencilOp}
             stencilZFail={KeepStencilOp}
+            // Write stencil value when depth test passes
             stencilZPass={ReplaceStencilOp}
-            transparent={false}
-            opacity={1}
           />
         </mesh>
       </Float>
@@ -167,6 +136,7 @@ function CameraTracker({
   const lastSideRef = useRef<number | null>(null)
   
   useFrame(() => {
+    // Calculate which side of the portal the camera is on
     const cameraZ = camera.position.z
     const portalZ = portalPosition.z
     const currentSide = Math.sign(cameraZ - portalZ)
@@ -179,9 +149,9 @@ function CameraTracker({
     
     // Check if we crossed the portal plane
     if (currentSide !== lastSideRef.current && currentSide !== 0) {
-      const entered = currentSide < 0
-      console.log(`Portal crossed! Entered: ${entered}, Camera Z: ${cameraZ.toFixed(2)}, Portal Z: ${portalZ.toFixed(2)}`)
-      onWalkThrough(entered)
+      // We crossed! Determine if we entered or exited
+      // currentSide < 0 means camera is now on the negative Z side (inside/through the portal)
+      onWalkThrough(currentSide < 0)
     }
     
     lastSideRef.current = currentSide
@@ -190,28 +160,12 @@ function CameraTracker({
   return null
 }
 
-// Debug helper to show camera position
-function DebugInfo() {
-  const { camera } = useThree()
-  const [pos, setPos] = useState({ x: 0, y: 0, z: 0 })
-  
-  useFrame(() => {
-    setPos({
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z
-    })
-  })
-  
-  return null
-}
 
 export default function PortalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { data, loading, error } = useExperience(params.id)
   const [invert, setInvert] = useState(false)
   const [arSupported, setArSupported] = useState<boolean | null>(null)
-  const [showDebug, setShowDebug] = useState(false)
 
   const envUrl = data?.portal_env_url || "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
   const distance = Number(data?.portal_distance ?? 2)
@@ -221,12 +175,11 @@ export default function PortalPage({ params }: { params: { id: string } }) {
   const title = data?.title || "AR Portal"
 
   const handleSelect = () => {
-    console.log("Portal tapped! Inverting:", !invert)
     setInvert(!invert)
   }
 
   const handleWalkThrough = (entered: boolean) => {
-    console.log("Walk through detected! Entered:", entered)
+    // Automatically invert when walking through
     setInvert(entered)
   }
 
@@ -236,12 +189,8 @@ export default function PortalPage({ params }: { params: { id: string } }) {
     async function check() {
       try {
         const supported = !!(navigator as any).xr && await (navigator as any).xr.isSessionSupported?.("immersive-ar")
-        if (mounted) {
-          setArSupported(!!supported)
-          console.log("AR Support:", !!supported)
-        }
-      } catch (err) {
-        console.error("AR support check failed:", err)
+        if (mounted) setArSupported(!!supported)
+      } catch {
         if (mounted) setArSupported(false)
       }
     }
@@ -249,100 +198,36 @@ export default function PortalPage({ params }: { params: { id: string } }) {
     return () => { mounted = false }
   }, [])
 
-  // Log when invert changes
-  useEffect(() => {
-    console.log("Invert state changed:", invert)
-  }, [invert])
-
   // Render nothing until we know support
   if (arSupported === null) {
-    return (
-      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", background: "#000" }}>
-        <div style={{ color: "#fff", fontSize: 16 }}>Checking AR support...</div>
-      </div>
-    )
+    return null
   }
 
   return (
     <div style={{ height: "100vh", width: "100vw", background: "transparent" }}>
       {/* Instructions / status bar */}
       <div style={{ position: "fixed", top: 12, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 1001 }}>
-        <div style={{ background: "rgba(0,0,0,0.7)", color: "#fff", border: "1px solid #000", borderRadius: 12, padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
+        <div style={{ background: "rgba(0,0,0,0.55)", color: "#fff", border: "1px solid #000", borderRadius: 12, padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
           {invert ? "🌍 Inside the portal world" : arSupported ? "👁️ Walk toward the portal to enter another world" : "⚠️ AR not supported on this device/browser"}
         </div>
       </div>
 
-      {/* Debug toggle button */}
-      <button
-        onClick={() => setShowDebug(!showDebug)}
-        style={{ 
-          position: "fixed", 
-          top: 60, 
-          right: 12, 
-          zIndex: 1001,
-          background: "rgba(0,0,0,0.7)",
-          color: "#fff",
-          border: "1px solid #fff",
-          borderRadius: 8,
-          padding: "8px 12px",
-          fontSize: 12
-        }}
-      >
-        {showDebug ? "Hide" : "Show"} Debug
-      </button>
-
-      {/* Debug info */}
-      {showDebug && (
-        <div style={{ 
-          position: "fixed", 
-          bottom: 80, 
-          left: 12, 
-          zIndex: 1001,
-          background: "rgba(0,0,0,0.8)",
-          color: "#fff",
-          border: "1px solid #fff",
-          borderRadius: 8,
-          padding: "10px",
-          fontSize: 11,
-          fontFamily: "monospace"
-        }}>
-          <div>Portal Distance: {distance}m</div>
-          <div>Portal Scale: {portalScale}x</div>
-          <div>Portal Z: {portalPosition.z.toFixed(2)}</div>
-          <div>Inverted: {invert ? "Yes" : "No"}</div>
-          <div>Env: {envUrl.split('/').pop()}</div>
-        </div>
-      )}
-
       {/* Show ARButton only if AR is supported */}
       {arSupported && (
-        <ARButton 
-          style={{ 
-            position: "fixed", 
-            bottom: 16, 
-            left: 16, 
-            zIndex: 1002,
-            padding: "12px 24px",
-            fontSize: 16,
-            fontWeight: 700,
-            borderRadius: 8
-          }} 
-        />
+        <ARButton style={{ position: "fixed", bottom: 16, left: 16, zIndex: 1002 }} />
       )}
 
-      {/* Only render the XR scene when supported */}
+      {/* Only render the XR scene when supported. The portal content itself will render only when presenting. */}
       {arSupported && (
         <Canvas
-          camera={{ position: [0, 1.6, 5], fov: 75 }}
+          camera={{ position: [0, 1.6, 5] }}
           gl={{ 
             alpha: true, 
             antialias: true,
-            stencil: true,
-            preserveDrawingBuffer: true
+            stencil: true
           }}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0)
-            console.log("Canvas created, stencil bits:", gl.getContextAttributes()?.stencil)
           }}
           style={{ background: "transparent" }}
         >
@@ -363,7 +248,6 @@ export default function PortalPage({ params }: { params: { id: string } }) {
                 portalPosition={portalPosition}
                 onWalkThrough={handleWalkThrough}
               />
-              {showDebug && <DebugInfo />}
             </RenderWhenPresenting>
           </XR>
         </Canvas>
@@ -375,11 +259,6 @@ export default function PortalPage({ params }: { params: { id: string } }) {
 // Helper component: renders children only when XR session is presenting
 function RenderWhenPresenting({ children }: { children: React.ReactNode }) {
   const { isPresenting } = useXR()
-  
-  useEffect(() => {
-    console.log("XR Presenting:", isPresenting)
-  }, [isPresenting])
-  
   if (!isPresenting) return null
   return <>{children}</>
 }
