@@ -5,7 +5,16 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@supabase/supabase-js"
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber"
 import { ARButton, XR, Interactive, useXR } from "@react-three/xr"
-import { TextureLoader, BackSide, Mesh, Vector3, AlwaysStencilFunc, NotEqualStencilFunc, KeepStencilOp, EqualStencilFunc, NeverStencilFunc } from "three"
+import { 
+  TextureLoader, 
+  BackSide, 
+  Vector3,
+  AlwaysStencilFunc,
+  EqualStencilFunc,
+  NotEqualStencilFunc,
+  ReplaceStencilOp,
+  KeepStencilOp
+} from "three"
 import { Float, MeshDistortMaterial } from "@react-three/drei"
 
 // Minimal Supabase client (public anon) for client-side fetch
@@ -53,8 +62,11 @@ function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) 
       <meshBasicMaterial
         map={texture}
         side={BackSide}
+        // Don't write to stencil, just read from it
         stencilWrite={false}
         stencilRef={1}
+        // Outside portal: show only where stencil equals 1 (through portal)
+        // Inside portal: show where stencil does NOT equal 1 (everywhere but portal back)
         stencilFunc={invert ? NotEqualStencilFunc : EqualStencilFunc}
         stencilFail={KeepStencilOp}
         stencilZFail={KeepStencilOp}
@@ -92,14 +104,19 @@ function PortalPlane({
             radius={1}
             speed={10}
             color="#4a90e2"
+            // Outside: show the portal (colorWrite=true)
+            // Inside: invisible portal, acts as clear window (colorWrite=false)
             colorWrite={!invert}
             depthWrite={true}
+            // Always write to stencil buffer
             stencilWrite={true}
             stencilRef={1}
-            stencilFunc={invert ? NeverStencilFunc : AlwaysStencilFunc}
+            // Always pass stencil test and write ref value
+            stencilFunc={AlwaysStencilFunc}
             stencilFail={KeepStencilOp}
             stencilZFail={KeepStencilOp}
-            stencilZPass={KeepStencilOp}
+            // Write stencil value when depth test passes
+            stencilZPass={ReplaceStencilOp}
           />
         </mesh>
       </Float>
@@ -110,25 +127,15 @@ function PortalPlane({
 // Camera position tracker to detect walk-through
 function CameraTracker({ 
   portalPosition, 
-  onWalkThrough,
-  enableAfterMs = 800,
-  enterThreshold = 0.75
+  onWalkThrough 
 }: { 
   portalPosition: Vector3; 
-  onWalkThrough: (entered: boolean) => void,
-  enableAfterMs?: number,
-  enterThreshold?: number
+  onWalkThrough: (entered: boolean) => void 
 }) {
   const { camera } = useThree()
   const lastSideRef = useRef<number | null>(null)
-  const startRef = useRef<number | null>(null)
   
   useFrame(() => {
-    const now = performance.now()
-    if (startRef.current === null) startRef.current = now
-    // Don't allow entry immediately after session starts
-    if (now - startRef.current < enableAfterMs) return
-
     // Calculate which side of the portal the camera is on
     const cameraZ = camera.position.z
     const portalZ = portalPosition.z
@@ -142,14 +149,8 @@ function CameraTracker({
     
     // Check if we crossed the portal plane
     if (currentSide !== lastSideRef.current && currentSide !== 0) {
-      // Require proximity to the portal to avoid accidental toggles
-      const dist = camera.position.distanceTo(portalPosition)
-      if (dist > enterThreshold) {
-        lastSideRef.current = currentSide
-        return
-      }
       // We crossed! Determine if we entered or exited
-      // currentSide < 0 means camera is now on the negative Z side (inside)
+      // currentSide < 0 means camera is now on the negative Z side (inside/through the portal)
       onWalkThrough(currentSide < 0)
     }
     
@@ -207,7 +208,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
       {/* Instructions / status bar */}
       <div style={{ position: "fixed", top: 12, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 1001 }}>
         <div style={{ background: "rgba(0,0,0,0.55)", color: "#fff", border: "1px solid #000", borderRadius: 12, padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
-          {invert ? "You are inside the portal world" : arSupported ? "Tap Enter AR, then walk toward the portal to enter" : "AR not supported on this device/browser"}
+          {invert ? "🌍 Inside the portal world" : arSupported ? "👁️ Walk toward the portal to enter another world" : "⚠️ AR not supported on this device/browser"}
         </div>
       </div>
 
