@@ -235,15 +235,16 @@ export default function PortalPage({ params }: { params: { id: string } }) {
             <ambientLight intensity={0.8} />
             <directionalLight position={[3, 5, 2]} intensity={1} />
 
-            {/* Render portal elements only when an AR session is active */}
+            {/* Always show the portal and masked content so users see a preview before starting AR */}
+            <PortalPlane
+              distance={distance}
+              scale={portalScale}
+              onSelect={handleSelect}
+              invert={invert}
+            />
+            <MaskedContent invert={invert} envUrl={envUrl} />
+            {/* Activate camera walk-through detection only when AR session is active */}
             <RenderWhenPresenting>
-              <PortalPlane
-                distance={distance}
-                scale={portalScale}
-                onSelect={handleSelect}
-                invert={invert}
-              />
-              <MaskedContent invert={invert} envUrl={envUrl} />
               <CameraTracker
                 portalPosition={portalPosition}
                 onWalkThrough={handleWalkThrough}
