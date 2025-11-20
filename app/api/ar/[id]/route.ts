@@ -37,10 +37,135 @@ export async function GET(
     const is3D = contentType === '3d' || contentType === 'both'
     const isPortal = contentType === 'portal'
 
-    if (isPortal) {
+    // Basic iOS detection for Safari/WebKit on iPhone/iPad/iPod
+    const userAgent = request.headers.get('user-agent') || ''
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent)
+
+    // Non‑iOS browsers use the existing WebXR/React Three portal implementation
+    if (isPortal && !isIOS) {
       const target = new URL(`/portal/${experience.id}`, request.url)
       return NextResponse.redirect(target, 302)
     }
+
+    // iOS-compatible portal implementation using A-Frame + MindAR (marker based)
+    const portalEnvUrl = experience.portal_env_url || 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg'
+    const portalDistance = Number(experience.portal_distance ?? 2)
+    const portalScale = Number(experience.portal_scale ?? 1)
+
+    const portalHTML = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="msapplication-navbutton-color" content="#1a1a2e" />
+    <meta name="apple-mobile-web-app-title" content="AR Portal" />
+    <title>${experience.title} - AR Portal</title>
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      }
+
+      a-scene {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #statusBar {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: rgba(0,0,0,0.65);
+        color: #fff;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid #000;
+      }
+
+      #statusBar.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="statusBar">Point your camera at the marker to open the portal</div>
+
+    <a-scene
+      mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
+      color-space="sRGB"
+      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      embedded
+      loading-screen="enabled: false"
+      style="opacity:0; transition: opacity .3s ease;"
+    >
+      <a-assets>
+        <img id="portalEnv" src="${portalEnvUrl}" crossorigin="anonymous" />
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0" id="target">
+        <!-- Simple window-style portal on the marker -->
+        <a-plane
+          id="portalPlane"
+          width="${(1.2 * portalScale).toFixed(2)}"
+          height="${(2.0 * portalScale).toFixed(2)}"
+          position="0 ${(1.0 * portalScale).toFixed(2)} 0.01"
+          material="src: #portalEnv; side: double; shader: flat"
+        ></a-plane>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const scene = document.querySelector('a-scene');
+        const target = document.getElementById('target');
+        const statusBar = document.getElementById('statusBar');
+
+        if (scene) {
+          scene.addEventListener('arReady', () => {
+            scene.style.opacity = '1';
+          });
+
+          scene.addEventListener('arError', (e) => {
+            console.error('MindAR portal arError', e);
+            if (statusBar) {
+              statusBar.textContent = 'AR error - please allow camera and reload';
+            }
+          });
+        }
+
+        if (target) {
+          target.addEventListener('targetFound', () => {
+            if (statusBar) {
+              statusBar.textContent = 'Portal open - move around to explore the world';
+            }
+          });
+
+          target.addEventListener('targetLost', () => {
+            if (statusBar) {
+              statusBar.textContent = 'Lost marker - point at it again to re-open the portal';
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>`
 
     const arHTML = `<!DOCTYPE html>
 <html>
@@ -1403,7 +1528,10 @@ export async function GET(
   </body>
 </html>`
 
-    return new NextResponse(arHTML, {
+    // For iOS portal experiences, return the MindAR-based portal HTML instead of the standard AR page
+    const htmlToSend = isPortal && isIOS ? portalHTML : arHTML
+
+    return new NextResponse(htmlToSend, {
       status: 200,
       headers: {
         'Content-Type': 'text/html',
