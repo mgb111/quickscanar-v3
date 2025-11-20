@@ -100,7 +100,7 @@ export async function GET(
     </style>
   </head>
   <body>
-    <div id="statusBar">Point your camera at the marker to open the portal</div>
+    <div id="statusBar">Move your phone to begin and look for the portal in your space</div>
 
     <a-scene
       mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 50; missTolerance: 3600; showStats: false; maxTrack: 1;"
@@ -158,7 +158,7 @@ export async function GET(
 
           target.addEventListener('targetLost', () => {
             if (statusBar) {
-              statusBar.textContent = 'Lost marker - point at it again to re-open the portal';
+              statusBar.textContent = 'Portal lost - move your phone slowly to find it again';
             }
           });
         }
