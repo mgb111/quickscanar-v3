@@ -257,15 +257,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
           }}
           style={{ background: "transparent" }}
         >
-          <XR
-            referenceSpace="local-floor"
-            sessionInit={{
-              requiredFeatures: ["local-floor"],
-              optionalFeatures: ["dom-overlay", "hit-test"],
-              // @ts-ignore - domOverlay is part of sessionInit when dom-overlay is requested
-              domOverlay: { root: typeof document !== "undefined" ? document.body : undefined }
-            }}
-          >
+          <XR referenceSpace="local-floor">
             <ambientLight intensity={0.8} />
             <directionalLight position={[3, 5, 2]} intensity={1} />
             <XRStencilProbe />
