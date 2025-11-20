@@ -53,21 +53,24 @@ function useExperience(id: string) {
 }
 
 // Component that shows the portal world through the mask
-function MaskedContent({ invert, envUrl }: { invert: boolean; envUrl: string }) {
+function MaskedContent({ invert, envUrl, supportsStencil }: { invert: boolean; envUrl: string; supportsStencil: boolean }) {
   const texture = useLoader(TextureLoader, envUrl)
   
+  // Fallback: without stencil, only render full environment when "inside"
+  if (!supportsStencil && !invert) return null
+
   return (
     <mesh>
       <sphereGeometry args={[500, 60, 40]} />
       <meshBasicMaterial
         map={texture}
         side={BackSide}
-        // Don't write to stencil, just read from it
-        stencilWrite={true}
+        // Enable stencil read/write only when supported
+        stencilWrite={supportsStencil}
         stencilRef={1}
         // Outside portal: show only where stencil equals 1 (through portal)
         // Inside portal: show where stencil does NOT equal 1 (everywhere but portal back)
-        stencilFunc={invert ? NotEqualStencilFunc : EqualStencilFunc}
+        stencilFunc={supportsStencil ? (invert ? NotEqualStencilFunc : EqualStencilFunc) : AlwaysStencilFunc}
         stencilFail={KeepStencilOp}
         stencilZFail={KeepStencilOp}
         stencilZPass={KeepStencilOp}
@@ -81,16 +84,21 @@ function PortalPlane({
   distance = 2, 
   scale = 1, 
   onSelect,
-  invert
+  invert,
+  supportsStencil,
+  envUrl
 }: { 
   distance: number; 
   scale: number; 
   onSelect: () => void;
   invert: boolean;
+  supportsStencil: boolean;
+  envUrl: string;
 }) {
   // Door dimensions (meters)
   const doorWidth = 1.0
   const doorHeight = 2.1
+  const previewTex = useLoader(TextureLoader, envUrl)
   return (
     <Interactive onSelect={onSelect}>
       {/* Stencil writer: invisible portal window, bottom at y=0 */}
@@ -101,9 +109,9 @@ function PortalPlane({
           radius={1}
           speed={6}
           color="#4a90e2"
-          colorWrite={false}
-          depthWrite={false}
-          stencilWrite={true}
+          colorWrite={!supportsStencil ? true : false}
+          depthWrite={!supportsStencil ? true : false}
+          stencilWrite={supportsStencil}
           stencilRef={1}
           stencilFunc={AlwaysStencilFunc}
           stencilFail={KeepStencilOp}
@@ -113,6 +121,14 @@ function PortalPlane({
         {/* Visible frame (edges only), does not affect stencil */}
         <Edges scale={1.002} color="#4a90e2" />
       </mesh>
+
+      {/* iOS fallback preview: draw env preview on a slightly inset quad if stencil unsupported and not yet inside */}
+      {!supportsStencil && !invert && (
+        <mesh position={[0, doorHeight / 2 + 0.001, -distance + 0.001]} scale={scale}>
+          <planeGeometry args={[doorWidth * 0.98, doorHeight * 0.98, 2, 2]} />
+          <meshBasicMaterial map={previewTex} toneMapped={false} />
+        </mesh>
+      )}
     </Interactive>
   )
 }
@@ -159,6 +175,7 @@ export default function PortalPage({ params }: { params: { id: string } }) {
   const { data, loading, error } = useExperience(params.id)
   const [invert, setInvert] = useState(false)
   const [arSupported, setArSupported] = useState<boolean | null>(null)
+  const [supportsStencil, setSupportsStencil] = useState<boolean>(true)
 
   const envUrl = data?.portal_env_url || "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"
   const distance = Number(data?.portal_distance ?? 2)
@@ -190,6 +207,22 @@ export default function PortalPage({ params }: { params: { id: string } }) {
     check()
     return () => { mounted = false }
   }, [])
+
+  // Detect stencil support after renderer is created and XR is presenting
+  function XRStencilProbe() {
+    const { gl } = useThree()
+    const { isPresenting } = useXR()
+    useEffect(() => {
+      if (!isPresenting) return
+      try {
+        const attrs = (gl.getContextAttributes && gl.getContextAttributes()) || { stencil: false }
+        setSupportsStencil(!!attrs.stencil)
+      } catch {
+        setSupportsStencil(false)
+      }
+    }, [gl, isPresenting])
+    return null
+  }
 
   // Render nothing until we know support
   if (arSupported === null) {
@@ -224,9 +257,18 @@ export default function PortalPage({ params }: { params: { id: string } }) {
           }}
           style={{ background: "transparent" }}
         >
-          <XR referenceSpace="local-floor">
+          <XR
+            referenceSpace="local-floor"
+            sessionInit={{
+              requiredFeatures: ["local-floor"],
+              optionalFeatures: ["dom-overlay", "hit-test"],
+              // @ts-ignore - domOverlay is part of sessionInit when dom-overlay is requested
+              domOverlay: { root: typeof document !== "undefined" ? document.body : undefined }
+            }}
+          >
             <ambientLight intensity={0.8} />
             <directionalLight position={[3, 5, 2]} intensity={1} />
+            <XRStencilProbe />
 
             {/* Render portal elements only when an AR session is active */}
             <RenderWhenPresenting>
@@ -235,8 +277,10 @@ export default function PortalPage({ params }: { params: { id: string } }) {
                 scale={portalScale}
                 onSelect={handleSelect}
                 invert={invert}
+                supportsStencil={supportsStencil}
+                envUrl={envUrl}
               />
-              <MaskedContent invert={invert} envUrl={envUrl} />
+              <MaskedContent invert={invert} envUrl={envUrl} supportsStencil={supportsStencil} />
               <CameraTracker
                 portalPosition={portalPosition}
                 onWalkThrough={handleWalkThrough}
